@@ -1,2 +1,5 @@
 # ignore data directory
 data/
+
+# ignore txt files in the repo root
+*.txt
