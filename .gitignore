@@ -3,3 +3,6 @@ data/
 
 # ignore txt files in the repo root
 *.txt
+
+# ignore executable files
+pageloop
