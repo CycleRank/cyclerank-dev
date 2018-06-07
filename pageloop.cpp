@@ -4,79 +4,107 @@
 #include <vector>
 #include <utility>
 #include <algorithm>
+#include <queue>
 #include <stack>
 using namespace std;
 
 ifstream in("input.txt");
 ofstream out("output.txt");
 
-int N, M;
+int N, M, S, K;
 
 struct nodo{
   vector<int> vic;
-  bool visited;
+  int dist;
+  bool active;
+
   nodo(){
-    visited=false;
+    dist=-1;
+    active=true;
   }
 };
 
 vector<nodo> grafo;
 vector<nodo> grafoT;
 
-int counter=0;
-stack<int> ordine;
-void dfsG(int n){
-  grafo[n].visited=true;
-  for(int i=0; i<grafo[n].vic.size(); i++){
-    int v=grafo[n].vic[i];
-    if(!grafo[v].visited)
-      dfsG(v);
+void print_grafo() {
+  for(int i=0; i<N; i++) {
+    if(grafo[i].active) {
+      for(int v:grafo[i].vic) {
+        printf("%d -> %d\n", i, v);
+      }
+    }
   }
-  ordine.push(n);
 }
 
-void dfsGT(int n){
-  grafoT[n].visited=true;
-  for(int i=0; i<grafoT[n].vic.size(); i++){
-    int v=grafoT[n].vic[i];
-    if(!grafoT[v].visited)
-      dfsGT(v);
+void bfs(int source){
+  for(nodo& n:grafo)
+    n.dist = -1;
+
+  grafo[source].dist = 0;
+
+  queue<int> q;
+  q.push(source);
+  int cur;
+  while(!q.empty()){
+    cur = q.front();
+    q.pop();
+
+    for(int v:grafo[cur].vic) {
+      if((grafo[v].dist==-1) and (grafo[v].active)) {
+
+        //Se un vicino non é ancora stato visitato, imposto la sua distanza.
+        grafo[v].dist=grafo[cur].dist+1;
+        q.push(v);
+      }
+    }
+
   }
-  counter++;
 }
 
+int main(void) {
+  in >> N >> M >> S >> K;
 
-int main(void)
-{
-  in >> N >> M;
   grafo.resize(N);
   grafoT.resize(N);
+
+  vector<bool> destroy(N, false);
 
   for(int i=0; i<M; i++) {
     int s, t;
     in >> s >> t;
     grafo[s].vic.push_back(t);
-    grafoT[t].vic.push_back(s);
   }
 
-  for(int i = 0; i<N; i++){
-    if(!grafo[i].visited){
-      dfsG(i);
+  print_grafo();
+
+  bfs(S);
+
+  for(int i=0; i<N; i++) {
+    printf("d(%d,%d) = %d\n", i, S, grafo[i].dist);
+
+    if(grafo[i].dist > K) {
+      destroy[i] = true;
     }
   }
 
-  int mx = -1;
-  for(int j = N-1; j >= 0; j--) {
-    int i=ordine.top();
-    ordine.pop();
-    
-    if(!grafoT[i].visited) {
-      counter=0;
-      dfsGT(i);
-      mx=max(mx,counter);
-    }    
+  for(int i=0; i<N; i++) {
+    printf("destroy[%d] = %s\n", i, destroy[i] ? "true" : "false");
+    if(destroy[i]) {
+      grafo[i].active = false;
+      grafo[i].vic.clear();
+    } else {
+      for(int j=0; j<grafo[i].vic.size(); j++) {
+        int v = grafo[i].vic[j];
+        if(destroy[v]) {
+          grafo[i].vic.erase(grafo[i].vic.begin()+j);
+        }
+      }
+    }
   }
-  out<<mx<<endl;
+
+  N = grafo.size();
+  print_grafo();
+
   return 0;
 }
-
