@@ -6,6 +6,7 @@
 #include <algorithm>
 #include <queue>
 #include <stack>
+#include <climits>
 using namespace std;
 
 ifstream in("input.txt");
@@ -18,7 +19,7 @@ struct nodo{
   int dist;
   bool active;
   int index; // indice della dfs
-  int low; // piu basso indice utilizzando al massimo un back edge
+  int low;   // piu basso indice utilizzando al massimo un back edge
   bool instack;
 
   nodo(){
@@ -26,6 +27,7 @@ struct nodo{
     active = true;
     index = -1;
     instack = false;
+    low = INT_MAX;
   }
 };
 
@@ -33,6 +35,7 @@ vector<nodo> grafo;
 stack<int> st;
 int counter = 0;
 vector<bool> destroy(N, false);
+vector<vector<int>> cycles;
 
 void print_grafo() {
   for(int i=0; i<N; i++) {
@@ -63,7 +66,7 @@ void destroy_nodes() {
 
 }
 
-void bfs(int source){
+void bfs(int source) {
 
   if(!grafo[source].active) {
     return;
@@ -86,7 +89,7 @@ void bfs(int source){
       if((grafo[v].dist==-1) and (grafo[v].active)) {
 
         //Se un vicino non é ancora stato visitato, imposto la sua distanza.
-        grafo[v].dist=grafo[cur].dist+1;
+        grafo[v].dist = grafo[cur].dist + 1;
         q.push(v);
       }
     }
@@ -95,40 +98,102 @@ void bfs(int source){
 }
 
 
-void tarjan_dfs(int source) {
+void tarjan_dfs(int n) {
 
-  if(!grafo[source].active) {
+  if(!grafo[n].active) {
     return;
   }
 
-  grafo[source].index=counter;
-  grafo[source].low=counter;
+  grafo[n].index = counter;
+  grafo[n].low = counter;
 
   counter++;
-  st.push(source);
-  grafo[source].instack = true;
+  st.push(n);
+  grafo[n].instack = true;
 
-  printf("  -> foo\n");
+  // printf("  -> foo\n");
 
-  for(int v:grafo[source].vic) {
+  for(int v:grafo[n].vic) {
     if(grafo[v].active) {
       if(grafo[v].index == -1) {
-        printf("    -> source: %d, v: %d\n", source, v);
+        // printf("    -> n: %d, v: %d\n", n, v);
         tarjan_dfs(v);
-        grafo[source].low = min(grafo[source].low, grafo[v].low);
+        grafo[n].low = min(grafo[n].low, grafo[v].low);
       } else if(grafo[v].instack) {
-        grafo[source].low = min(grafo[source].low, grafo[v].index);
+        grafo[n].low = min(grafo[n].low, grafo[v].index);
       }
     }
   }
 
-  printf("grafo[%d].low: %d - grafo[%d].index: %d\n", source, grafo[source].low, source, grafo[source].index);
+  // printf("grafo[%d].low: %d - grafo[%d].index: %d\n", n, grafo[n].low, n, grafo[n].index);
 
-  if(grafo[source].low == grafo[source].index) {
+  if(grafo[n].low == grafo[n].index) {
+    int el;
+
+    if(n == S) {
+
+      // for(int i=0; i<N; i++) {
+      //   printf("  ----> grafo[%d].instack: %s\n", i, grafo[i].instack ? "true" : "false");
+      // }
+
+      for(int i=0; i<N; i++) {
+        if(!grafo[i].instack) {
+          // printf("  ----> set destroy node: %d\n", i);
+          destroy[i] = true;
+        }
+      }
+    }
+
+    printf("SCC: ");
+    // trovato una componente fortemente connessa
+    do {
+      el = st.top();
+      st.pop();
+      grafo[el].instack = false;
+      printf("%d ", el);
+    } while((el != n) and !(st.empty()));
+    printf("\n");
+
+  }
+
+  return;
+
+}
+
+void find_cycles(int n) {
+
+  if(!grafo[n].active) {
+    return;
+  }
+
+  grafo[n].index = counter;
+  grafo[n].low = counter;
+
+  counter++;
+  st.push(n);
+  grafo[n].instack = true;
+
+  printf("  -> foo\n");
+
+  for(int v:grafo[n].vic) {
+    if(grafo[v].active) {
+      if(grafo[v].index == -1) {
+        printf("    -> n: %d, v: %d\n", n, v);
+        tarjan_dfs(v);
+        grafo[n].low = min(grafo[n].low, grafo[v].low);
+      } else if(grafo[v].instack) {
+        grafo[n].low = min(grafo[n].low, grafo[v].index);
+      }
+    }
+  }
+
+  printf("grafo[%d].low: %d - grafo[%d].index: %d\n", n, grafo[n].low, n, grafo[n].index);
+
+  if(grafo[n].low == grafo[n].index) {
     int el;
 
 
-    if(source == S) {
+    if(n == S) {
       for(int i=0; i<N; i++) {
         printf("  ----> grafo[%d].instack: %s\n", i, grafo[i].instack ? "true" : "false");
       }
@@ -148,44 +213,12 @@ void tarjan_dfs(int source) {
       st.pop();
       grafo[el].instack = false;
       printf("%d ", el);
-    } while((el != source) and !(st.empty()));
+    } while((el != n) and !(st.empty()));
     printf("\n");
 
   }
 
   return;
-
-}
-
-
-void bfs_path(int source){
-
-  if(!grafo[source].active) {
-    return;
-  }
-
-  for(nodo& n:grafo) {
-    n.dist = -1;
-  }
-
-  grafo[source].dist = 0;
-
-  queue<int> q;
-  q.push(source);
-  int cur;
-  while(!q.empty()){
-    cur = q.front();
-    q.pop();
-
-    for(int v:grafo[cur].vic) {
-      if((grafo[v].dist==-1) and (grafo[v].active)) {
-
-        //Se un vicino non é ancora stato visitato, imposto la sua distanza.
-        grafo[v].dist=grafo[cur].dist+1;
-        q.push(v);
-      }
-    }
-  }
 
 }
 
@@ -236,6 +269,14 @@ int main(void) {
 
   print_grafo();
   printf("---\n");
+
+  for(int i=0; i<N; i++) {
+    grafo[i].index = -1;
+    grafo[i].low = INT_MAX;
+    grafo[i].instack = false;
+  }
+
+  find_cycles(S);
 
   return 0;
 }
