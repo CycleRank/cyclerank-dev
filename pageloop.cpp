@@ -32,10 +32,12 @@ struct nodo{
 };
 
 vector<nodo> grafo;
-stack<int> st;
 int counter = 0;
 vector<bool> destroy(N, false);
-vector<vector<int>> cycles;
+vector<stack<int>> cycles;
+
+stack<int> tarjan_st;
+stack<int> cycles_st;
 
 void print_grafo() {
   for(int i=0; i<N; i++) {
@@ -50,7 +52,7 @@ void print_grafo() {
 void destroy_nodes() {
 
   for(int i=0; i<N; i++) {
-    printf("destroy[%d] = %s\n", i, destroy[i] ? "true" : "false");
+    // printf("destroy[%d] = %s\n", i, destroy[i] ? "true" : "false");
     if(destroy[i]) {
       grafo[i].active = false;
       grafo[i].vic.clear();
@@ -106,17 +108,14 @@ void tarjan_dfs(int n) {
 
   grafo[n].index = counter;
   grafo[n].low = counter;
-
   counter++;
-  st.push(n);
-  grafo[n].instack = true;
 
-  // printf("  -> foo\n");
+  tarjan_st.push(n);
+  grafo[n].instack = true;
 
   for(int v:grafo[n].vic) {
     if(grafo[v].active) {
       if(grafo[v].index == -1) {
-        // printf("    -> n: %d, v: %d\n", n, v);
         tarjan_dfs(v);
         grafo[n].low = min(grafo[n].low, grafo[v].low);
       } else if(grafo[v].instack) {
@@ -125,33 +124,25 @@ void tarjan_dfs(int n) {
     }
   }
 
-  // printf("grafo[%d].low: %d - grafo[%d].index: %d\n", n, grafo[n].low, n, grafo[n].index);
-
   if(grafo[n].low == grafo[n].index) {
     int el;
 
     if(n == S) {
-
-      // for(int i=0; i<N; i++) {
-      //   printf("  ----> grafo[%d].instack: %s\n", i, grafo[i].instack ? "true" : "false");
-      // }
-
       for(int i=0; i<N; i++) {
         if(!grafo[i].instack) {
-          // printf("  ----> set destroy node: %d\n", i);
           destroy[i] = true;
         }
       }
     }
 
-    printf("SCC: ");
     // trovato una componente fortemente connessa
+    printf("SCC: ");
     do {
-      el = st.top();
-      st.pop();
+      el = tarjan_st.top();
+      tarjan_st.pop();
       grafo[el].instack = false;
       printf("%d ", el);
-    } while((el != n) and !(st.empty()));
+    } while((el != n) and !(tarjan_st.empty()));
     printf("\n");
 
   }
@@ -160,66 +151,64 @@ void tarjan_dfs(int n) {
 
 }
 
+
+void print_stack(stack<int> s) {
+  printf("(print_stack) stack size: %d\n", (int) s.size());
+  while (!s.empty()) {
+    cout << s.top();
+    s.pop();
+ }
+ printf("\n--- (print_stack) ---\n");
+}
+
+
+void print_cycles() {
+  printf("***\n");
+  printf("(print_cycles) cycles vector size: %d\n", (int) cycles.size());
+  for (auto& st : cycles) {
+    print_stack(st);
+  }
+  printf("\n--- (print_cycles) ---\n");
+  printf("***\n");
+}
+
 void find_cycles(int n) {
 
   if(!grafo[n].active) {
     return;
   }
 
+  printf("  -> n: %d\n", n);
+  printf("     - counter: %d\n", counter);
   grafo[n].index = counter;
   grafo[n].low = counter;
-
   counter++;
-  st.push(n);
+
+  cycles_st.push(n);
   grafo[n].instack = true;
 
-  printf("  -> foo\n");
-
   for(int v:grafo[n].vic) {
-    if(grafo[v].active) {
-      if(grafo[v].index == -1) {
-        printf("    -> n: %d, v: %d\n", n, v);
-        tarjan_dfs(v);
-        grafo[n].low = min(grafo[n].low, grafo[v].low);
-      } else if(grafo[v].instack) {
-        grafo[n].low = min(grafo[n].low, grafo[v].index);
-      }
-    }
-  }
+    if(v==S) {
+      printf("back to S (%d)\n", v);
+      print_stack(cycles_st);
 
-  printf("grafo[%d].low: %d - grafo[%d].index: %d\n", n, grafo[n].low, n, grafo[n].index);
-
-  if(grafo[n].low == grafo[n].index) {
-    int el;
-
-
-    if(n == S) {
-      for(int i=0; i<N; i++) {
-        printf("  ----> grafo[%d].instack: %s\n", i, grafo[i].instack ? "true" : "false");
+      if(!cycles_st.empty()) {
+        cycles.push_back(cycles_st);
+        print_cycles();
       }
 
-      for(int i=0; i<N; i++) {
-        if(!grafo[i].instack) {
-          printf("  ----> set destroy node: %d\n", i);
-          destroy[i] = true;
+    } else {
+      if(grafo[v].active) {
+        if(grafo[v].index == -1) {
+          find_cycles(v);
         }
+        cycles_st.pop();
+        print_stack(cycles_st);
       }
     }
-
-    printf("SCC: ");
-    // trovato una componente fortemente connessa
-    do {
-      el = st.top();
-      st.pop();
-      grafo[el].instack = false;
-      printf("%d ", el);
-    } while((el != n) and !(st.empty()));
-    printf("\n");
-
   }
 
   return;
-
 }
 
 
@@ -240,7 +229,7 @@ int main(void) {
   bfs(S);
 
   for(int i=0; i<N; i++) {
-    printf("d(%d,%d) = %d\n", i, S, grafo[i].dist);
+    // printf("d(%d,%d) = %d\n", i, S, grafo[i].dist);
 
     // se il nodo si trova distanza maggiore di K-1 o non raggiungibile
     if((grafo[i].dist > K-1) or (grafo[i].dist == -1)) {
@@ -258,14 +247,15 @@ int main(void) {
   }
 
   tarjan_dfs(S);
-  printf("--- aaa ---\n");
 
   destroy_nodes();
 
+  /*
   for(int i=0; i<N; i++) {
     printf("grafo[%d].active: %s - ", i, grafo[i].active ? "true" : "false");
     printf("grafo[%d].instack: %s\n", i, grafo[i].instack  ? "true" : "false");
   }
+  */
 
   print_grafo();
   printf("---\n");
@@ -276,6 +266,11 @@ int main(void) {
     grafo[i].instack = false;
   }
 
+  printf("print tarjan_st:\n");
+  print_stack(tarjan_st);
+  printf("---\n");
+
+  counter = 0;
   find_cycles(S);
 
   return 0;
