@@ -284,7 +284,7 @@ int main(void) {
     // printf("d(%d,%d) = %d\n", i, S, grafo[i].dist);
 
     // se il nodo si trova distanza maggiore di K-1 o non raggiungibile
-    if((grafo[i].dist > K-1) or (grafo[i].dist == -1)) {
+    if((grafo[i].dist == -1) or (grafo[i].dist > K-1)) {
       destroy[i] = true;
     }
   }
