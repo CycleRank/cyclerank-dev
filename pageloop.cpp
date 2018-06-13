@@ -16,33 +16,38 @@ ofstream out("output.txt");
 int N, M, S, K;
 
 struct nodo{
-  vector<int> vic;
-  int dist;
   bool active;
+  bool instack;
+  bool blocked;
+  int dist;
   int index; // indice della dfs
   int low;   // piu basso indice utilizzando al massimo un back edge
-  bool instack;
+  double score;
+  vector<int> vic;
+  list<int> B;
 
   nodo(){
-    dist = -1;
     active = true;
-    index = -1;
     instack = false;
+    blocked = false;
+    dist = -1;
+    index = -1;
     low = INT_MAX;
+    score = 0.0;
+    B.clear();
   }
 };
 
 vector<nodo> grafo;
-int counter = 0;
+
 vector<bool> destroy;
 vector<stack<int>> cycles;
 
 stack<int> tarjan_st;
+int counter = 0;
 
 stack<int> circuits_st;
-vector<bool> blocked;
 
-vector<list<int>> B;
 
 void print_grafo() {
   for (int i=0; i<N; i++) {
@@ -53,6 +58,7 @@ void print_grafo() {
     }
   }
 }
+
 
 void destroy_nodes() {
 
@@ -166,37 +172,11 @@ void print_stack(stack<int> s) {
 }
 
 
-void print_cycles() {
-  printf("***\n");
-  printf("(print_cycles) cycles vector size: %d\n", (int) cycles.size());
-  for (auto& st : cycles) {
-    print_stack(st);
-  }
-  printf("\n--- (print_cycles) ---\n");
-  printf("***\n");
-}
-
-
-void unblock(int u) {
-  // printf("      ----> unblock(%d)\n", u);
-  blocked[u] = false;
-  // printf("        ----> blocked[%d]: %s\n", u, blocked[u] ? "true" : "false");
-
-  while (!B[u].empty()) {
-    int w = B[u].front();
-    B[u].pop_front();
-
-    if (blocked[w]) {
-      unblock(w);
-    }
-  }
-}
-
-
-void output(stack<int> s) {
+void print_circuit(stack<int> s) {
   vector<int> tmp;
 
-  printf("      ----> found: ");
+  // printf("      ----> found: ");
+  printf("--> cycle: ");
   while (!s.empty()) {
     int el = s.top();
     tmp.push_back(el);
@@ -211,6 +191,29 @@ void output(stack<int> s) {
 }
 
 
+void print_cycles() {
+  for (auto& st : cycles) {
+    print_circuit(st);
+  }
+}
+
+
+void unblock(int u) {
+  // printf("      ----> unblock(%d)\n", u);
+  grafo[u].blocked = false;
+  // printf("        ----> grafo[%d].blocked: %s\n", u, grafo[u].blocked ? "true" : "false");
+
+  while (!grafo[u].B.empty()) {
+    int w = grafo[u].B.front();
+    grafo[u].B.pop_front();
+
+    if (grafo[w].blocked) {
+      unblock(w);
+    }
+  }
+}
+
+
 bool circuit(int v) {
   // printf("  --> circuit(%d)\n", v);
 
@@ -218,15 +221,16 @@ bool circuit(int v) {
 
   circuits_st.push(v);
 
-  blocked[v] = true;
-  // printf("  --> blocked[%d]: %s\n", v, blocked[v] ? "true" : "false");
+  grafo[v].blocked = true;
+  // printf("  --> grafo[%d].blocked: %s\n", v, grafo[v].blocked ? "true" : "false");
 
   for(int w : grafo[v].vic) {
     // printf("  --> w: %d\n", w);
     if (w == S) {
-      output(circuits_st);
+      // print_circuit(circuits_st);
+      cycles.push_back(circuits_st);
       flag = true;
-    } else if (!blocked[w]) {
+    } else if (!grafo[w].blocked) {
       // printf("    ==> circuit(%d)\n", w);
       if (circuit(w)) {
         flag = true;
@@ -239,11 +243,11 @@ bool circuit(int v) {
   } else {
     for (int w: grafo[v].vic) {
       // printf("  ++> v: %d, w: %d\n", v, w);
-      auto it = find(B[w].begin(), B[w].end(), v);
+      auto it = find(grafo[w].B.begin(), grafo[w].B.end(), v);
       // v not in B[w]
-      if (it == B[w].end()) {
+      if (it == grafo[w].B.end()) {
         // printf("  ++--> B[%d].push_back(%d)\n", w, v);
-        B[w].push_back(v);
+        grafo[w].B.push_back(v);
       }
     }
   }
@@ -260,10 +264,8 @@ int main(void) {
 
   grafo.resize(N);
   destroy.resize(N);
-  blocked.resize(N);
-  B.resize(N);
 
-  for(int i=0; i<M; i++) {
+  for(int i=0; i<N; i++) {
     destroy[i] = false;
   }
 
@@ -300,31 +302,24 @@ int main(void) {
 
   destroy_nodes();
 
-  /*
-  for(int i=0; i<N; i++) {
-    printf("grafo[%d].active: %s - ", i, grafo[i].active ? "true" : "false");
-    printf("grafo[%d].instack: %s\n", i, grafo[i].instack  ? "true" : "false");
-  }
-  */
-
   print_grafo();
   printf("---\n");
-
-  for(int i=0; i<N; i++) {
-    grafo[i].index = -1;
-    grafo[i].low = INT_MAX;
-    grafo[i].instack = false;
-  }
 
   // tarjan stack is empty here and may be reused
 
   // printf("S: %d\n", S);
-  for (int i=0; i<N; ++i) {
-    blocked[i] = false;
-    B[i].clear();
+  circuit(S);
+
+  print_cycles();
+  printf("***\n");
+
+  for (auto& c : cycles) {
+    while (!c.empty()) {
+      int el = c.top();
+      c.pop();
+    }
   }
 
-  circuit(S);
 
   return 0;
 }
