@@ -99,7 +99,7 @@ void bfs(int source) {
     q.pop();
 
     // if g[cur].dist == K-1 we can stop
-    if(g[cur].dist > K-2) {
+    if(grafo[cur].dist > K-2) {
       continue;
     }
 
@@ -233,7 +233,9 @@ bool circuit(int v) {
     // printf("  --> w: %d\n", w);
     if (w == S) {
       // print_circuit(circuits_st);
-      cycles.push_back(circuits_st);
+      if (!(circuits_st.size() > K)) {
+        cycles.push_back(circuits_st);
+      }
       flag = true;
     } else if (!grafo[w].blocked) {
       // printf("    ==> circuit(%d)\n", w);

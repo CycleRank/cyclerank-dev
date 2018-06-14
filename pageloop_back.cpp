@@ -182,7 +182,9 @@ bool circuit(int v) {
     // printf("  --> w: %d\n", w);
     if (w == S) {
       // print_circuit(circuits_st);
-      cycles.push_back(circuits_st);
+      if (!(circuits_st.size() > K)) {
+        cycles.push_back(circuits_st);
+      }
       flag = true;
     } else if (!grafo[w].blocked) {
       // printf("    ==> circuit(%d)\n", w);
