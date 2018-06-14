@@ -99,14 +99,15 @@ void bfs(int source, vector<nodo>& g) {
     cur = q.front();
     q.pop();
 
-    if(g[cur].dist > K-1) {
+    // if g[cur].dist == K-1 we can stop
+    if(g[cur].dist > K-2) {
       continue;
     }
 
     for (int v: g[cur].vic) {
       if ((g[v].dist==-1) and (g[v].active)) {
 
-        //Se un vicino non é ancora stato visitato, imposto la sua distanza.
+        // neighbor not yet visited, set distance
         g[v].dist = g[cur].dist + 1;
         q.push(v);
       }
