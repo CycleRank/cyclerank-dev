@@ -99,6 +99,10 @@ void bfs(int source, vector<nodo>& g) {
     cur = q.front();
     q.pop();
 
+    if(g[cur].dist > K-1) {
+      continue;
+    }
+
     for (int v: g[cur].vic) {
       if ((g[v].dist==-1) and (g[v].active)) {
 

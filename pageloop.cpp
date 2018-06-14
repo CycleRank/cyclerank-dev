@@ -98,6 +98,10 @@ void bfs(int source) {
     cur = q.front();
     q.pop();
 
+    if(g[cur].dist > K-1) {
+      continue;
+    }
+
     for (int v:grafo[cur].vic) {
       if ((grafo[v].dist==-1) and (grafo[v].active)) {
 
