@@ -23,7 +23,7 @@ struct nodo{
   int index; // indice della dfs
   int low;   // piu basso indice utilizzando al massimo un back edge
   double score;
-  vector<int> vic;
+  vector<int> adj;
   list<int> B;
 
   nodo(){
@@ -53,7 +53,7 @@ stack<int> circuits_st;
 void print_g(vector<nodo>& g) {
   for (int i=0; i<N; i++) {
     if (g[i].active) {
-      for (int v: g[i].vic) {
+      for (int v: g[i].adj) {
         printf("%d -> %d\n", i, v);
       }
     }
@@ -67,12 +67,12 @@ void destroy_nodes(vector<nodo>& g) {
     // printf("destroy[%d] = %s\n", i, destroy[i] ? "true" : "false");
     if (destroy[i]) {
       g[i].active = false;
-      g[i].vic.clear();
+      g[i].adj.clear();
     } else {
-      for (int j=0; j<g[i].vic.size(); j++) {
-        int v = g[i].vic[j];
+      for (int j=0; j<g[i].adj.size(); j++) {
+        int v = g[i].adj[j];
         if (destroy[v]) {
-          g[i].vic.erase(g[i].vic.begin()+j);
+          g[i].adj.erase(g[i].adj.begin()+j);
         }
       }
     }
@@ -104,7 +104,7 @@ void bfs(int source, vector<nodo>& g) {
       continue;
     }
 
-    for (int v: g[cur].vic) {
+    for (int v: g[cur].adj) {
       if ((g[v].dist==-1) and (g[v].active)) {
 
         // neighbor not yet visited, set distance
@@ -178,7 +178,7 @@ bool circuit(int v) {
   grafo[v].blocked = true;
   // printf("  --> grafo[%d].blocked: %s\n", v, grafo[v].blocked ? "true" : "false");
 
-  for(int w : grafo[v].vic) {
+  for(int w : grafo[v].adj) {
     // printf("  --> w: %d\n", w);
     if (w == S) {
       // print_circuit(circuits_st);
@@ -195,7 +195,7 @@ bool circuit(int v) {
   if (flag) {
     unblock(v);
   } else {
-    for (int w: grafo[v].vic) {
+    for (int w: grafo[v].adj) {
       // printf("  ++> v: %d, w: %d\n", v, w);
       auto it = find(grafo[w].B.begin(), grafo[w].B.end(), v);
       // v not in B[w]
@@ -227,8 +227,8 @@ int main(void) {
   for(int i=0; i<M; i++) {
     int s, t;
     in >> s >> t;
-    grafo[s].vic.push_back(t);
-    grafoT[t].vic.push_back(s);
+    grafo[s].adj.push_back(t);
+    grafoT[t].adj.push_back(s);
   }
 
   print_g(grafo);

@@ -23,7 +23,7 @@ struct nodo{
   int index; // indice della dfs
   int low;   // piu basso indice utilizzando al massimo un back edge
   double score;
-  vector<int> vic;
+  vector<int> adj;
   list<int> B;
 
   nodo(){
@@ -52,7 +52,7 @@ stack<int> circuits_st;
 void print_grafo() {
   for (int i=0; i<N; i++) {
     if (grafo[i].active) {
-      for (int v:grafo[i].vic) {
+      for (int v:grafo[i].adj) {
         printf("%d -> %d\n", i, v);
       }
     }
@@ -66,12 +66,12 @@ void destroy_nodes() {
     // printf("destroy[%d] = %s\n", i, destroy[i] ? "true" : "false");
     if (destroy[i]) {
       grafo[i].active = false;
-      grafo[i].vic.clear();
+      grafo[i].adj.clear();
     } else {
-      for (int j=0; j<grafo[i].vic.size(); j++) {
-        int v = grafo[i].vic[j];
+      for (int j=0; j<grafo[i].adj.size(); j++) {
+        int v = grafo[i].adj[j];
         if (destroy[v]) {
-          grafo[i].vic.erase(grafo[i].vic.begin()+j);
+          grafo[i].adj.erase(grafo[i].adj.begin()+j);
         }
       }
     }
@@ -103,7 +103,7 @@ void bfs(int source) {
       continue;
     }
 
-    for (int v:grafo[cur].vic) {
+    for (int v:grafo[cur].adj) {
       if ((grafo[v].dist==-1) and (grafo[v].active)) {
 
         // neighbor not yet visited, set distance
@@ -129,7 +129,7 @@ void tarjan_dfs(int n) {
   tarjan_st.push(n);
   grafo[n].instack = true;
 
-  for(int v:grafo[n].vic) {
+  for(int v:grafo[n].adj) {
     if (grafo[v].active) {
       if (grafo[v].index == -1) {
         tarjan_dfs(v);
@@ -229,7 +229,7 @@ bool circuit(int v) {
   grafo[v].blocked = true;
   // printf("  --> grafo[%d].blocked: %s\n", v, grafo[v].blocked ? "true" : "false");
 
-  for(int w : grafo[v].vic) {
+  for(int w : grafo[v].adj) {
     // printf("  --> w: %d\n", w);
     if (w == S) {
       // print_circuit(circuits_st);
@@ -246,7 +246,7 @@ bool circuit(int v) {
   if (flag) {
     unblock(v);
   } else {
-    for (int w: grafo[v].vic) {
+    for (int w: grafo[v].adj) {
       // printf("  ++> v: %d, w: %d\n", v, w);
       auto it = find(grafo[w].B.begin(), grafo[w].B.end(), v);
       // v not in B[w]
@@ -277,7 +277,7 @@ int main(void) {
   for(int i=0; i<M; i++) {
     int s, t;
     in >> s >> t;
-    grafo[s].vic.push_back(t);
+    grafo[s].adj.push_back(t);
   }
 
   print_grafo();
