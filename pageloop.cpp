@@ -321,12 +321,22 @@ int main(void) {
   printf("***\n");
 
   for (auto& c : cycles) {
+    int csize = c.size();
+    print_circuit(c);
     while (!c.empty()) {
       int el = c.top();
       c.pop();
+
+      printf("%d <- %f\n", el, 1.0/csize);
+
+      grafo[el].score += 1.0/csize;
     }
   }
 
+  printf("---\n");
+  for (int i=0; i<N; i++) {
+    printf("score(%d): %f\n", i, grafo[i].score);
+  }
 
   return 0;
 }
