@@ -7,3 +7,4 @@ data/
 # ignore executable files
 pageloop
 pageloop_back
+pageloop_back_map
