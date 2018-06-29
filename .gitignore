@@ -3,8 +3,9 @@ data/
 logs/
 misc/
 
-# ignore txt files in the repo root (input/output files)
+# ignore txt and csv files in the repo root (input/output files)
 *.txt
+*.csv
 
 # ignore log files in the repo root (input/output files)
 *.log
