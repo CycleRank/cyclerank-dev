@@ -9,17 +9,16 @@
 #include <list>
 #include <map>
 #include <climits>
+#include <stdlib.h>     /* exit, EXIT_FAILURE */
 
+#include "cxxopts.hpp"
 #include "spdlog/spdlog.h"
 
 using namespace std;
 namespace spd = spdlog;
+namespace opts = cxxopts;
 
-ifstream in("input.txt");
-ofstream out("output.txt");
-
-int N, M, S, K;
-
+// ***************************************************************************
 struct nodo{
   bool active;
   bool instack;
@@ -43,80 +42,28 @@ struct nodo{
   }
 };
 
-vector<nodo> grafo;
-vector<nodo> grafoT;
+// *************************************************************************
+// global variables
+shared_ptr<spd::logger> console;
 
-vector<bool> destroy;
 vector<stack<int>> cycles;
-
 stack<int> tarjan_st;
 int counter = 0;
 
 stack<int> circuits_st;
 
-
+// *************************************************************************
+// helper functions
 void print_g(vector<nodo>& g) {
   for (int i=0; i<g.size(); i++) {
     if (g[i].active) {
       for (int v: g[i].adj) {
-        printf("%d -> %d\n", i, v);
+        console->debug("{0:d} -> {1:d}", i, v);
       }
     }
   }
-}
 
-
-void destroy_nodes(vector<nodo>& g) {
-
-  for(int i=0; i<g.size(); i++) {
-    if (destroy[i]) {
-      g[i].active = false;
-      g[i].adj.clear();
-    } else {
-      for (int j=0; j<g[i].adj.size(); j++) {
-        int v = g[i].adj[j];
-        if (destroy[v]) {
-          g[i].adj.erase(g[i].adj.begin()+j);
-        }
-      }
-    }
-  }
-}
-
-
-void bfs(int source, vector<nodo>& g) {
-
-  if (!g[source].active) {
-    return;
-  }
-
-  for (nodo& n: g) {
-    n.dist = -1;
-  }
-
-  g[source].dist = 0;
-
-  queue<int> q;
-  q.push(source);
-  int cur;
-  while (!q.empty()){
-    cur = q.front();
-    q.pop();
-
-    // if g[cur].dist == K-1 we can stop
-    if(g[cur].dist > K-2) {
-      continue;
-    }
-
-    for (int v: g[cur].adj) {
-      if ((g[v].dist==-1) and (g[v].active)) {
-
-        // neighbor not yet visited, set distance
-        g[v].dist = g[cur].dist + 1;
-        q.push(v);
-      }
-    }
-  }
+  return;
 }
 
 
@@ -154,51 +101,107 @@ void print_cycles() {
     print_circuit(st);
   }
 }
+// ********** end: helper functions
 
 
-void unblock(int u) {
-  // printf("      ----> unblock(%d)\n", u);
-  grafo[u].blocked = false;
-  // printf("        ----> grafo[%d].blocked: %s\n", u, grafo[u].blocked ? "true" : "false");
+// *************************************************************************
+void destroy_nodes(vector<nodo>& g, vector<bool>& destroy) {
 
-  while (!grafo[u].B.empty()) {
-    int w = grafo[u].B.front();
-    grafo[u].B.pop_front();
-
-    if (grafo[w].blocked) {
-      unblock(w);
+  for(int i=0; i<g.size(); i++) {
+    if (destroy[i]) {
+      g[i].active = false;
+      g[i].adj.clear();
+    } else {
+      for (int j=0; j<g[i].adj.size(); j++) {
+        int v = g[i].adj[j];
+        if (destroy[v]) {
+          g[i].adj.erase(g[i].adj.begin()+j);
+        }
+      }
     }
   }
 }
 
 
-bool circuit(int v) {
+void bfs(int source, int K, vector<nodo>& g) {
+
+  if (!g[source].active) {
+    return;
+  }
+
+  for (nodo& n: g) {
+    n.dist = -1;
+  }
+
+  g[source].dist = 0;
+
+  queue<int> q;
+  q.push(source);
+  int cur;
+  while (!q.empty()){
+    cur = q.front();
+    q.pop();
+
+    // if g[cur].dist == K-1 we can stop
+    if(g[cur].dist > K-2) {
+      continue;
+    }
+
+    for (int v: g[cur].adj) {
+      if ((g[v].dist==-1) and (g[v].active)) {
+
+        // neighbor not yet visited, set distance
+        g[v].dist = g[cur].dist + 1;
+        q.push(v);
+      }
+    }
+  }
+}
+
+
+void unblock(int u, vector<nodo>& g) {
+  // printf("      ----> unblock(%d)\n", u);
+  g[u].blocked = false;
+  // printf("        ----> g[%d].blocked: %s\n", u, g[u].blocked ? "true" : "false");
+
+  while (!g[u].B.empty()) {
+    int w = g[u].B.front();
+    g[u].B.pop_front();
+
+    if (g[w].blocked) {
+      unblock(w, g);
+    }
+  }
+}
+
+
+bool circuit(int v, int S, int K, vector<nodo>& g) {
   bool flag = false;
 
   circuits_st.push(v);
 
-  grafo[v].blocked = true;
+  g[v].blocked = true;
 
-  for(int w : grafo[v].adj) {
+  for(int w : g[v].adj) {
     if (w == S) {
       if (!(circuits_st.size() > K)) {
         cycles.push_back(circuits_st);
       }
       flag = true;
-    } else if (!grafo[w].blocked) {
-      if (circuit(w)) {
+    } else if (!g[w].blocked) {
+      if (circuit(w, S, K, g)) {
         flag = true;
       }
     }
   }
 
   if (flag) {
-    unblock(v);
+    unblock(v, g);
   } else {
-    for (int w: grafo[v].adj) {
-      auto it = find(grafo[w].B.begin(), grafo[w].B.end(), v);
-      if (it == grafo[w].B.end()) {
-        grafo[w].B.push_back(v);
+    for (int w: g[v].adj) {
+      auto it = find(g[w].B.begin(), g[w].B.end(), v);
+      if (it == g[w].B.end()) {
+        g[w].B.push_back(v);
       }
     }
   }
@@ -209,58 +212,104 @@ bool circuit(int v) {
 }
 
 
-int main(int argc, char* argv[]) {
+int main(int argc, const char* argv[]) {
 
+	// *************************************************************************
+	// initialize logger
   try {
-    // Console logger with color
-    auto console = spd::stdout_color_mt("console");
-    console->info("Welcome to spdlog!");
-    console->error("Some error message with arg{}..", 1);
-
-    // Formatting examples
-    console->warn("Easy padding in numbers like {:08d}", 12);
-    console->critical("Support for int: {0:d};  hex: {0:x};  oct: {0:o}; bin: {0:b}", 42);
-    console->info("Support for floats {:03.2f}", 1.23456);
-    console->info("Positional args are {1} {0}..", "too", "supported");
-    console->info("{:<30}", "left aligned");
+		console = spd::stdout_color_mt("console");
   }
-  // Exceptions will only be thrown upon failed logger or sink construction (not during logging)
+  // exceptions thrown upon failed logger init
   catch (const spd::spdlog_ex& ex) {
-      std::cout << "Log init failed: " << ex.what() << std::endl;
+      cerr << "Log init failed: " << ex.what() << endl;
       return 1;
   }
+	// ********** end: logger
+	
+	// *************************************************************************
+	// parse command-line options
+  opts::Options* options;
+  string input_file="input.txt";
+  bool verbose = false;
+	bool debug = false;
 
-  exit(0);
+  try {
+
+    options = new cxxopts::Options(argv[0]);
+
+    options->add_options()
+      ("f,file", "File", cxxopts::value<std::string>(input_file))
+      ("v,verbose", "Verbose", cxxopts::value(verbose))
+      ("d,debug", "Debug", cxxopts::value(debug))
+      ;
+
+		auto arguments = options->parse(argc, argv);
+  } catch (const cxxopts::OptionException& e) {
+    cerr << "error parsing options: " << e.what() << endl;
+    exit (EXIT_FAILURE);
+  }
+	// ********** end: command-line options
+
+	// *************************************************************************
+	// set logging level based on option from CLI
+  if (debug) {
+  	spd::set_level(spd::level::debug);
+  } else if (verbose) {
+  	spd::set_level(spd::level::info);
+  } else {
+  	spd::set_level(spd::level::warn);
+  }
+
+  console->info("Log start!");
+  console->debug("input_file: {}", input_file);
+  console->debug("verbose: {}", verbose);
+  console->debug("debug: {}", debug);
+
+	// *************************************************************************
+	// start algorithm
+	int N, M, S, K;
+
+	vector<nodo> grafo;
+	vector<nodo> grafoT;
+
+	vector<bool> destroy;
+
+  map<int,int> old2new;
+  vector<int> new2old;
+
+	// *************************************************************************
+	// read input
+	ifstream in(input_file);
 
   in >> N >> M >> S >> K;
 
   grafo.resize(N);
   destroy.resize(N);
 
-  map<int,int> old2new;
-  vector<int> new2old;
-
   for(int i=0; i<N; i++) {
     destroy[i] = false;
   }
 
+  console->info("Reading graph");
   for(int i=0; i<M; i++) {
     int s, t;
     in >> s >> t;
     grafo[s].adj.push_back(t);
   }
+  console->info("Read graph");
 
-  print_g(grafo);
-  printf("---\n");
+  // print_g(grafo);
+  // console->debug("---\n");
 
-  bfs(S, grafo);
+  console->info("Step 1. BFS");
+  bfs(S, K, grafo);
 
   int count_destroied = 0;
   for(int i=0; i<N; i++) {
 
     // se il nodo si trova distanza maggiore di K-1 o non raggiungibile
     if((grafo[i].dist == -1) or (grafo[i].dist > K-1)) {
-      printf("destroied node: %d\n", i);
+      // console->debug("destroied node: {0:d}", i);
       destroy[i] = true;
       count_destroied++;
     }
@@ -268,9 +317,9 @@ int main(int argc, char* argv[]) {
 
   int remaining = N-count_destroied;
 
-  printf("-> nodes: %d\n", N);
-  printf("-> destroyed: %d\n", count_destroied);
-  printf("-> remaining: %d\n", remaining);
+  console->info("nodes: {}", N);
+  console->info("destroyed: {}", count_destroied);
+  console->info("remaining: {}", remaining);
 
   new2old.resize(remaining);
 
@@ -288,12 +337,16 @@ int main(int argc, char* argv[]) {
 
   int c = 0;
   for (auto const& pp : old2new) {
-    printf("%d => %d, %d => %d\n", pp.first, pp.second, c, new2old[c]);
+    console->debug("{0:d} => {1:d}, {2:d} => {3:d}",
+    							 pp.first,
+    							 pp.second,
+    							 c,
+    							 new2old[c]);
     c++;
   }
-  printf("~~~\n");
+  console->debug("~~~");
 
-  destroy_nodes(grafo);
+  destroy_nodes(grafo, destroy);
   destroy.clear();
 
   int newi = -1;
@@ -314,8 +367,8 @@ int main(int argc, char* argv[]) {
   grafo.clear();
   grafo.swap(tmpgrafo);
 
-  print_g(grafo);
-  printf("***\n");
+  // print_g(grafo);
+  // console->debug("***\n");
 
   for(int i=0; i<grafo.size(); i++) {
     destroy[i] = false;
@@ -330,26 +383,28 @@ int main(int argc, char* argv[]) {
   }
 
   print_g(grafoT);
-  printf("***\n");
+  console->debug("***");
 
   int newS = old2new[S];
-  printf("S: %d, newS: %d\n", S, newS);
-  bfs(S, grafoT);
+
+  console->info("S: {0}, newS: {1}", S, newS);
+  console->info("Step 2. BFS");
+  bfs(newS, K, grafoT);
 
   for(int i=0; i<grafo.size(); i++) {
     if((grafo[i].dist == -1) or (grafoT[i].dist == -1) or (grafo[i].dist + grafoT[i].dist > K)) {
-      printf("destroied node: %d\n", i);
+      // console->debug("destroied node: {0:d}\n", i);
       destroy[i] = true;
       count_destroied++;
     }
   }
   remaining = N-count_destroied;
 
-  printf("-> nodes: %d\n", N);
-  printf("-> destroyed: %d\n", count_destroied);
-  printf("-> remaining: %d\n", remaining);
+  console->info("nodes: {}", N);
+  console->info("destroyed: {}", count_destroied);
+  console->info("remaining: {}", remaining);
 
-  destroy_nodes(grafo);
+  destroy_nodes(grafo, destroy);
 
   map<int,int> tmp_old2new;
   vector<int> tmp_new2old;
@@ -363,36 +418,47 @@ int main(int argc, char* argv[]) {
 
       oldi = new2old[i];
 
-      printf("newindex: %d\n", newindex);
-      printf("i: %d - oldi: %d\n", i, oldi);
+      console->debug("newindex: {}", newindex);
+      console->debug("i: {} - oldi: {}", i, oldi);
 
       tmp_new2old[newindex] = oldi;
       tmp_old2new.insert(pair<int,int>(oldi, newindex));
-      printf("tmp_new2old[%d]: %d\n", newindex, tmp_new2old[newindex]);
-      printf("tmp_old2new.insert(pair<int,int>(%d, %d))\n", oldi, newindex);
-
+      console->debug("tmp_new2old[{0}]: {1}",
+      							 newindex,
+      							 tmp_new2old[newindex]);
+      console->debug("tmp_old2new.insert(pair<int,int>({0}, {1}))",
+      							 oldi,
+      							 newindex);
     }
   }
 
-  printf("*** tmp maps ***\n");
-  printf("tmp_old2new, tmp_new2old\n");
+  console->debug("*** tmp maps ***");
+  console->debug("tmp_old2new, tmp_new2old");
   c = 0;
   for (auto const& pp : tmp_old2new) {
-    printf("%d => %d, %d => %d\n", pp.first, pp.second, c, tmp_new2old[c]);
+    console->debug("{0} => {1}, {2} => {3}",
+    							 pp.first,
+    							 pp.second,
+    							 c,
+    							 tmp_new2old[c]);
     c++;
   }
-  printf("^^^\n");
+  console->debug("^^^");
 
-  printf("*** maps ***\n");
-  printf("old2new, new2old\n");
+  console->debug("*** maps ***");
+  console->debug("old2new, new2old");
   c = 0;
   for (auto const& pp : old2new) {
-    printf("%d => %d, %d => %d\n", pp.first, pp.second, c, new2old[c]);
+    console->debug("{0} => {1}, {2} => {3}",
+							   	 pp.first,
+							   	 pp.second,
+							   	 c,
+							   	 new2old[c]);
     c++;
   }
-  printf("~~~\n");
+  console->debug("~~~");
 
-  printf("*** 1 ***\n");
+  console->debug("*** 1 ***");
 
   newi = -1;
   newv = -1;
@@ -406,7 +472,7 @@ int main(int argc, char* argv[]) {
 
     	oldi = new2old[i];
     	tmpnewi = tmp_old2new[oldi];
-      printf("i: %d, oldi: %d, tmpnewi: %d\n", i, oldi, tmpnewi);
+      console->debug("i: %d, oldi: %d, tmpnewi: %d\n", i, oldi, tmpnewi);
 
       tmpgrafo[tmpnewi].dist = grafo[i].dist;
       tmpgrafo[tmpnewi].active = true;
@@ -414,7 +480,7 @@ int main(int argc, char* argv[]) {
 
 	    	oldv = new2old[v];
   	  	tmpnewv = tmp_old2new[oldv];
-	      printf("v: %d, oldv: %d, tmpnewv: %d\n", v, oldv, tmpnewv);
+	      console->debug("v: %d, oldv: %d, tmpnewv: %d\n", v, oldv, tmpnewv);
 
         tmpgrafo[tmpnewi].adj.push_back(tmpnewv);
       }
@@ -424,30 +490,36 @@ int main(int argc, char* argv[]) {
   grafo.clear();
   grafo.swap(tmpgrafo);
 
-  printf("*** 2 ***\n");
+  console->debug("*** 2 ***\n");
   new2old.clear();
   old2new.clear();
 
-  printf("*** 3 ***\n");
+  console->debug("*** 3 ***\n");
   tmp_new2old.swap(new2old);
   tmp_old2new.swap(old2new);
 
-  printf("*** 4 ***\n");
+  console->debug("*** 4 ***\n");
 
   c = 0;
   for (auto const& pp : old2new) {
-    printf("%d => %d, %d => %d\n", pp.first, pp.second, c, new2old[c]);
+    console->debug("{0:d} => {1:d}, {2:d} => {3:d}",
+    							 pp.first,
+    							 pp.second,
+    							 c,
+    							 new2old[c]);
     c++;
   }
-  printf("~~~\n");
+  console->debug("~~~\n");
 
   print_g(grafo);
-  printf("---\n");
+  console->debug("---\n");
 
-  circuit(S);
+  newS = old2new[S];
+  console->info("S: {0}, newS: {1}", S, newS);
+  circuit(newS, newS, K, grafo);
 
   print_cycles();
-  printf("***\n");
+  console->debug("***\n");
 
   for (auto& c : cycles) {
     int csize = c.size();
@@ -462,8 +534,8 @@ int main(int argc, char* argv[]) {
     }
   }
 
-  printf("---\n");
-	printf("grafo.size(): %zu\n", grafo.size());
+  console->debug("---\n");
+	console->debug("grafo.size(): %zu\n", grafo.size());
 	oldi = -1;
   for (int i=0; i<grafo.size(); i++) {
     if(grafo[i].score != 0.0) {
@@ -472,5 +544,6 @@ int main(int argc, char* argv[]) {
     }
   }
 
-  return 0;
+  console->info("Log stop!", input_file);
+  exit (EXIT_SUCCESS);
 }
