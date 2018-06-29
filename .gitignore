@@ -1,8 +1,13 @@
-# ignore data directory
+# ignore data, logs, misc directories
 data/
+logs/
+misc/
 
-# ignore txt files in the repo root
+# ignore txt files in the repo root (input/output files)
 *.txt
+
+# ignore log files in the repo root (input/output files)
+*.log
 
 # ignore executable files
 pageloop
