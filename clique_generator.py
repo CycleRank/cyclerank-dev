@@ -14,15 +14,16 @@ if __name__ == '__main__':
 
     parser.add_argument('-o', '--output',
                         type=pathlib.Path,
-                        help='output file name [default: stdout]')
+                        help='output file name [default: stdout].')
 
     parser.add_argument('-l', '--lenght',
                         type=int,
-                        help='max lenght of the loop.')
+                        help='max lenght of the loop [default: K].')
 
     parser.add_argument('-s', '--start',
                         type=int,
-                        help='starting node for pageloop algorithm.')
+                        default=0,
+                        help='starting node for pageloop algorithm [default: 0].')
 
     args = parser.parse_args()
 
@@ -34,18 +35,24 @@ if __name__ == '__main__':
     lenght = args.lenght
     edges = K**2-K
 
+    if lenght is None:
+        lenght = K
+
     outfile = None
     if output is None:
         outfile = sys.stdout
     else:
         outfile = open(output, 'w+')
 
-    if start and length:
-        outfile.write("{nodes} {edges} {start} {lenght}\n"
-              .format(nodes=K, edges=edges, start=start, lenght=lenght))
-    else:
-        outfile.write("{nodes} {edges}\n".format(nodes=K, edges=edges))
+    # assertion about input
+    assert isinstance(K, int)
+    assert isinstance(start, int)
+    assert isinstance(lenght, int)
+    assert isinstance(edges, int)
+    assert hasattr(outfile, 'write')    # check that outfile has write method
 
+    outfile.write("{nodes} {edges} {start} {lenght}\n"
+          .format(nodes=K, edges=edges, start=start, lenght=lenght))
 
     for i in range(K):
         for j in range(K):
