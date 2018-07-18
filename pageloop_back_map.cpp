@@ -214,24 +214,24 @@ bool circuit(int v, int S, int K, vector<nodo>& g) {
 
 int main(int argc, const char* argv[]) {
 
-	// *************************************************************************
-	// initialize logger
+  // *************************************************************************
+  // initialize logger
   try {
-		console = spd::stdout_color_mt("console");
+    console = spd::stdout_color_mt("console");
   }
   // exceptions thrown upon failed logger init
   catch (const spd::spdlog_ex& ex) {
       cerr << "Log init failed: " << ex.what() << endl;
       return 1;
   }
-	// ********** end: logger
-	
-	// *************************************************************************
-	// parse command-line options
+  // ********** end: logger
+
+  // *************************************************************************
+  // parse command-line options
   opts::Options* options;
   string input_file="input.txt";
   bool verbose = false;
-	bool debug = false;
+  bool debug = false;
 
   try {
 
@@ -243,21 +243,21 @@ int main(int argc, const char* argv[]) {
       ("d,debug", "Debug", cxxopts::value(debug))
       ;
 
-		auto arguments = options->parse(argc, argv);
+    auto arguments = options->parse(argc, argv);
   } catch (const cxxopts::OptionException& e) {
     cerr << "error parsing options: " << e.what() << endl;
     exit (EXIT_FAILURE);
   }
-	// ********** end: command-line options
+  // ********** end: command-line options
 
-	// *************************************************************************
-	// set logging level based on option from CLI
+  // *************************************************************************
+  // set logging level based on option from CLI
   if (debug) {
-  	spd::set_level(spd::level::debug);
+    spd::set_level(spd::level::debug);
   } else if (verbose) {
-  	spd::set_level(spd::level::info);
+    spd::set_level(spd::level::info);
   } else {
-  	spd::set_level(spd::level::warn);
+    spd::set_level(spd::level::warn);
   }
 
   console->info("Log start!");
@@ -265,23 +265,35 @@ int main(int argc, const char* argv[]) {
   console->debug("verbose: {}", verbose);
   console->debug("debug: {}", debug);
 
-	// *************************************************************************
-	// start algorithm
-	int N, M, S, K;
+  // *************************************************************************
+  // start algorithm
+  int N, M, S, K;
 
-	vector<nodo> grafo;
-	vector<nodo> grafoT;
+  vector<nodo> grafo;
+  vector<nodo> grafoT;
 
-	vector<bool> destroy;
+  vector<bool> destroy;
 
   map<int,int> old2new;
   vector<int> new2old;
 
-	// *************************************************************************
-	// read input
-	ifstream in(input_file);
+  // *************************************************************************
+  // read input
+  ifstream in(input_file);
+
+  if(in.fail()){
+    cerr << "Error! Could not open file: " << input_file << endl;
+    exit(EXIT_FAILURE);
+  }
 
   in >> N >> M >> S >> K;
+
+  console->debug("N: {}", N);
+  console->debug("M: {}", M);
+  console->debug("S: {}", S);
+  console->debug("K: {}", K);
+
+  printf("N: %d, M: %d, S: %d, K: %d\n", N, M, S, K);
 
   grafo.resize(N);
   destroy.resize(N);
@@ -338,10 +350,10 @@ int main(int argc, const char* argv[]) {
   int c = 0;
   for (auto const& pp : old2new) {
     console->debug("{0:d} => {1:d}, {2:d} => {3:d}",
-    							 pp.first,
-    							 pp.second,
-    							 c,
-    							 new2old[c]);
+                   pp.first,
+                   pp.second,
+                   c,
+                   new2old[c]);
     c++;
   }
   console->debug("~~~");
@@ -424,11 +436,11 @@ int main(int argc, const char* argv[]) {
       tmp_new2old[newindex] = oldi;
       tmp_old2new.insert(pair<int,int>(oldi, newindex));
       console->debug("tmp_new2old[{0}]: {1}",
-      							 newindex,
-      							 tmp_new2old[newindex]);
+                     newindex,
+                     tmp_new2old[newindex]);
       console->debug("tmp_old2new.insert(pair<int,int>({0}, {1}))",
-      							 oldi,
-      							 newindex);
+                     oldi,
+                     newindex);
     }
   }
 
@@ -437,10 +449,10 @@ int main(int argc, const char* argv[]) {
   c = 0;
   for (auto const& pp : tmp_old2new) {
     console->debug("{0} => {1}, {2} => {3}",
-    							 pp.first,
-    							 pp.second,
-    							 c,
-    							 tmp_new2old[c]);
+                   pp.first,
+                   pp.second,
+                   c,
+                   tmp_new2old[c]);
     c++;
   }
   console->debug("^^^");
@@ -450,10 +462,10 @@ int main(int argc, const char* argv[]) {
   c = 0;
   for (auto const& pp : old2new) {
     console->debug("{0} => {1}, {2} => {3}",
-							   	 pp.first,
-							   	 pp.second,
-							   	 c,
-							   	 new2old[c]);
+                   pp.first,
+                   pp.second,
+                   c,
+                   new2old[c]);
     c++;
   }
   console->debug("~~~");
@@ -470,17 +482,17 @@ int main(int argc, const char* argv[]) {
   for(int i=0; i<grafo.size(); i++) {
     if(grafo[i].active) {
 
-    	oldi = new2old[i];
-    	tmpnewi = tmp_old2new[oldi];
-      console->debug("i: %d, oldi: %d, tmpnewi: %d\n", i, oldi, tmpnewi);
+      oldi = new2old[i];
+      tmpnewi = tmp_old2new[oldi];
+      console->debug("i: {}, oldi: {}, tmpnewi: {}", i, oldi, tmpnewi);
 
       tmpgrafo[tmpnewi].dist = grafo[i].dist;
       tmpgrafo[tmpnewi].active = true;
       for (int v: grafo[i].adj) {
 
-	    	oldv = new2old[v];
-  	  	tmpnewv = tmp_old2new[oldv];
-	      console->debug("v: %d, oldv: %d, tmpnewv: %d\n", v, oldv, tmpnewv);
+        oldv = new2old[v];
+        tmpnewv = tmp_old2new[oldv];
+        console->debug("v: %d, oldv: %d, tmpnewv: %d\n", v, oldv, tmpnewv);
 
         tmpgrafo[tmpnewi].adj.push_back(tmpnewv);
       }
@@ -503,10 +515,10 @@ int main(int argc, const char* argv[]) {
   c = 0;
   for (auto const& pp : old2new) {
     console->debug("{0:d} => {1:d}, {2:d} => {3:d}",
-    							 pp.first,
-    							 pp.second,
-    							 c,
-    							 new2old[c]);
+                   pp.first,
+                   pp.second,
+                   c,
+                   new2old[c]);
     c++;
   }
   console->debug("~~~\n");
@@ -535,11 +547,11 @@ int main(int argc, const char* argv[]) {
   }
 
   console->debug("---\n");
-	console->debug("grafo.size(): %zu\n", grafo.size());
-	oldi = -1;
+  console->debug("grafo.size(): %zu\n", grafo.size());
+  oldi = -1;
   for (int i=0; i<grafo.size(); i++) {
     if(grafo[i].score != 0.0) {
-    	oldi = new2old[i];
+      oldi = new2old[i];
       printf("score(%d): %f\n", oldi, grafo[i].score);
     }
   }
