@@ -17,7 +17,8 @@ fi
 fullname=$(basename "$3")
 filename="${fullname%.*}"
 
-timeout "$1" ~/.scripts/limitmem.sh "$2" \
+timeout "$1" \
+	limitmem "$2" \
 	./pageloop_back_map -d -f "$3" &>"${filename}.log" &
 
 plpid="$!"
