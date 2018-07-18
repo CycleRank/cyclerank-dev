@@ -293,8 +293,6 @@ int main(int argc, const char* argv[]) {
   console->debug("S: {}", S);
   console->debug("K: {}", K);
 
-  printf("N: %d, M: %d, S: %d, K: %d\n", N, M, S, K);
-
   grafo.resize(N);
   destroy.resize(N);
 
