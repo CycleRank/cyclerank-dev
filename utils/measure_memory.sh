@@ -18,7 +18,7 @@ fullname=$(basename "$3")
 filename="${fullname%.*}"
 
 timeout "$1" \
-	limitmem "$2" \
+	"$(command -v limitmem)" "$2" -s 0 \
 	./pageloop_back_map -d -f "$3" &>"${filename}.log" &
 
 plpid="$!"
