@@ -55,7 +55,7 @@ stack<int> circuits_st;
 // *************************************************************************
 // helper functions
 void print_g(vector<nodo>& g) {
-  for (int i=0; i<g.size(); i++) {
+  for (unsigned int i=0; i<g.size(); i++) {
     if (g[i].active) {
       for (int v: g[i].adj) {
         console->debug("{0:d} -> {1:d}", i, v);
@@ -80,13 +80,13 @@ void print_stack(stack<int> s) {
 void print_circuit(stack<int> s) {
   vector<int> tmp;
 
-  // printf("      ----> found: ");
   printf("--> cycle: ");
   while (!s.empty()) {
     int el = s.top();
     tmp.push_back(el);
     s.pop();
   }
+
 
   for (int j=tmp.size()-1; j>=0; j--) {
     printf("%d-", tmp[j]);
@@ -97,7 +97,7 @@ void print_circuit(stack<int> s) {
 
 
 void print_cycles() {
-  for (auto& st : cycles) {
+  for (auto& st: cycles) {
     print_circuit(st);
   }
 }
@@ -107,12 +107,12 @@ void print_cycles() {
 // *************************************************************************
 void destroy_nodes(vector<nodo>& g, vector<bool>& destroy) {
 
-  for(int i=0; i<g.size(); i++) {
+  for(unsigned int i=0; i<g.size(); i++) {
     if (destroy[i]) {
       g[i].active = false;
       g[i].adj.clear();
     } else {
-      for (int j=0; j<g[i].adj.size(); j++) {
+      for (unsigned int j=0; j<g[i].adj.size(); j++) {
         int v = g[i].adj[j];
         if (destroy[v]) {
           g[i].adj.erase(g[i].adj.begin()+j);
@@ -174,13 +174,16 @@ void unblock(int u, vector<nodo>& g) {
   }
 }
 
-
+int count_calls=0;
 bool circuit(int v, int S, int K, vector<nodo>& g) {
   bool flag = false;
+  count_calls++;
 
   circuits_st.push(v);
 
   g[v].blocked = true;
+
+  // console->debug("sizeof circuits_st {}", (sizeof circuits_st));
 
   for(int w : g[v].adj) {
     if (w == S) {
@@ -380,13 +383,13 @@ int main(int argc, const char* argv[]) {
   // print_g(grafo);
   // console->debug("***\n");
 
-  for(int i=0; i<grafo.size(); i++) {
+  for(unsigned int i=0; i<grafo.size(); i++) {
     destroy[i] = false;
   }
 
   grafoT.resize(grafo.size());
 
-  for(int i=0; i<grafo.size(); i++) {
+  for(unsigned int i=0; i<grafo.size(); i++) {
     for (int v: grafo[i].adj) {
       grafoT[v].adj.push_back(i);
     }
@@ -401,7 +404,7 @@ int main(int argc, const char* argv[]) {
   console->info("Step 2. BFS");
   bfs(newS, K, grafoT);
 
-  for(int i=0; i<grafo.size(); i++) {
+  for(unsigned int i=0; i<grafo.size(); i++) {
     if((grafo[i].dist == -1) or (grafoT[i].dist == -1) or (grafo[i].dist + grafoT[i].dist > K)) {
       // console->debug("destroied node: {0:d}\n", i);
       destroy[i] = true;
@@ -422,7 +425,7 @@ int main(int argc, const char* argv[]) {
 
   newindex = -1;
   int oldi = -1;
-  for(int i=0; i<grafo.size(); i++) {
+  for(unsigned int i=0; i<grafo.size(); i++) {
     if(!destroy[i]) {
       newindex++;
 
@@ -477,7 +480,7 @@ int main(int argc, const char* argv[]) {
   int oldv = -1;
 
   tmpgrafo.resize(remaining);
-  for(int i=0; i<grafo.size(); i++) {
+  for(unsigned int i=0; i<grafo.size(); i++) {
     if(grafo[i].active) {
 
       oldi = new2old[i];
@@ -490,7 +493,7 @@ int main(int argc, const char* argv[]) {
 
         oldv = new2old[v];
         tmpnewv = tmp_old2new[oldv];
-        console->debug("v: %d, oldv: %d, tmpnewv: %d\n", v, oldv, tmpnewv);
+        console->debug("v: {}, oldv: {}, tmpnewv: {}", v, oldv, tmpnewv);
 
         tmpgrafo[tmpnewi].adj.push_back(tmpnewv);
       }
@@ -500,16 +503,14 @@ int main(int argc, const char* argv[]) {
   grafo.clear();
   grafo.swap(tmpgrafo);
 
-  console->debug("*** 2 ***\n");
   new2old.clear();
   old2new.clear();
 
-  console->debug("*** 3 ***\n");
   tmp_new2old.swap(new2old);
   tmp_old2new.swap(old2new);
 
-  console->debug("*** 4 ***\n");
 
+  console->debug("map indexes");
   c = 0;
   for (auto const& pp : old2new) {
     console->debug("{0:d} => {1:d}, {2:d} => {3:d}",
@@ -519,17 +520,21 @@ int main(int argc, const char* argv[]) {
                    new2old[c]);
     c++;
   }
-  console->debug("~~~\n");
+  console->debug("~~~");
 
   print_g(grafo);
-  console->debug("---\n");
+  console->debug("---");
 
   newS = old2new[S];
   console->info("S: {0}, newS: {1}", S, newS);
+  console->debug("calling circuit()");
   circuit(newS, newS, K, grafo);
+  console->debug("count_calls: {}", count_calls);
+  console->debug("called circuit()");
 
-  print_cycles();
-  console->debug("***\n");
+  console->debug("***");
+  printf("count_calls: %d\n", count_calls);
+  printf("# of cycles found: %zu\n", cycles.size());
 
   for (auto& c : cycles) {
     int csize = c.size();
@@ -538,22 +543,21 @@ int main(int argc, const char* argv[]) {
       int el = c.top();
       c.pop();
 
-      printf("%d <- %f\n", el, 1.0/csize);
+      console->debug("{} <- {}", el, 1.0/csize);
 
       grafo[el].score += 1.0/csize;
     }
   }
 
-  console->debug("---\n");
-  console->debug("grafo.size(): %zu\n", grafo.size());
+  console->debug("---");
   oldi = -1;
-  for (int i=0; i<grafo.size(); i++) {
+  for (unsigned int i=0; i<grafo.size(); i++) {
     if(grafo[i].score != 0.0) {
       oldi = new2old[i];
       printf("score(%d): %f\n", oldi, grafo[i].score);
     }
   }
 
-  console->info("Log stop!", input_file);
+  console->info("Log stop!");
   exit (EXIT_SUCCESS);
 }
