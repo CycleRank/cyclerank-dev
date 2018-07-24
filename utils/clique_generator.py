@@ -42,7 +42,7 @@ if __name__ == '__main__':
     if output is None:
         outfile = sys.stdout
     else:
-        outfile = open(output, 'w+')
+        outfile = output.open('w+')
 
     # assertion about input
     assert isinstance(K, int)
