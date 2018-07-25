@@ -177,39 +177,42 @@ void unblock(int u, vector<nodo>& g) {
 int count_calls=0;
 bool circuit(int v, int S, int K, vector<nodo>& g) {
   bool flag = false;
-  count_calls++;
 
-  circuits_st.push(v);
+  if (!(circuits_st.size() > K-1)) {
+    count_calls++;
 
-  g[v].blocked = true;
+    circuits_st.push(v);
 
-  // console->debug("sizeof circuits_st {}", (sizeof circuits_st));
+    g[v].blocked = true;
 
-  for(int w : g[v].adj) {
-    if (w == S) {
-      if (!(circuits_st.size() > K)) {
-        cycles.push_back(circuits_st);
-      }
-      flag = true;
-    } else if (!g[w].blocked) {
-      if (circuit(w, S, K, g)) {
+    // console->debug("sizeof circuits_st {}", (sizeof circuits_st));
+
+    for(int w : g[v].adj) {
+      if (w == S) {
+        if (!(circuits_st.size() > K)) {
+          cycles.push_back(circuits_st);
+        }
         flag = true;
+      } else if (!g[w].blocked) {
+        if (circuit(w, S, K, g)) {
+          flag = true;
+        }
       }
     }
-  }
 
-  if (flag) {
-    unblock(v, g);
-  } else {
-    for (int w: g[v].adj) {
-      auto it = find(g[w].B.begin(), g[w].B.end(), v);
-      if (it == g[w].B.end()) {
-        g[w].B.push_back(v);
+    if (flag) {
+      unblock(v, g);
+    } else {
+      for (int w: g[v].adj) {
+        auto it = find(g[w].B.begin(), g[w].B.end(), v);
+        if (it == g[w].B.end()) {
+          g[w].B.push_back(v);
+        }
       }
     }
-  }
 
-  circuits_st.pop();
+    circuits_st.pop();
+  }
 
   return flag;
 }
