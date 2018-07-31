@@ -25,6 +25,12 @@ if __name__ == '__main__':
                         default=0,
                         help='starting node for pageloop algorithm [default: 0].')
 
+    parser.add_argument('--no-params',
+                        dest='print_params',
+                        action='store_false',
+                        help='Do not print parameters, only number of nodes '
+                             'and edges.')
+
     args = parser.parse_args()
 
     # import ipdb; ipdb.set_trace()
@@ -51,8 +57,12 @@ if __name__ == '__main__':
     assert isinstance(edges, int)
     assert hasattr(outfile, 'write')    # check that outfile has write method
 
-    outfile.write("{nodes} {edges} {start} {lenght}\n"
-          .format(nodes=K, edges=edges, start=start, lenght=lenght))
+    if args.print_params:
+        outfile.write("{nodes} {edges} {start} {lenght}\n"
+              .format(nodes=K, edges=edges, start=start, lenght=lenght))
+    else:
+        outfile.write("{nodes} {edges}\n"
+              .format(nodes=K, edges=edges))
 
     for i in range(K):
         for j in range(K):
