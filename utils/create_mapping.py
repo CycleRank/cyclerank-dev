@@ -81,7 +81,7 @@ if __name__ == '__main__':
     else:
         outfile = output.open('w+')
 
-    graphreader = csv.reader(graphfile, delimiter=' ')
+    graphreader = csv.reader(graphfile, delimiter='\t')
     snapshotreader = csv.reader(snapshotfile)
 
     graph = uniqfy_list(((int(e[0]),int(e[1])) for e in graphreader))
@@ -114,8 +114,12 @@ if __name__ == '__main__':
         graphshift = csv.writer(graphshiftfile, delimiter='\t')
 
         for oid1, oid2 in graph:
-            nid1 = idmap[oid1]
-            nid2 = idmap[oid2]
+            try:
+                nid1 = idmap[oid1]
+                nid2 = idmap[oid2]
+            except:
+                import ipdb; ipdb.set_trace()
+
             graphshift.writerow((nid1, nid2))
 
     nodsnap = dict()
