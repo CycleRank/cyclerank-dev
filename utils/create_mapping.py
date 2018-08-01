@@ -117,8 +117,11 @@ if __name__ == '__main__':
             try:
                 nid1 = idmap[oid1]
                 nid2 = idmap[oid2]
-            except:
-                import ipdb; ipdb.set_trace()
+            except KeyError as err:
+                print("Error: old id nodes ({}, {}) not found."
+                      .format(oid1, oid2),
+                      file=sys.stderr)
+                continue
 
             graphshift.writerow((nid1, nid2))
 
