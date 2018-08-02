@@ -56,13 +56,13 @@ if __name__ == '__main__':
     else:
         outfile = output.open('w+')
 
-    with open(file, 'r') as infile:
+    with file.open('r') as infile:
         reader = csv.reader(infile, delimiter='\t')
         edges = [(int(l[0]), int(l[1]))
                 for l in reader]
         numedges = len(edges)
 
-    with open(snapshot, 'r') as snapshotfile:
+    with snapshot.open('r') as snapshotfile:
         reader = csv.reader(snapshotfile, delimiter='\t')
         maxnodes = max([int(l[0]) for l in reader])
 
