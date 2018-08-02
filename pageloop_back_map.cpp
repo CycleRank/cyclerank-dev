@@ -239,6 +239,9 @@ int main(int argc, const char* argv[]) {
   bool verbose = false;
   bool debug = false;
 
+  int S = -1;
+  int K = -1;
+
   try {
 
     options = new cxxopts::Options(argv[0]);
@@ -247,6 +250,8 @@ int main(int argc, const char* argv[]) {
       ("f,file", "File", cxxopts::value<std::string>(input_file))
       ("v,verbose", "Verbose", cxxopts::value(verbose))
       ("d,debug", "Debug", cxxopts::value(debug))
+      ("s,source", "Source", cxxopts::value(S))
+      ("k,maxdist", "Maxdist", cxxopts::value(K))
       ;
 
     auto arguments = options->parse(argc, argv);
@@ -273,7 +278,7 @@ int main(int argc, const char* argv[]) {
 
   // *************************************************************************
   // start algorithm
-  int N, M, S, K;
+  int N, M;
 
   vector<nodo> grafo;
   vector<nodo> grafoT;
@@ -292,7 +297,17 @@ int main(int argc, const char* argv[]) {
     exit(EXIT_FAILURE);
   }
 
-  in >> N >> M >> S >> K;
+  int tmpS, tmpK;
+
+  in >> N >> M >> tmpS >> tmpK;
+
+  if(S == -1) {
+    S = tmpS;
+  }
+
+  if(K == -1) {
+    K = tmpK;
+  }
 
   console->debug("N: {}", N);
   console->debug("M: {}", M);
@@ -351,16 +366,19 @@ int main(int argc, const char* argv[]) {
     }
   }
 
-  int c = 0;
-  for (auto const& pp : old2new) {
-    console->debug("{0:d} => {1:d}, {2:d} => {3:d}",
-                   pp.first,
-                   pp.second,
-                   c,
-                   new2old[c]);
-    c++;
+  if(debug); {
+    console->debug("index map");
+    int c = 0;
+    for (auto const& pp : old2new) {
+      console->debug("{0:d} => {1:d}, {2:d} => {3:d}",
+                     pp.first,
+                     pp.second,
+                     c,
+                     new2old[c]);
+      c++;
+    }
+    console->debug("~~~");
   }
-  console->debug("~~~");
 
   destroy_nodes(grafo, destroy);
   destroy.clear();
@@ -448,33 +466,35 @@ int main(int argc, const char* argv[]) {
     }
   }
 
-  console->debug("*** tmp maps ***");
-  console->debug("tmp_old2new, tmp_new2old");
-  c = 0;
-  for (auto const& pp : tmp_old2new) {
-    console->debug("{0} => {1}, {2} => {3}",
-                   pp.first,
-                   pp.second,
-                   c,
-                   tmp_new2old[c]);
-    c++;
-  }
-  console->debug("^^^");
+  if(debug) {
+    console->debug("*** tmp maps ***");
+    console->debug("tmp_old2new, tmp_new2old");
+    int c = 0;
+    for (auto const& pp : tmp_old2new) {
+      console->debug("{0} => {1}, {2} => {3}",
+                     pp.first,
+                     pp.second,
+                     c,
+                     tmp_new2old[c]);
+      c++;
+    }
+    console->debug("^^^");
 
-  console->debug("*** maps ***");
-  console->debug("old2new, new2old");
-  c = 0;
-  for (auto const& pp : old2new) {
-    console->debug("{0} => {1}, {2} => {3}",
-                   pp.first,
-                   pp.second,
-                   c,
-                   new2old[c]);
-    c++;
-  }
-  console->debug("~~~");
+    console->debug("*** maps ***");
+    console->debug("old2new, new2old");
+    c = 0;
+    for (auto const& pp : old2new) {
+      console->debug("{0} => {1}, {2} => {3}",
+                     pp.first,
+                     pp.second,
+                     pp.second,
+                     new2old[pp.second]);
+      c++;
+    }
+    console->debug("~~~");
 
-  console->debug("*** 1 ***");
+    console->debug("*** 1 ***");
+  }
 
   newi = -1;
   newv = -1;
@@ -513,17 +533,17 @@ int main(int argc, const char* argv[]) {
   tmp_old2new.swap(old2new);
 
 
-  console->debug("map indexes");
-  c = 0;
-  for (auto const& pp : old2new) {
-    console->debug("{0:d} => {1:d}, {2:d} => {3:d}",
-                   pp.first,
-                   pp.second,
-                   c,
-                   new2old[c]);
-    c++;
+  if(debug) {
+    console->debug("map indexes");
+    for (auto const& pp : old2new) {
+      console->debug("{0:d} => {1:d}, {2:d} => {3:d}",
+                     pp.first,
+                     pp.second,
+                     pp.second,
+                     new2old[pp.second]);
+    }
+    console->debug("~~~");
   }
-  console->debug("~~~");
 
   print_g(grafo);
   console->debug("---");
