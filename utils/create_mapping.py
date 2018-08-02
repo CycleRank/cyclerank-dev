@@ -81,7 +81,7 @@ if __name__ == '__main__':
     else:
         outfile = output.open('w+')
 
-    graphreader = csv.reader(graphfile, delimiter='\t')
+    graphreader = csv.reader(graphfile, delimiter=' ')
     snapshotreader = csv.reader(snapshotfile)
 
     graph = uniqfy_list(((int(e[0]),int(e[1])) for e in graphreader))
