@@ -17,14 +17,16 @@ fi
 fullname=$(basename "$3")
 filename="${fullname%.*}"
 
-timeout "$1" \
-	"$(command -v limitmem)" "$2" -s 0 \
-	./pageloop_back_map -d -f "$3" &>"${filename}.log" &
+/usr/bin/time -v \
+  timeout "$1" \
+    "$(command -v limitmem)" "$2" -s 0 \
+      ./pageloop_back_map -f "$3" &>"${filename}.memtime.log" &
 
 plpid="$!"
 psrecord "$plpid" \
-	--interval 2 \
-	--include-children \
-	--log "${filename}.psrecord.log"
+  --interval 1 \
+  --include-children \
+  --log "${filename}.psrecord.log"
 
 exit 0
+
