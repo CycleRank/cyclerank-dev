@@ -28,7 +28,7 @@ if __name__ == '__main__':
 
     snapshotname = args.snapshot
 
-    with open(snapshotname, 'r') as snapshotfile:
+    with snapshotname.open('r') as snapshotfile:
         reader = csv.reader(snapshotfile, delimiter='\t')
         snapshot = dict((int(l[0]), l[1]) for l in reader)
 
