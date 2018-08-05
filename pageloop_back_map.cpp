@@ -227,8 +227,8 @@ int main(int argc, const char* argv[]) {
   }
   // exceptions thrown upon failed logger init
   catch (const spd::spdlog_ex& ex) {
-      cerr << "Log init failed: " << ex.what() << endl;
-      return 1;
+    cerr << "Log init failed: " << ex.what() << endl;
+    return 1;
   }
   // ********** end: logger
 
@@ -243,7 +243,6 @@ int main(int argc, const char* argv[]) {
   int K = -1;
 
   try {
-
     options = new cxxopts::Options(argv[0]);
 
     options->add_options()
@@ -296,6 +295,15 @@ int main(int argc, const char* argv[]) {
     cerr << "Error! Could not open file: " << input_file << endl;
     exit(EXIT_FAILURE);
   }
+
+  /*
+  int tmp_n;
+  int counter_fl =0;
+
+  while (in >> tmp_n) {
+    counter_fl ++ ;
+  }
+  */
 
   int tmpS, tmpK;
 
@@ -363,11 +371,18 @@ int main(int argc, const char* argv[]) {
       newindex++;
       new2old[newindex] = i;
       old2new.insert(pair<int,int>(i,newindex));
+      /*
+      console->debug("old2new.insert(pair<int,int>({0}, {1}))",
+                     i,
+                     newindex);
+      */
     }
   }
 
   if(debug); {
-    console->debug("index map");
+    console->debug("index map (1)");
+    console->debug("old2new.size() is {}", old2new.size());
+
     int c = 0;
     for (auto const& pp : old2new) {
       console->debug("{0:d} => {1:d}, {2:d} => {3:d}",
@@ -381,28 +396,48 @@ int main(int argc, const char* argv[]) {
   }
 
   destroy_nodes(grafo, destroy);
-  destroy.clear();
 
   int newi = -1;
   int newv = -1;
 
   for(int i=0; i<N; i++) {
     if(grafo[i].active) {
-      newi = old2new[i];
+      if ( old2new.find(i) == old2new.end() ) {
+        // not found
+        cerr << "Key " << i << " (i) not found in map old2new" << endl;
+
+        exit(EXIT_FAILURE);
+      } else {
+        // found
+        newi = old2new[i];
+      }
       tmpgrafo[newi].dist = grafo[i].dist;
       tmpgrafo[newi].active = true;
       for (int v: grafo[i].adj) {
+        if ( old2new.find(v) == old2new.end() ) {
+          // not found
+          cerr << "Key " << v << " (v) not found in map old2new" << endl;
+          cerr << "destroy[" << v << "]: " << (destroy[v] ? "true" : "false") << endl;
+
+          continue;
+        } else {
+          // found
           newv = old2new[v];
-          tmpgrafo[newi].adj.push_back(newv);
+          console->debug("destroy[{0:d}]: {}", v, destroy[v]);
+        }
+        tmpgrafo[newi].adj.push_back(newv);
       }
     }
   }
+  destroy.clear();
 
   grafo.clear();
   grafo.swap(tmpgrafo);
 
-  // print_g(grafo);
-  // console->debug("***\n");
+  if(debug) {
+    // print_g(grafo);
+    console->debug("*** end print_g(grafo) ***");
+  }
 
   for(unsigned int i=0; i<grafo.size(); i++) {
     destroy[i] = false;
@@ -416,10 +451,20 @@ int main(int argc, const char* argv[]) {
     }
   }
 
-  print_g(grafoT);
-  console->debug("***");
+  if(debug) {
+    // print_g(grafoT);
+    console->debug("*** end print_g(grafoT) ***");
+  }
 
-  int newS = old2new[S];
+  int newS = -1;
+  if ( old2new.find(S) == old2new.end() ) {
+    // not found
+    cerr << "Key " << S << " (S) not found in map old2new" << endl;
+    exit(EXIT_FAILURE);
+  } else {
+    // found
+    newS = old2new[S];
+  }
 
   console->info("S: {0}, newS: {1}", S, newS);
   console->info("Step 2. BFS");
@@ -469,22 +514,24 @@ int main(int argc, const char* argv[]) {
   if(debug) {
     console->debug("*** tmp maps ***");
     console->debug("tmp_old2new, tmp_new2old");
+    console->debug("tmp_old2new.size() is {}", tmp_old2new.size());
+
     int c = 0;
     for (auto const& pp : tmp_old2new) {
-      console->debug("{0} => {1}, {2} => {3}",
+      console->debug("{0:d} => {1:d}, {2:d} => {3:d}",
                      pp.first,
                      pp.second,
                      c,
                      tmp_new2old[c]);
       c++;
     }
-    console->debug("^^^");
 
-    console->debug("*** maps ***");
+    console->debug("*** maps BBB ***");
+    console->debug("old2new.size() is {}", old2new.size());
     console->debug("old2new, new2old");
     c = 0;
     for (auto const& pp : old2new) {
-      console->debug("{0} => {1}, {2} => {3}",
+      console->debug("{0:d} => {1:d}, {2:d} => {3:d}",
                      pp.first,
                      pp.second,
                      pp.second,
@@ -507,7 +554,14 @@ int main(int argc, const char* argv[]) {
     if(grafo[i].active) {
 
       oldi = new2old[i];
-      tmpnewi = tmp_old2new[oldi];
+      if ( tmp_old2new.find(oldi) == tmp_old2new.end() ) {
+        // not found
+        cerr << "Key " << oldi << " (oldi) not found in map old2new" << endl;
+        exit(EXIT_FAILURE);
+      } else {
+        // found
+        tmpnewi = tmp_old2new[oldi];
+      }
       console->debug("i: {}, oldi: {}, tmpnewi: {}", i, oldi, tmpnewi);
 
       tmpgrafo[tmpnewi].dist = grafo[i].dist;
@@ -515,7 +569,14 @@ int main(int argc, const char* argv[]) {
       for (int v: grafo[i].adj) {
 
         oldv = new2old[v];
-        tmpnewv = tmp_old2new[oldv];
+        if ( tmp_old2new.find(oldv) == tmp_old2new.end() ) {
+          // not found
+          cerr << "Key " << oldv << " (oldi) not found in map old2new" << endl;
+          continue;
+        } else {
+          // found
+          tmpnewv = tmp_old2new[oldv];
+        }
         console->debug("v: {}, oldv: {}, tmpnewv: {}", v, oldv, tmpnewv);
 
         tmpgrafo[tmpnewi].adj.push_back(tmpnewv);
@@ -535,6 +596,8 @@ int main(int argc, const char* argv[]) {
 
   if(debug) {
     console->debug("map indexes");
+    console->debug("old2new.size() is {}", old2new.size());
+
     for (auto const& pp : old2new) {
       console->debug("{0:d} => {1:d}, {2:d} => {3:d}",
                      pp.first,
