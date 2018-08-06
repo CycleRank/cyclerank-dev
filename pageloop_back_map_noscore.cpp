@@ -454,42 +454,11 @@ int main(int argc, const char* argv[]) {
 
     for(unsigned int i=0; i<N; i++) {
       if(grafo[i].active) {
-
-        newi = get_remapped_node_or_fail(i, old2new);
-
-        /*
-        *
-        * if ( old2new.find(i) == old2new.end() ) {
-        *   // not found
-        *   cerr << "Key " << i << " (i) not found in map old2new" << endl;
-        *   exit(EXIT_FAILURE);
-        * } else {
-        *   // found
-        *   newi = old2new[i];
-        * }
-        *
-        */
-
+        newi = old2new[i];
         tmpgrafo[newi].dist = grafo[i].dist;
         tmpgrafo[newi].active = true;
         for (int v: grafo[i].adj) {
           if(grafo[v].active) {
-            // key v must be in in old2new
-            /*
-            *
-            * if ( old2new.find(v) == old2new.end() ) {
-            *   // not found
-            *   console->debug("Key {} (v) not found in map old2new - " \
-            *                  "destroy[{}]: {}", v, v,
-            *                  (destroy[v] ? "true" : "false") );
-            *   continue;
-            * } else {
-            *   // found
-            *   newv = old2new[v];
-            *   console->debug("destroy[{0:d}]: {}", v, destroy[v]);
-            * }
-            *
-            */
             newv = old2new[v];
             tmpgrafo[newi].adj.push_back(newv);
           }
@@ -618,45 +587,12 @@ int main(int argc, const char* argv[]) {
       if(grafo[i].active) {
 
         oldi = new2old[i];
-
-        /*
-        *
-        * if ( tmp_old2new.find(oldi) == tmp_old2new.end() ) {
-        *   // not found
-        *   cerr << "Key " << oldi << " (oldi) not found in map old2new" << endl;
-        *   exit(EXIT_FAILURE);
-        * } else {
-        *   // found
-        *   tmpnewi = tmp_old2new[oldi];
-        * }
-        * console->debug("i: {}, oldi: {}, tmpnewi: {}", i, oldi, tmpnewi);
-        *
-        */
-
-        tmpnewi = get_remapped_node_or_fail(oldi, tmp_old2new);
+        tmpnewi = tmp_old2new[oldi];
         tmpgrafo[tmpnewi].dist = grafo[i].dist;
         tmpgrafo[tmpnewi].active = true;
         for (int v: grafo[i].adj) {
           if(grafo[v].active) {
             oldv = new2old[v];
-
-            /*
-            *
-            * if ( tmp_old2new.find(oldv) == tmp_old2new.end() ) {
-            *   // not found
-            *   console->debug("Key {} (oldv) not found in map old2new - " \
-            *                  "v: {} - destroy[{}]: {}", oldv, v, v,
-            *                  (destroy[v] ? "true" : "false") );
-            *   continue;
-            * } else {
-            *   // found
-            *   tmpnewv = tmp_old2new[oldv];
-            * }
-            * console->debug("v: {}, oldv: {}, tmpnewv: {}", v, oldv,
-            *                tmpnewv);
-            *
-            */
-
             tmpnewv = tmp_old2new[oldv];
             tmpgrafo[tmpnewi].adj.push_back(tmpnewv);
           }
