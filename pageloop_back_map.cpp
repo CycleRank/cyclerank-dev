@@ -79,13 +79,14 @@ void print_stack(stack<int> s) {
 }
 
 
-void print_circuit(stack<int> s) {
+void print_circuit(stack<int> s, vector<int>& new2old) {
   vector<int> tmp;
 
   printf("--> cycle: ");
   while (!s.empty()) {
     int el = s.top();
-    tmp.push_back(el);
+    int oldel = new2old[el];
+    tmp.push_back(oldel);
     s.pop();
   }
 
@@ -95,15 +96,17 @@ void print_circuit(stack<int> s) {
   }
   int last = tmp[tmp.size()-1];
   printf("%d\n", last);
+
 }
 
 
+/*
 void print_cycles() {
   for (auto& st: cycles) {
     print_circuit(st);
   }
 }
-
+*/
 
 // count the number of parameters in the first line of the file
 // https://stackoverflow.com/a/34665370/2377454
@@ -326,7 +329,12 @@ int main(int argc, const char* argv[]) {
   // *************************************************************************
   // start algorithm
   int N = -1, M = -1, S = -1, K = -1;
-  vector<nodo> grafo, grafoT;
+  vector<nodo> grafo;
+
+  map<int,int> old2new;
+  vector<int> new2old;
+
+  int count_destroied = 0;
 
   // *************************************************************************
   // read input
@@ -387,191 +395,194 @@ int main(int argc, const char* argv[]) {
     }
     console->debug("--> read graph");
     in.close();
+
+    // print_g(grafo);
+    // console->debug("---\n");
   }
   // ********** end: read input
 
-  vector<bool> destroy;
 
-  map<int,int> old2new;
-  vector<int> new2old;
+  // *************************************************************************
+  // Step 1: BFS on g
+  {
+    console->info("Step 1. BFS");
+    vector<bool> destroy(N, false);
 
-  destroy.resize(N);
+    bfs(S, K, grafo);
 
-  for(int i=0; i<N; i++) {
-    destroy[i] = false;
-  }
-
-  // print_g(grafo);
-  // console->debug("---\n");
-
-  console->info("Step 1. BFS");
-  bfs(S, K, grafo);
-
-  int count_destroied = 0;
-  for(int i=0; i<N; i++) {
-
-    // se il nodo si trova distanza maggiore di K-1 o non raggiungibile
-    if((grafo[i].dist == -1) or (grafo[i].dist > K-1)) {
-      // console->debug("destroied node: {0:d}", i);
-      destroy[i] = true;
-      count_destroied++;
-    }
-  }
-
-  int remaining = N-count_destroied;
-
-  console->info("nodes: {}", N);
-  console->info("destroyed: {}", count_destroied);
-  console->info("remaining: {}", remaining);
-
-  new2old.resize(remaining);
-
-  vector<nodo> tmpgrafo;
-  tmpgrafo.resize(remaining);
-
-  int newindex = -1;
-  for(int i=0; i<N; i++) {
-    if(!destroy[i]) {
-      newindex++;
-      new2old[newindex] = i;
-      old2new.insert(pair<int,int>(i,newindex));
-      /*
-      console->debug("old2new.insert(pair<int,int>({0}, {1}))",
-                     i,
-                     newindex);
-      */
-    }
-  }
-
-  if(debug); {
-    console->debug("index map (1)");
-    console->debug("old2new.size() is {}", old2new.size());
-
-    int c = 0;
-    for (auto const& pp : old2new) {
-      console->debug("{0:d} => {1:d}, {2:d} => {3:d}",
-                     pp.first,
-                     pp.second,
-                     c,
-                     new2old[c]);
-      c++;
-    }
-    console->debug("~~~");
-  }
-
-  destroy_nodes(grafo, destroy);
-
-  int newi = -1;
-  int newv = -1;
-
-  for(int i=0; i<N; i++) {
-    if(grafo[i].active) {
-      if ( old2new.find(i) == old2new.end() ) {
-        // not found
-        cerr << "Key " << i << " (i) not found in map old2new" << endl;
-
-        exit(EXIT_FAILURE);
-      } else {
-        // found
-        newi = old2new[i];
+    for(int i=0; i<N; i++) {
+      // se il nodo si trova distanza maggiore di K-1 o non raggiungibile
+      if((grafo[i].dist == -1) or (grafo[i].dist > K-1)) {
+        destroy[i] = true;
+        count_destroied++;
       }
-      tmpgrafo[newi].dist = grafo[i].dist;
-      tmpgrafo[newi].active = true;
-      for (int v: grafo[i].adj) {
-        if ( old2new.find(v) == old2new.end() ) {
-          // not found
-          cerr << "Key " << v << " (v) not found in map old2new" << endl;
-          cerr << "destroy[" << v << "]: " << (destroy[v] ? "true" : "false") << endl;
+    }
 
-          continue;
+    int remaining = N-count_destroied;
+    console->info("nodes: {}", N);
+    console->info("destroyed: {}", count_destroied);
+    console->info("remaining: {}", remaining);
+    new2old.resize(remaining);
+
+    int newindex = -1;
+    for(int i=0; i<N; i++) {
+      if(!destroy[i]) {
+        newindex++;
+        new2old[newindex] = i;
+        old2new.insert(pair<int,int>(i,newindex));
+        /*
+        console->debug("old2new.insert(pair<int,int>({0}, {1}))",
+                       i,
+                       newindex);
+        */
+      }
+    }
+
+    if(debug) {
+      console->debug("index map (1)");
+      console->debug("old2new.size() is {}", old2new.size());
+
+      int c = 0;
+      for (auto const& pp : old2new) {
+        console->debug("{0:d} => {1:d}, {2:d} => {3:d}",
+                       pp.first,
+                       pp.second,
+                       c,
+                       new2old[c]);
+        c++;
+      }
+      console->debug("~~~");
+    }
+
+    destroy_nodes(grafo, destroy);
+
+    vector<nodo> tmpgrafo;
+    tmpgrafo.resize(remaining);
+
+    int newi = -1;
+    int newv = -1;
+
+    for(int i=0; i<N; i++) {
+      if(grafo[i].active) {
+
+        if ( old2new.find(i) == old2new.end() ) {
+          // not found
+          cerr << "Key " << i << " (i) not found in map old2new" << endl;
+          exit(EXIT_FAILURE);
         } else {
           // found
-          newv = old2new[v];
-          console->debug("destroy[{0:d}]: {}", v, destroy[v]);
+          newi = old2new[i];
         }
-        tmpgrafo[newi].adj.push_back(newv);
+
+        tmpgrafo[newi].dist = grafo[i].dist;
+        tmpgrafo[newi].active = true;
+        for (int v: grafo[i].adj) {
+          if ( old2new.find(v) == old2new.end() ) {
+            // not found
+            console->debug("Key {} (v) not found in map old2new - destroy[{}]: {}", v, v,
+                           (destroy[v] ? "true" : "false") );
+            continue;
+
+          } else {
+            // found
+            newv = old2new[v];
+            console->debug("destroy[{0:d}]: {}", v, destroy[v]);
+          }
+          tmpgrafo[newi].adj.push_back(newv);
+        }
       }
     }
-  }
-  destroy.clear();
 
-  grafo.clear();
-  grafo.swap(tmpgrafo);
+    grafo.clear();
+    grafo.swap(tmpgrafo);
+
+    destroy.clear();
+  }
+  // ********** end: Step 1
 
   if(debug) {
     // print_g(grafo);
     console->debug("*** end print_g(grafo) ***");
   }
 
-  for(unsigned int i=0; i<grafo.size(); i++) {
-    destroy[i] = false;
-  }
-
-  grafoT.resize(grafo.size());
-
-  for(unsigned int i=0; i<grafo.size(); i++) {
-    for (int v: grafo[i].adj) {
-      grafoT[v].adj.push_back(i);
-    }
-  }
-
-  if(debug) {
-    // print_g(grafoT);
-    console->debug("*** end print_g(grafoT) ***");
-  }
-
+  vector<bool> destroy(grafo.size(), false);
   int newS = -1;
   if ( old2new.find(S) == old2new.end() ) {
-    // not found
+    // Key S not found
     cerr << "Key " << S << " (S) not found in map old2new" << endl;
     exit(EXIT_FAILURE);
   } else {
-    // found
+    // Key S found
     newS = old2new[S];
   }
 
   console->info("S: {0}, newS: {1}", S, newS);
-  console->info("Step 2. BFS");
-  bfs(newS, K, grafoT);
 
-  for(unsigned int i=0; i<grafo.size(); i++) {
-    if((grafo[i].dist == -1) or (grafoT[i].dist == -1) or (grafo[i].dist + grafoT[i].dist > K)) {
-      // console->debug("destroied node: {0:d}\n", i);
-      destroy[i] = true;
-      count_destroied++;
+  // *************************************************************************
+  // Step 2: BFS on g^T
+  {
+    console->info("Step 2.: BFS on g^T");
+    vector<nodo> grafoT;
+    grafoT.resize(grafo.size());
+
+    for(unsigned int i=0; i<grafo.size(); i++) {
+      for (int v: grafo[i].adj) {
+        grafoT[v].adj.push_back(i);
+      }
     }
+
+    if(debug) {
+      // print_g(grafoT);
+      console->debug("*** end print_g(grafoT) ***");
+    }
+
+    bfs(newS, K, grafoT);
+
+    for(unsigned int i=0; i<grafo.size(); i++) {
+      if((grafo[i].dist == -1) or (grafoT[i].dist == -1) or (grafo[i].dist + grafoT[i].dist > K)) {
+        // console->debug("destroied node: {0:d}\n", i);
+        destroy[i] = true;
+        count_destroied++;
+      }
+    }
+
+    int remaining = N-count_destroied;
+
+    console->info("nodes: {}", N);
+    console->info("destroyed: {}", count_destroied);
+    console->info("remaining: {}", remaining);
+
+    destroy_nodes(grafo, destroy);
+    destroy.clear();
   }
-  remaining = N-count_destroied;
+  // ********** end: Step 2
 
-  console->info("nodes: {}", N);
-  console->info("destroyed: {}", count_destroied);
-  console->info("remaining: {}", remaining);
-
-  destroy_nodes(grafo, destroy);
-
+  int remaining = N-count_destroied;
   map<int,int> tmp_old2new;
   vector<int> tmp_new2old;
   tmp_new2old.resize(remaining);
 
-  newindex = -1;
-  int oldi = -1;
-  for(unsigned int i=0; i<grafo.size(); i++) {
-    if(!destroy[i]) {
-      newindex++;
+  {
+    int newindex = -1;
+    int oldi = -1;
+    for(unsigned int i=0; i<grafo.size(); i++) {
+      if(!destroy[i]) {
+        newindex++;
 
-      oldi = new2old[i];
+        oldi = new2old[i];
 
-      console->debug("newindex: {}", newindex);
-      console->debug("i: {} - oldi: {}", i, oldi);
+        console->debug("newindex: {}", newindex);
+        console->debug("i: {} - oldi: {}", i, oldi);
 
-      tmp_new2old[newindex] = oldi;
-      tmp_old2new.insert(pair<int,int>(oldi, newindex));
-      console->debug("tmp_new2old[{0}]: {1}",
-                     newindex,
-                     tmp_new2old[newindex]);
-      console->debug("tmp_old2new.insert(pair<int,int>({0}, {1}))",
-                     oldi,
-                     newindex);
+        tmp_new2old[newindex] = oldi;
+        tmp_old2new.insert(pair<int,int>(oldi, newindex));
+        console->debug("tmp_new2old[{0}]: {1}",
+                       newindex,
+                       tmp_new2old[newindex]);
+        console->debug("tmp_old2new.insert(pair<int,int>({0}, {1}))",
+                       oldi,
+                       newindex);
+      }
     }
   }
 
@@ -607,49 +618,49 @@ int main(int argc, const char* argv[]) {
     console->debug("*** 1 ***");
   }
 
-  newi = -1;
-  newv = -1;
-  int tmpnewi = -1;
-  int tmpnewv = -1;
-  int oldv = -1;
+  {
+    int oldi = -1, newi = -1, tmpnewi = -1;
+    int oldv = -1, newv = -1, tmpnewv = -1;
 
-  tmpgrafo.resize(remaining);
-  for(unsigned int i=0; i<grafo.size(); i++) {
-    if(grafo[i].active) {
+    vector<nodo> tmpgrafo;
+    tmpgrafo.resize(remaining);
+    for(unsigned int i=0; i<grafo.size(); i++) {
+      if(grafo[i].active) {
 
-      oldi = new2old[i];
-      if ( tmp_old2new.find(oldi) == tmp_old2new.end() ) {
-        // not found
-        cerr << "Key " << oldi << " (oldi) not found in map old2new" << endl;
-        exit(EXIT_FAILURE);
-      } else {
-        // found
-        tmpnewi = tmp_old2new[oldi];
-      }
-      console->debug("i: {}, oldi: {}, tmpnewi: {}", i, oldi, tmpnewi);
-
-      tmpgrafo[tmpnewi].dist = grafo[i].dist;
-      tmpgrafo[tmpnewi].active = true;
-      for (int v: grafo[i].adj) {
-
-        oldv = new2old[v];
-        if ( tmp_old2new.find(oldv) == tmp_old2new.end() ) {
+        oldi = new2old[i];
+        if ( tmp_old2new.find(oldi) == tmp_old2new.end() ) {
           // not found
-          cerr << "Key " << oldv << " (oldi) not found in map old2new" << endl;
-          continue;
+          cerr << "Key " << oldi << " (oldi) not found in map old2new" << endl;
+          exit(EXIT_FAILURE);
         } else {
           // found
-          tmpnewv = tmp_old2new[oldv];
+          tmpnewi = tmp_old2new[oldi];
         }
-        console->debug("v: {}, oldv: {}, tmpnewv: {}", v, oldv, tmpnewv);
+        console->debug("i: {}, oldi: {}, tmpnewi: {}", i, oldi, tmpnewi);
 
-        tmpgrafo[tmpnewi].adj.push_back(tmpnewv);
+        tmpgrafo[tmpnewi].dist = grafo[i].dist;
+        tmpgrafo[tmpnewi].active = true;
+        for (int v: grafo[i].adj) {
+
+          oldv = new2old[v];
+          if ( tmp_old2new.find(oldv) == tmp_old2new.end() ) {
+            // not found
+            cerr << "Key " << oldv << " (oldi) not found in map old2new" << endl;
+            continue;
+          } else {
+            // found
+            tmpnewv = tmp_old2new[oldv];
+          }
+          console->debug("v: {}, oldv: {}, tmpnewv: {}", v, oldv, tmpnewv);
+
+          tmpgrafo[tmpnewi].adj.push_back(tmpnewv);
+        }
       }
     }
-  }
 
-  grafo.clear();
-  grafo.swap(tmpgrafo);
+    grafo.clear();
+    grafo.swap(tmpgrafo);
+  }
 
   new2old.clear();
   old2new.clear();
@@ -687,8 +698,9 @@ int main(int argc, const char* argv[]) {
   printf("# of cycles found: %zu\n", cycles.size());
 
   for (auto& c : cycles) {
+
     int csize = c.size();
-    print_circuit(c);
+    print_circuit(c, new2old);
     while (!c.empty()) {
       int el = c.top();
       c.pop();
@@ -700,10 +712,9 @@ int main(int argc, const char* argv[]) {
   }
 
   console->debug("---");
-  oldi = -1;
   for (unsigned int i=0; i<grafo.size(); i++) {
     if(grafo[i].score != 0.0) {
-      oldi = new2old[i];
+      int oldi = new2old[i];
       printf("score(%d): %f\n", oldi, grafo[i].score);
     }
   }
