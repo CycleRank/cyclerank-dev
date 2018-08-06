@@ -9,12 +9,12 @@ from collections import defaultdict
 
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description='Generate a clique graph of '
-                                                 'the given dimension.')
+    desc = 'Assign score to pageloop cyles.'
+    parser = argparse.ArgumentParser(description=desc)
 
     parser.add_argument('FILE',
                         type=pathlib.Path,
-                        help='Input file.')
+                        help='Input file (w/ pageloop cycles).')
 
     parser.add_argument('-o', '--output',
                         type=pathlib.Path,
@@ -23,7 +23,7 @@ if __name__ == '__main__':
     parser.add_argument('-k', '--maxloop',
                         type=int,
                         dest='K',
-                        help='Limit loops to this length (K) '
+                        help='Limit cycles to this length (K) '
                              '[default: No limit].')
 
     args = parser.parse_args()
