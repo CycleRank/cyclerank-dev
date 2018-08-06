@@ -42,6 +42,7 @@ struct nodo{
   }
 };
 
+
 // *************************************************************************
 // global variables
 shared_ptr<spd::logger> console;
@@ -51,6 +52,7 @@ stack<int> tarjan_st;
 int counter = 0;
 
 stack<int> circuits_st;
+
 
 // *************************************************************************
 // helper functions
@@ -238,6 +240,7 @@ int main(int argc, const char* argv[]) {
   string input_file="input.txt";
   bool verbose = false;
   bool debug = false;
+  bool help = false;
 
   int S = -1;
   int K = -1;
@@ -246,17 +249,35 @@ int main(int argc, const char* argv[]) {
     options = new cxxopts::Options(argv[0]);
 
     options->add_options()
-      ("f,file", "File", cxxopts::value<std::string>(input_file))
-      ("v,verbose", "Verbose", cxxopts::value(verbose))
-      ("d,debug", "Debug", cxxopts::value(debug))
-      ("s,source", "Source", cxxopts::value(S))
-      ("k,maxdist", "Maxdist", cxxopts::value(K))
+      ("f,file", "Input file.",
+       cxxopts::value<std::string>(input_file),
+       "FILE"
+       )
+      ("v,verbose", "Enable logging at verbose level.",
+       cxxopts::value(verbose))
+      ("d,debug", "Enable logging at debug level.",
+       cxxopts::value(debug))
+      ("h,help", "Show help message and exit.",
+       cxxopts::value(help))
+      ("s,source", "Set source node (S).",
+       cxxopts::value(S),
+       "S"
+       )
+      ("k,maxdist", "Set max loop length (K).",
+       cxxopts::value(K),
+       "K"
+       )
       ;
 
     auto arguments = options->parse(argc, argv);
   } catch (const cxxopts::OptionException& e) {
     cerr << "error parsing options: " << e.what() << endl;
     exit (EXIT_FAILURE);
+  }
+
+  if(help) {
+    cout << options->help({""}) << endl;
+    exit(0);
   }
   // ********** end: command-line options
 
