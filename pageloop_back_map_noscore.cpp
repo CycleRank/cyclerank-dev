@@ -454,7 +454,8 @@ int main(int argc, const char* argv[]) {
         for (int v: grafo[i].adj) {
           if ( old2new.find(v) == old2new.end() ) {
             // not found
-            console->debug("Key {} (v) not found in map old2new - destroy[{}]: {}", v, v,
+            console->debug("Key {} (v) not found in map old2new - " \
+                           "destroy[{}]: {}", v, v,
                            (destroy[v] ? "true" : "false") );
             continue;
 
@@ -518,7 +519,6 @@ int main(int argc, const char* argv[]) {
     console->info("remaining: {}", remaining);
 
     destroy_nodes(grafo, destroy);
-    destroy.clear();
   }
   // ********** end: Step 2
 
@@ -610,7 +610,9 @@ int main(int argc, const char* argv[]) {
           oldv = new2old[v];
           if ( tmp_old2new.find(oldv) == tmp_old2new.end() ) {
             // not found
-            cerr << "Key " << oldv << " (oldv) not found in map old2new" << endl;
+            console->debug("Key {} (oldv) not found in map old2new - " \
+                           "v: {} - destroy[{}]: {}", oldv, v, v,
+                           (destroy[v] ? "true" : "false") );
             continue;
           } else {
             // found
@@ -625,6 +627,7 @@ int main(int argc, const char* argv[]) {
 
     grafo.clear();
     grafo.swap(tmpgrafo);
+    destroy.clear();
   }
 
   new2old.clear();
