@@ -103,6 +103,31 @@ void print_cycles() {
     print_circuit(st);
   }
 }
+
+
+// count the number of parameters in the first line of the file
+// https://stackoverflow.com/a/34665370/2377454
+int count_parameters(ifstream &in) {
+
+  int tmp_n;
+  int firstline_count =0;
+  string line;
+
+  // read first line of file
+  getline(in, line);
+
+  stringstream ss(line);
+
+  // read numbers from the line
+  while (ss >> tmp_n) {
+    ++firstline_count;
+  }
+
+  console->debug("firstline_count: {}", firstline_count);
+
+  return firstline_count;
+}
+
 // ********** end: helper functions
 
 
@@ -238,12 +263,11 @@ int main(int argc, const char* argv[]) {
   // parse command-line options
   opts::Options* options;
   string input_file="input.txt";
+  int cliS = -1;
+  int cliK = -1;
   bool verbose = false;
   bool debug = false;
   bool help = false;
-
-  int S = -1;
-  int K = -1;
 
   try {
     options = new cxxopts::Options(argv[0]);
@@ -260,11 +284,11 @@ int main(int argc, const char* argv[]) {
       ("h,help", "Show help message and exit.",
        cxxopts::value(help))
       ("s,source", "Set source node (S).",
-       cxxopts::value(S),
+       cxxopts::value(cliS),
        "S"
        )
       ("k,maxdist", "Set max loop length (K).",
-       cxxopts::value(K),
+       cxxopts::value(cliK),
        "K"
        )
       ;
@@ -275,13 +299,15 @@ int main(int argc, const char* argv[]) {
     exit (EXIT_FAILURE);
   }
 
+  // if help option is activated, print help and exit.
   if(help) {
     cout << options->help({""}) << endl;
     exit(0);
   }
-  // ********** end: command-line options
+  // ********** end: parse command-line options
 
   // *************************************************************************
+  // start logging
   // set logging level based on option from CLI
   if (debug) {
     spd::set_level(spd::level::debug);
@@ -295,68 +321,85 @@ int main(int argc, const char* argv[]) {
   console->debug("input_file: {}", input_file);
   console->debug("verbose: {}", verbose);
   console->debug("debug: {}", debug);
+  // ********** end: start logging
 
   // *************************************************************************
   // start algorithm
-  int N, M;
+  int N = -1, M = -1, S = -1, K = -1;
+  vector<nodo> grafo, grafoT;
 
-  vector<nodo> grafo;
-  vector<nodo> grafoT;
+  // *************************************************************************
+  // read input
+  {
+    ifstream in(input_file);
+    int tmpS = -1;
+    int tmpK = -1;
+    int nparam = 0;
+
+    if(in.fail()){
+      cerr << "Error! Could not open file: " << input_file << endl;
+      exit(EXIT_FAILURE);
+    }
+
+    nparam = count_parameters(in);
+    in.close();
+
+    in.open(input_file);
+    if(nparam == 4) {
+      in >> N >> M >> tmpS >> tmpK;
+    } else if(nparam == 2) {
+      in >> N >> M;
+    } else {
+      cerr << "Error! Error while reading file (" << input_file \
+          << "), unexpected number of parameters" << endl;
+      exit(EXIT_FAILURE);
+    }
+
+    if(cliS == -1) {
+      S = tmpS;
+    } else {
+      S = cliS;
+    }
+
+    if(cliK == -1) {
+      K = tmpK;
+    } else {
+      K = cliK;
+    }
+
+    assert( (N > 0 && M > 0) \
+            && "N and M must be positive." );
+
+    assert( (K > 0 && S >= 0) \
+            && "K must be positive and S must be non-negative." );
+
+    console->info("N: {}", N);
+    console->info("M: {}", M);
+    console->info("S: {}", S);
+    console->info("K: {}", K);
+
+    console->debug("reading graph...");
+    grafo.resize(N);
+    for(int i=0; i<M; i++) {
+      int s, t;
+      in >> s >> t;
+      grafo[s].adj.push_back(t);
+    }
+    console->debug("--> read graph");
+    in.close();
+  }
+  // ********** end: read input
 
   vector<bool> destroy;
 
   map<int,int> old2new;
   vector<int> new2old;
 
-  // *************************************************************************
-  // read input
-  ifstream in(input_file);
-
-  if(in.fail()){
-    cerr << "Error! Could not open file: " << input_file << endl;
-    exit(EXIT_FAILURE);
-  }
-
-  /*
-  int tmp_n;
-  int counter_fl =0;
-
-  while (in >> tmp_n) {
-    counter_fl ++ ;
-  }
-  */
-
-  int tmpS, tmpK;
-
-  in >> N >> M >> tmpS >> tmpK;
-
-  if(S == -1) {
-    S = tmpS;
-  }
-
-  if(K == -1) {
-    K = tmpK;
-  }
-
-  console->debug("N: {}", N);
-  console->debug("M: {}", M);
-  console->debug("S: {}", S);
-  console->debug("K: {}", K);
-
-  grafo.resize(N);
   destroy.resize(N);
 
   for(int i=0; i<N; i++) {
     destroy[i] = false;
   }
-
-  console->info("Reading graph");
-  for(int i=0; i<M; i++) {
-    int s, t;
-    in >> s >> t;
-    grafo[s].adj.push_back(t);
-  }
-  console->info("Read graph");
 
   // print_g(grafo);
   // console->debug("---\n");
