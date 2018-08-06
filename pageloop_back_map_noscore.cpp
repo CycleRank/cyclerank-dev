@@ -610,7 +610,7 @@ int main(int argc, const char* argv[]) {
           oldv = new2old[v];
           if ( tmp_old2new.find(oldv) == tmp_old2new.end() ) {
             // not found
-            cerr << "Key " << oldv << " (oldi) not found in map old2new" << endl;
+            cerr << "Key " << oldv << " (oldv) not found in map old2new" << endl;
             continue;
           } else {
             // found
