@@ -290,7 +290,7 @@ int main(int argc, const char* argv[]) {
        cxxopts::value(cliS),
        "S"
        )
-      ("k,maxdist", "Set max loop length (K).",
+      ("k,maxloop", "Set max loop length (K).",
        cxxopts::value(cliK),
        "K"
        )

@@ -272,7 +272,7 @@ int main(int argc, const char* argv[]) {
        cxxopts::value(debug))
       ("h,help", "Show help message and exit.",
        cxxopts::value(help))
-      ("k,maxdist", "Set max loop length (K).",
+      ("k,maxloop", "Set max loop length (K).",
        cxxopts::value(cliK),
        "K"
        )
