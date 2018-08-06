@@ -70,12 +70,10 @@ void write_circuit(stack<int> s, vector<int>& new2old, ofstream& out) {
     s.pop();
   }
 
-  for (int k=tmp.size()-1; k>=0; k--) {
+  for (unsigned k=tmp.size()-1; k>0; k--) {
     out << tmp[k] << " ";
   }
-  int last = tmp[tmp.size()-1];
-  out << last << endl;
-
+  out << tmp[0] << endl;
 }
 
 // count the number of parameters in the first line of the file
