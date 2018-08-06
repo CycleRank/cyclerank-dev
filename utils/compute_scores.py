@@ -7,6 +7,8 @@ import argparse
 import pathlib
 from collections import defaultdict
 
+NDIGITS = 5
+
 
 if __name__ == '__main__':
     desc = 'Assign score to pageloop cyles.'
@@ -52,6 +54,7 @@ if __name__ == '__main__':
         outfile = output.open('w+')
 
     for nid, score in sorted(scores.items()):
-        outfile.write("score({}): {}\n".format(nid, score))
+        rounded_score = round(score, NDIGITS)
+        outfile.write("score({}): {}\n".format(nid, rounded_score))
 
     exit(0)
