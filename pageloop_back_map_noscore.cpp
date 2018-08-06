@@ -101,6 +101,21 @@ int count_parameters(ifstream& in) {
   return firstline_count;
 }
 
+// get remapped node
+int get_remapped_node_or_fail(int s, map<int,int>& map_old2new ) {
+  int newS = -1;
+
+  if ( map_old2new.find(s) == map_old2new.end() ) {
+    // Key s not found
+    cerr << "Key " << s << " not found in map" << endl;
+    exit(EXIT_FAILURE);
+  } else {
+    // Key s found
+    newS = map_old2new[s];
+    return newS;
+  }
+
+}
 // ********** end: helper functions
 
 
@@ -305,7 +320,7 @@ int main(int argc, const char* argv[]) {
 
   // *************************************************************************
   // start algorithm
-  int S = -1;
+  int S = -1, newS = -1;
   unsigned int N = 0, M = 0, K = 0;
   vector<nodo> grafo;
 
@@ -440,31 +455,44 @@ int main(int argc, const char* argv[]) {
     for(unsigned int i=0; i<N; i++) {
       if(grafo[i].active) {
 
-        if ( old2new.find(i) == old2new.end() ) {
-          // not found
-          cerr << "Key " << i << " (i) not found in map old2new" << endl;
-          exit(EXIT_FAILURE);
-        } else {
-          // found
-          newi = old2new[i];
-        }
+        newi = get_remapped_node_or_fail(i, old2new);
+
+        /*
+        *
+        * if ( old2new.find(i) == old2new.end() ) {
+        *   // not found
+        *   cerr << "Key " << i << " (i) not found in map old2new" << endl;
+        *   exit(EXIT_FAILURE);
+        * } else {
+        *   // found
+        *   newi = old2new[i];
+        * }
+        *
+        */
 
         tmpgrafo[newi].dist = grafo[i].dist;
         tmpgrafo[newi].active = true;
         for (int v: grafo[i].adj) {
-          if ( old2new.find(v) == old2new.end() ) {
-            // not found
-            console->debug("Key {} (v) not found in map old2new - " \
-                           "destroy[{}]: {}", v, v,
-                           (destroy[v] ? "true" : "false") );
-            continue;
-
-          } else {
-            // found
+          if(grafo[v].active) {
+            // key v must be in in old2new
+            /*
+            *
+            * if ( old2new.find(v) == old2new.end() ) {
+            *   // not found
+            *   console->debug("Key {} (v) not found in map old2new - " \
+            *                  "destroy[{}]: {}", v, v,
+            *                  (destroy[v] ? "true" : "false") );
+            *   continue;
+            * } else {
+            *   // found
+            *   newv = old2new[v];
+            *   console->debug("destroy[{0:d}]: {}", v, destroy[v]);
+            * }
+            *
+            */
             newv = old2new[v];
-            console->debug("destroy[{0:d}]: {}", v, destroy[v]);
+            tmpgrafo[newi].adj.push_back(newv);
           }
-          tmpgrafo[newi].adj.push_back(newv);
         }
       }
     }
@@ -477,17 +505,13 @@ int main(int argc, const char* argv[]) {
   // ********** end: Step 1
 
   vector<bool> destroy(grafo.size(), false);
-  int newS = -1;
-  if ( old2new.find(S) == old2new.end() ) {
-    // Key S not found
-    cerr << "Key " << S << " (S) not found in map old2new" << endl;
-    exit(EXIT_FAILURE);
-  } else {
-    // Key S found
-    newS = old2new[S];
-  }
 
+
+  // *************************************************************************
+  // get remapped source node (S)
+  newS = get_remapped_node_or_fail(S, old2new);
   console->info("S: {0}, newS: {1}", S, newS);
+  // ********** end: get remapped source node (S)
 
   // *************************************************************************
   // Step 2: BFS on g^T
@@ -505,7 +529,8 @@ int main(int argc, const char* argv[]) {
     bfs(newS, K, grafoT);
 
     for(unsigned int i=0; i<grafo.size(); i++) {
-      if((grafo[i].dist == -1) or (grafoT[i].dist == -1) or (grafo[i].dist + grafoT[i].dist > (int) K)) {
+      if((grafo[i].dist == -1) or (grafoT[i].dist == -1) or \
+          (grafo[i].dist + grafoT[i].dist > (int) K)) {
         // console->debug("destroied node: {0:d}\n", i);
         destroy[i] = true;
         count_destroied++;
@@ -593,34 +618,48 @@ int main(int argc, const char* argv[]) {
       if(grafo[i].active) {
 
         oldi = new2old[i];
-        if ( tmp_old2new.find(oldi) == tmp_old2new.end() ) {
-          // not found
-          cerr << "Key " << oldi << " (oldi) not found in map old2new" << endl;
-          exit(EXIT_FAILURE);
-        } else {
-          // found
-          tmpnewi = tmp_old2new[oldi];
-        }
-        console->debug("i: {}, oldi: {}, tmpnewi: {}", i, oldi, tmpnewi);
 
+        /*
+        *
+        * if ( tmp_old2new.find(oldi) == tmp_old2new.end() ) {
+        *   // not found
+        *   cerr << "Key " << oldi << " (oldi) not found in map old2new" << endl;
+        *   exit(EXIT_FAILURE);
+        * } else {
+        *   // found
+        *   tmpnewi = tmp_old2new[oldi];
+        * }
+        * console->debug("i: {}, oldi: {}, tmpnewi: {}", i, oldi, tmpnewi);
+        *
+        */
+
+        tmpnewi = get_remapped_node_or_fail(oldi, tmp_old2new);
         tmpgrafo[tmpnewi].dist = grafo[i].dist;
         tmpgrafo[tmpnewi].active = true;
         for (int v: grafo[i].adj) {
+          if(grafo[v].active) {
+            oldv = new2old[v];
 
-          oldv = new2old[v];
-          if ( tmp_old2new.find(oldv) == tmp_old2new.end() ) {
-            // not found
-            console->debug("Key {} (oldv) not found in map old2new - " \
-                           "v: {} - destroy[{}]: {}", oldv, v, v,
-                           (destroy[v] ? "true" : "false") );
-            continue;
-          } else {
-            // found
+            /*
+            *
+            * if ( tmp_old2new.find(oldv) == tmp_old2new.end() ) {
+            *   // not found
+            *   console->debug("Key {} (oldv) not found in map old2new - " \
+            *                  "v: {} - destroy[{}]: {}", oldv, v, v,
+            *                  (destroy[v] ? "true" : "false") );
+            *   continue;
+            * } else {
+            *   // found
+            *   tmpnewv = tmp_old2new[oldv];
+            * }
+            * console->debug("v: {}, oldv: {}, tmpnewv: {}", v, oldv,
+            *                tmpnewv);
+            *
+            */
+
             tmpnewv = tmp_old2new[oldv];
+            tmpgrafo[tmpnewi].adj.push_back(tmpnewv);
           }
-          console->debug("v: {}, oldv: {}, tmpnewv: {}", v, oldv, tmpnewv);
-
-          tmpgrafo[tmpnewi].adj.push_back(tmpnewv);
         }
       }
     }
@@ -651,8 +690,11 @@ int main(int argc, const char* argv[]) {
     console->debug("~~~");
   }
 
-  newS = old2new[S];
+  // *************************************************************************
+  // get remapped source node (S)
+  newS = get_remapped_node_or_fail(S, old2new);
   console->info("S: {0}, newS: {1}", S, newS);
+  // ********** end: get remapped source node (S)
 
   console->debug("calling circuit()");
 
@@ -662,7 +704,6 @@ int main(int argc, const char* argv[]) {
 
   console->debug("count_calls: {}", count_calls);
   console->debug("called circuit()");
-
 
   console->info("Log stop!");
   exit (EXIT_SUCCESS);
