@@ -188,10 +188,10 @@ void unblock(int u, vector<nodo>& g) {
 }
 
 int count_calls=0;
-stack<int> circuits_st;
 bool circuit(int v, int S, unsigned int K,
              vector<nodo>& g,
              vector<int>& new2old,
+             stack<int>& circuits_st,
              ofstream& out) {
   bool flag = false;
 
@@ -633,7 +633,8 @@ int main(int argc, const char* argv[]) {
   console->debug("calling circuit()");
 
   ofstream out(output_file);
-  circuit(newS, newS, K, grafo, new2old, out);
+  stack<int> circuits_st;
+  circuit(newS, newS, K, grafo, new2old, circuits_st, out);
   out.close();
 
   console->debug("count_calls: {}", count_calls);
