@@ -209,7 +209,7 @@ bool circuit(int v, int S, unsigned int K,
         }
         flag = true;
       } else if (!g[w].blocked) {
-        if (circuit(w, S, K, g, new2old, out)) {
+        if (circuit(w, S, K, g, new2old, circuits_st, out)) {
           flag = true;
         }
       }
