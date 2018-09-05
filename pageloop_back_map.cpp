@@ -266,6 +266,7 @@ int main(int argc, const char* argv[]) {
   // parse command-line options
   opts::Options* options;
   string input_file="input.txt";
+  string output_file="output.txt";
   int cliS = -1;
   int cliK = -1;
   bool verbose = false;
@@ -286,13 +287,17 @@ int main(int argc, const char* argv[]) {
        cxxopts::value(debug))
       ("h,help", "Show help message and exit.",
        cxxopts::value(help))
-      ("s,source", "Set source node (S).",
-       cxxopts::value(cliS),
-       "S"
-       )
       ("k,maxloop", "Set max loop length (K).",
        cxxopts::value(cliK),
        "K"
+       )
+      ("o,output", "Output file.",
+       cxxopts::value<string>(output_file),
+       "OUTPUT_FILE"
+       )
+      ("s,source", "Set source node (S).",
+       cxxopts::value(cliS),
+       "S"
        )
       ;
 
@@ -712,10 +717,12 @@ int main(int argc, const char* argv[]) {
   }
 
   console->debug("---");
+
+  ofstream out(output_file);
   for (unsigned int i=0; i<grafo.size(); i++) {
     if(grafo[i].score != 0.0) {
       int oldi = new2old[i];
-      printf("score(%d): %f\n", oldi, grafo[i].score);
+      out << "score(" << oldi << "): " << grafo[i].score << endl;
     }
   }
 
