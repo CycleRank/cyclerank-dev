@@ -205,7 +205,7 @@ void unblock(int u, vector<nodo>& g) {
 }
 
 int count_calls=0;
-bool circuit(int v, int S, int K, vector<nodo>& g) {
+bool circuit(int v, int S, unsigned int K, vector<nodo>& g) {
   bool flag = false;
 
   if (!(circuits_st.size() > K-1)) {
@@ -624,8 +624,8 @@ int main(int argc, const char* argv[]) {
   }
 
   {
-    int oldi = -1, newi = -1, tmpnewi = -1;
-    int oldv = -1, newv = -1, tmpnewv = -1;
+    int oldi = -1, tmpnewi = -1;
+    int oldv = -1, tmpnewv = -1;
 
     vector<nodo> tmpgrafo;
     tmpgrafo.resize(remaining);
