@@ -15,3 +15,6 @@ pageloop_tarjan
 pageloop_back
 pageloop_back_map
 pageloop_back_map_noscore
+pageloop_back_map_noscore_interruptible
+pageloop_back_map_noscore
+ssppr
