@@ -11,6 +11,10 @@
 #include <climits>
 #include <stdlib.h>     /* exit, EXIT_FAILURE */
 
+extern "C" {
+   #include <igraph.h>
+}
+
 #include "cxxopts.hpp"
 #include "spdlog/spdlog.h"
 
@@ -583,6 +587,90 @@ int main(int argc, const char* argv[]) {
   *    const igraph_vector_t *weights,
   *    void *options);
   * *************************************************************************/
+
+  igraph_t igrafo;
+  igraph_vector_t ivertices;
+  igraph_vector_t iedges;
+
+  // initialize vertices vector
+  igraph_vector_init(&ivertices, grafo.size());
+
+  // assign vertices and count number of edges
+  unsigned int num_edges = 0;
+  for(unsigned int i=0; i<grafo.size(); i++) {
+    VECTOR(ivertices)[i]=i;
+
+    num_edges += grafo[i].adj.size();
+  }
+
+  // create graph with the given number of vertices, destroy vertex vector
+  igraph_create(&igrafo, &ivertices, 0, 1);
+  igraph_vector_destroy(&ivertices);
+
+  // initialize vertices vector 2*num_edges
+  igraph_vector_init(&iedges, 2*num_edges);
+  int ec = 0;
+  for(unsigned int i=0; i<grafo.size(); i++) {
+    for (int v: grafo[i].adj) {
+      VECTOR(iedges)[ec]=i;
+      VECTOR(iedges)[ec+1]=v;
+
+      ec = ec + 2;
+    }
+  }
+
+  igraph_add_edges(&igrafo, &iedges, 0);
+
+
+  igraph_vector_t pprscore, reset;
+
+  // init result vector
+  igraph_vector_init(&pprscore, 0);
+
+  // reset vector
+  igraph_vector_init(&reset, grafo.size());
+  igraph_vector_fill(&reset, 0);
+
+  /*
+  * int igraph_personalized_pagerank(
+  *    const igraph_t *graph,
+  *    igraph_pagerank_algo_t algo, igraph_vector_t *vector,
+  *    igraph_real_t *value, const igraph_vs_t vids,
+  *    igraph_bool_t directed, igraph_real_t damping,
+  *    igraph_vector_t *reset,
+  *    const igraph_vector_t *weights,
+  *    void *options);
+  *
+  * algo: IGRAPH_PAGERANK_ALGO_PRPACK is the recommended implementation
+  *       http://igraph.org/c/doc/igraph-Structural.html#igraph_pagerank_algo_t
+  */
+
+  // jump probability to (remapped) S is 1
+  VECTOR(reset)[newS]=1.0;
+
+  int ret = -1;
+  ret=igraph_personalized_pagerank(
+     &igrafo,                         // const igraph_t *graph
+     IGRAPH_PAGERANK_ALGO_PRPACK,     // igraph_pagerank_algo_t algo
+     &pprscore,                       // igraph_vector_t *vector
+     0,                               // igraph_real_t *value
+     igraph_vss_all(),                // const igraph_vs_t vids
+     1,                               // igraph_bool_t directed
+     0.85,                            // igraph_real_t damping
+     &reset,                          // igraph_vector_t *reset
+     0,                               // const igraph_vector_t *weights,
+     0                                // void *options
+     );
+  console->info("SSPPR ret: {0:d}", ret);
+
+  igraph_vector_destroy(&reset);
+  igraph_destroy(&igrafo);
+
+  ofstream out(output_file);
+  for (unsigned int i=0; i<grafo.size(); i++) {
+    int oldi = new2old[i];
+    out << "score(" << oldi << "): " << VECTOR(pprscore)[i] << endl;
+  }
 
   console->info("Log stop!");
   exit (EXIT_SUCCESS);
