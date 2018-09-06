@@ -246,7 +246,7 @@ int main(int argc, const char* argv[]) {
       ("u,undirected", "Run on the undirected network (incompatible with -t).",
        cxxopts::value(undirected))
       ("w,whole-network", "Run on the whole network (ignore K).",
-       cxxopts::value(undirected))
+       cxxopts::value(wholenetwork))
       ;
 
     auto arguments = options->parse(argc, argv);
