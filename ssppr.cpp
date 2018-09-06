@@ -675,7 +675,7 @@ int main(int argc, const char* argv[]) {
       }
     }
   }
-  grafo.clear()
+  grafo.clear();
 
   igraph_create(&igrafo, &iedges, grafo.size(), 1);
 
