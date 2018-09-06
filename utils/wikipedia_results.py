@@ -7,8 +7,14 @@ import argparse
 import pathlib
 import itertools
 
-
-REGEX_SCORE = r'score\(([0-9]+)\):\t([0-9]+\.?[0-9]*)'
+# Regex:
+#  score(<pageid>):<spaces><score>
+#
+# where:
+#   - <pageid> is an integer number
+#   - <score> is a real number that can be written using the scientific
+#     notation
+REGEX_SCORE = r'score\(([0-9]+)\):\s+([0-9]+\.?[0-9]*e?-?[0-9]*)'
 regex_score = re.compile(REGEX_SCORE)
 
 
