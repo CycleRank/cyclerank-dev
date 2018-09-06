@@ -8,7 +8,7 @@ import pathlib
 import itertools
 
 
-REGEX_SCORE = r'score\(([0-9]+)\): ([0-9]+\.?[0-9]*)'
+REGEX_SCORE = r'score\(([0-9]+)\):\t([0-9]+\.?[0-9]*)'
 regex_score = re.compile(REGEX_SCORE)
 
 
@@ -54,7 +54,7 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     snapshotname = args.snapshot
-    outline = 'score({title}): {score}\n'
+    outline = 'score({title}):\t{score}\n'
     with snapshotname.open('r') as snapshotfile:
         reader = csv.reader(snapshotfile, delimiter='\t')
         snapshot = dict((int(l[0]), l[1]) for l in reader)

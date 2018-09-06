@@ -718,11 +718,12 @@ int main(int argc, const char* argv[]) {
 
   console->debug("---");
 
-  ofstream out(output_file);
+  FILE* outfp;
+  outfp = fopen(output_file.c_str(), "w+");
   for (unsigned int i=0; i<grafo.size(); i++) {
     if(grafo[i].score != 0.0) {
       int oldi = new2old[i];
-      out << "score(" << oldi << "): " << grafo[i].score << endl;
+      fprintf(outfp, "score(%d):\t%.10f\n", oldi, grafo[i].score);
     }
   }
 
