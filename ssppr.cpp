@@ -637,21 +637,9 @@ int main(int argc, const char* argv[]) {
     console->debug("  * on the directed graph");
   } else {
     console->debug("  * on the undirected graph");
-
-    grafoU.resize(grafo.size());
-    for(unsigned int i=0; i<grafo.size(); i++) {
-      for (int v: grafo[i].adj) {
-        grafoU[i].adj.push_back(v);
-        grafoU[v].adj.push_back(i);
-      }
-    }
-    grafo.swap(grafoU);
-
-    // deallocate vector (of nodes)
-    grafoU.clear();
   }
 
-  // assign vertices and count number of edges
+  // count number of edges
   unsigned int num_edges = 0;
   for(unsigned int i=0; i<grafo.size(); i++) {
     num_edges += grafo[i].adj.size();
@@ -664,20 +652,21 @@ int main(int argc, const char* argv[]) {
 
   int ec = 0;
   for(unsigned int i=0; i<grafo.size(); i++) {
-    sort(grafo[i].adj.begin(), grafo[i].adj.end());
-    int lastv = -1;
     for (int v: grafo[i].adj) {
-      if(!(lastv != -1 && lastv == v)) {
-        VECTOR(iedges)[ec]=i;
-        VECTOR(iedges)[ec+1]=v;
+      VECTOR(iedges)[ec]=i;
+      VECTOR(iedges)[ec+1]=v;
 
-        ec = ec + 2;
-      }
+      ec = ec + 2;
     }
   }
+
+  // we get the size of the graph and the we clear
+  unsigned int num_nodes = grafo.size();
   grafo.clear();
 
-  igraph_create(&igrafo, &iedges, grafo.size(), 1);
+  // int igraph_create(igraph_t *graph, const igraph_vector_t *edges,
+  //   igraph_integer_t n, igraph_bool_t directed);
+  igraph_create(&igrafo, &iedges, num_nodes, !undirected);
 
   igraph_vector_t pprscore, reset;
 
@@ -685,7 +674,7 @@ int main(int argc, const char* argv[]) {
   igraph_vector_init(&pprscore, 0);
 
   // reset vector
-  igraph_vector_init(&reset, grafo.size());
+  igraph_vector_init(&reset, num_nodes);
   igraph_vector_fill(&reset, 0);
 
   /*
@@ -712,7 +701,7 @@ int main(int argc, const char* argv[]) {
      &pprscore,                       // igraph_vector_t *vector
      0,                               // igraph_real_t *value
      igraph_vss_all(),                // const igraph_vs_t vids
-     1,                               // igraph_bool_t directed
+     !undirected,                     // igraph_bool_t directed
      0.85,                            // igraph_real_t damping
      &reset,                          // igraph_vector_t *reset
      0,                               // const igraph_vector_t *weights,
@@ -725,7 +714,7 @@ int main(int argc, const char* argv[]) {
 
   FILE* outfp;
   outfp = fopen(output_file.c_str(), "w+");
-  for (unsigned int i=0; i<grafo.size(); i++) {
+  for (unsigned int i=0; i<num_nodes; i++) {
     int oldi;
     if(!wholenetwork) {
       oldi = new2old[i];
