@@ -335,7 +335,7 @@ int main(void) {
 
   printf("---\n");
   for (int i=0; i<N; i++) {
-    printf("score(%d): %f\n", i, grafo[i].score);
+    printf("score(%d):\t%.10f\n", i, grafo[i].score);
   }
 
   return 0;
