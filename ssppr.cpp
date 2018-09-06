@@ -589,26 +589,19 @@ int main(int argc, const char* argv[]) {
   * *************************************************************************/
 
   igraph_t igrafo;
-  igraph_vector_t ivertices;
   igraph_vector_t iedges;
-
-  // initialize vertices vector
-  igraph_vector_init(&ivertices, grafo.size());
 
   // assign vertices and count number of edges
   unsigned int num_edges = 0;
   for(unsigned int i=0; i<grafo.size(); i++) {
-    VECTOR(ivertices)[i]=i;
-
     num_edges += grafo[i].adj.size();
   }
 
-  // create graph with the given number of vertices, destroy vertex vector
-  igraph_create(&igrafo, &ivertices, 0, 1);
-  igraph_vector_destroy(&ivertices);
+  console->debug("num_edges: {0}", num_edges);
 
   // initialize vertices vector 2*num_edges
   igraph_vector_init(&iedges, 2*num_edges);
+
   int ec = 0;
   for(unsigned int i=0; i<grafo.size(); i++) {
     for (int v: grafo[i].adj) {
@@ -619,8 +612,7 @@ int main(int argc, const char* argv[]) {
     }
   }
 
-  igraph_add_edges(&igrafo, &iedges, 0);
-
+  igraph_create(&igrafo, &iedges, grafo.size(), 1);
 
   igraph_vector_t pprscore, reset;
 
