@@ -99,10 +99,11 @@ if __name__ == '__main__':
 
         try:
             for title, score in sorted_lines:
-                sys.stdout.write(outline.format(title=title,
-                                                score=repr(score)
-                                                )
-                                 )
+                if title:
+                    sys.stdout.write(outline.format(title=title,
+                                                    score=repr(score)
+                                                    )
+                                     )
         except IOError as err:
             if err.errno == errno.EPIPE:
                 pass
