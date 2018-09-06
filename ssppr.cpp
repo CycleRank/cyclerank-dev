@@ -664,11 +664,15 @@ int main(int argc, const char* argv[]) {
 
   int ec = 0;
   for(unsigned int i=0; i<grafo.size(); i++) {
+    sort(grafo[i].adj.begin(), grafo[i].adj.end());
+    int lastv = -1;
     for (int v: grafo[i].adj) {
-      VECTOR(iedges)[ec]=i;
-      VECTOR(iedges)[ec+1]=v;
+      if(!(lastv != -1 && lastv == v)) {
+        VECTOR(iedges)[ec]=i;
+        VECTOR(iedges)[ec+1]=v;
 
-      ec = ec + 2;
+        ec = ec + 2;
+      }
     }
   }
 
