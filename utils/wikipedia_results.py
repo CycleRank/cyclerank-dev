@@ -90,10 +90,15 @@ if __name__ == '__main__':
                                   reverse=args.reverse
                                   )
 
-        for title, score in sorted_lines:
-            sys.stdout.write(outline.format(title=title,
-                                            score=repr(score)
-                                            )
-                             )
+
+        try:
+            for title, score in sorted_lines:
+                sys.stdout.write(outline.format(title=title,
+                                                score=repr(score)
+                                                )
+                                 )
+        except IOError as err:
+            if err.errno == errno.EPIPE:
+                pass
 
     exit(0)
