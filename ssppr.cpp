@@ -213,6 +213,7 @@ int main(int argc, const char* argv[]) {
   bool help = false;
   bool transposed = false;
   bool undirected = false;
+  bool directed = true;
   bool wholenetwork = false;
 
   try {
@@ -266,6 +267,9 @@ int main(int argc, const char* argv[]) {
          << "mutually exclusive." << endl;
     exit (EXIT_FAILURE);
   }
+
+  // use a variable called directed to indicate if the graph is directed
+  directed = !undirected;
   // ********** end: parse command-line options
 
   // *************************************************************************
@@ -285,6 +289,7 @@ int main(int argc, const char* argv[]) {
   console->debug("debug: {}", debug);
   console->debug("transposed: {}", transposed);
   console->debug("undirected: {}", undirected);
+  console->debug("directed: {}", directed);
   console->debug("whole-network: {}", wholenetwork);
   // ********** end: start logging
 
@@ -633,7 +638,7 @@ int main(int argc, const char* argv[]) {
     grafoT.clear();
   }
 
-  if(!undirected) {
+  if(directed) {
     console->debug("  * on the directed graph");
   } else {
     console->debug("  * on the undirected graph");
@@ -666,7 +671,7 @@ int main(int argc, const char* argv[]) {
 
   // int igraph_create(igraph_t *graph, const igraph_vector_t *edges,
   //   igraph_integer_t n, igraph_bool_t directed);
-  igraph_create(&igrafo, &iedges, num_nodes, !undirected);
+  igraph_create(&igrafo, &iedges, num_nodes, directed);
 
   igraph_vector_t pprscore, reset;
 
@@ -701,7 +706,7 @@ int main(int argc, const char* argv[]) {
      &pprscore,                       // igraph_vector_t *vector
      0,                               // igraph_real_t *value
      igraph_vss_all(),                // const igraph_vs_t vids
-     !undirected,                     // igraph_bool_t directed
+     directed,                        // igraph_bool_t directed
      0.85,                            // igraph_real_t damping
      &reset,                          // igraph_vector_t *reset
      0,                               // const igraph_vector_t *weights,
