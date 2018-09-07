@@ -396,7 +396,13 @@ int main(int argc, const char* argv[]) {
     for(int i=0; i<M; i++) {
       int s, t;
       in >> s >> t;
-      grafo[s].adj.push_back(t);
+
+      // check that we are not inserting duplicates
+      if (find(grafo[s].adj.begin(), \
+               grafo[s].adj.end(), \
+               t) == grafo[s].adj.end()) {
+        grafo[s].adj.push_back(t);
+      }
     }
     console->debug("--> read graph");
     in.close();
