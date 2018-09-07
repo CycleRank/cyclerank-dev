@@ -215,6 +215,7 @@ int main(int argc, const char* argv[]) {
   bool undirected = false;
   bool directed = true;
   bool wholenetwork = false;
+  bool forcebfstransposed = false;
 
   try {
     options = new cxxopts::Options(argv[0]);
@@ -246,6 +247,10 @@ int main(int argc, const char* argv[]) {
        cxxopts::value(transposed))
       ("u,undirected", "Run on the undirected network (incompatible with -t).",
        cxxopts::value(undirected))
+      ("b,force-bfs-transposed", "Force running the second BFS on the " \
+       "transposed network. This is needed only if -u is specified, " \
+       "otherwise it is effectively ignored.",
+       cxxopts::value(forcebfstransposed))
       ("w,whole-network", "Run on the whole network (ignore K).",
        cxxopts::value(wholenetwork))
       ;
@@ -365,6 +370,20 @@ int main(int argc, const char* argv[]) {
                grafo[s].adj.end(), \
                t) == grafo[s].adj.end()) {
         grafo[s].adj.push_back(t);
+
+        if(!directed) {
+          // we still need to check for duplicates since we are starting
+          // from a directed network and if we a double link, i.e.:
+          //   1 -> 2
+          //   2 -> 1
+          // this would become a duplicate when considering the undirected
+          // version
+          if (find(grafo[t].adj.begin(), \
+                   grafo[t].adj.end(), \
+                   s) == grafo[t].adj.end()) {
+            grafo[t].adj.push_back(s);
+          }
+        }
       }
     }
     console->debug("--> read graph");
@@ -373,7 +392,7 @@ int main(int argc, const char* argv[]) {
   // ********** end: read input
 
   if(!wholenetwork) {
-    // *************************************************************************
+    // ***********************************************************************
     // Step 1: BFS on g
     {
       console->info("Step 1. BFS");
@@ -457,155 +476,186 @@ int main(int argc, const char* argv[]) {
     vector<bool> destroy(grafo.size(), false);
 
 
-    // *************************************************************************
+    // ***********************************************************************
     // get remapped source node (S)
     newS = get_remapped_node_or_fail(S, old2new);
     console->info("S: {0}, newS: {1}", S, newS);
     // ********** end: get remapped source node (S)
 
-    // *************************************************************************
+    // ***********************************************************************
     // Step 2: BFS on g^T
-    {
-      console->info("Step 2.: BFS on g^T");
-      vector<nodo> grafoT;
-      transpose_graph(grafo, grafoT);
+    if(directed || forcebfstransposed) {
+      {
+        console->info("Step 2.: BFS on g^T");
 
-      bfs(newS, K, grafoT);
+        if(directed) {
+          // graph is directed, this is the regular scenario
+          vector<nodo> grafoT;
+          transpose_graph(grafo, grafoT);
 
-      for(unsigned int i=0; i<grafo.size(); i++) {
-        if((grafo[i].dist == -1) or (grafoT[i].dist == -1) or \
-            (grafo[i].dist + grafoT[i].dist > (int) K)) {
-          // console->debug("destroied node: {0:d}\n", i);
-          destroy[i] = true;
-          count_destroied++;
+          bfs(newS, K, grafoT);
+
+          for(unsigned int i=0; i<grafo.size(); i++) {
+            if((grafo[i].dist == -1) or (grafoT[i].dist == -1) or \
+                (grafo[i].dist + grafoT[i].dist > (int) K)) {
+              // console->debug("destroied node: {0:d}\n", i);
+              destroy[i] = true;
+              count_destroied++;
+            }
+          }
+
+        } else {
+          // graph is undirected, we are here because we are forcing this
+          // step
+
+          // we can be smart and instead of running the same visit twice
+          // (we are on an undirected network, we transpose it and we run a
+          // BFS from the same node), we know that:
+          //   \foreach i grafo[i].dist == grafoT[i].dist
+          //
+          // hence the check over the distance we do above:
+          //   (grafo[i].dist == -1) || (grafoT[i].dist == -1) ||
+          //       (grafo[i].dist + grafoT[i].dist > K)
+          //
+          // is effectively simplified to:
+          //   (grafo[i].dist == -1) || (2*grafo[i].dist > K)
+          //
+          for(unsigned int i=0; i<grafo.size(); i++) {
+            if((grafo[i].dist == -1) or (2*grafo[i].dist > (int) K)) {
+              // console->debug("destroied node: {0:d}\n", i);
+              destroy[i] = true;
+              count_destroied++;
+            }
+          }
+
         }
+
+        int remaining = N-count_destroied;
+
+        console->info("nodes: {}", N);
+        console->info("destroyed: {}", count_destroied);
+        console->info("remaining: {}", remaining);
+
+        destroy_nodes(grafo, destroy);
       }
+      // ********** end: Step 2
 
       int remaining = N-count_destroied;
+      map<int,int> tmp_old2new;
+      vector<int> tmp_new2old;
+      tmp_new2old.resize(remaining);
 
-      console->info("nodes: {}", N);
-      console->info("destroyed: {}", count_destroied);
-      console->info("remaining: {}", remaining);
+      {
+        int newindex = -1;
+        int oldi = -1;
+        for(unsigned int i=0; i<grafo.size(); i++) {
+          if(!destroy[i]) {
+            newindex++;
 
-      destroy_nodes(grafo, destroy);
-    }
-    // ********** end: Step 2
+            oldi = new2old[i];
 
-    int remaining = N-count_destroied;
-    map<int,int> tmp_old2new;
-    vector<int> tmp_new2old;
-    tmp_new2old.resize(remaining);
+            console->debug("newindex: {}", newindex);
+            console->debug("i: {} - oldi: {}", i, oldi);
 
-    {
-      int newindex = -1;
-      int oldi = -1;
-      for(unsigned int i=0; i<grafo.size(); i++) {
-        if(!destroy[i]) {
-          newindex++;
-
-          oldi = new2old[i];
-
-          console->debug("newindex: {}", newindex);
-          console->debug("i: {} - oldi: {}", i, oldi);
-
-          tmp_new2old[newindex] = oldi;
-          tmp_old2new.insert(pair<int,int>(oldi, newindex));
-          console->debug("tmp_new2old[{0}]: {1}",
-                         newindex,
-                         tmp_new2old[newindex]);
-          console->debug("tmp_old2new.insert(pair<int,int>({0}, {1}))",
-                         oldi,
-                         newindex);
-        }
-      }
-    }
-
-    if(debug) {
-      console->debug("*** tmp maps ***");
-      console->debug("tmp_old2new, tmp_new2old");
-      console->debug("tmp_old2new.size() is {}", tmp_old2new.size());
-
-      int c = 0;
-      for (auto const& pp : tmp_old2new) {
-        console->debug("{0:d} => {1:d}, {2:d} => {3:d}",
-                       pp.first,
-                       pp.second,
-                       c,
-                       tmp_new2old[c]);
-        c++;
-      }
-
-      console->debug("*** maps BBB ***");
-      console->debug("old2new.size() is {}", old2new.size());
-      console->debug("old2new, new2old");
-      c = 0;
-      for (auto const& pp : old2new) {
-        console->debug("{0:d} => {1:d}, {2:d} => {3:d}",
-                       pp.first,
-                       pp.second,
-                       pp.second,
-                       new2old[pp.second]);
-        c++;
-      }
-      console->debug("~~~");
-
-      console->debug("*** 1 ***");
-    }
-
-    {
-      int oldi = -1, tmpnewi = -1;
-      int oldv = -1, tmpnewv = -1;
-
-      vector<nodo> tmpgrafo;
-      tmpgrafo.resize(remaining);
-      for(unsigned int i=0; i<grafo.size(); i++) {
-        if(grafo[i].active) {
-
-          oldi = new2old[i];
-          tmpnewi = tmp_old2new[oldi];
-          tmpgrafo[tmpnewi].dist = grafo[i].dist;
-          tmpgrafo[tmpnewi].active = true;
-          for (int v: grafo[i].adj) {
-            if(grafo[v].active) {
-              oldv = new2old[v];
-              tmpnewv = tmp_old2new[oldv];
-              tmpgrafo[tmpnewi].adj.push_back(tmpnewv);
-            }
+            tmp_new2old[newindex] = oldi;
+            tmp_old2new.insert(pair<int,int>(oldi, newindex));
+            console->debug("tmp_new2old[{0}]: {1}",
+                           newindex,
+                           tmp_new2old[newindex]);
+            console->debug("tmp_old2new.insert(pair<int,int>({0}, {1}))",
+                           oldi,
+                           newindex);
           }
         }
       }
 
-      grafo.clear();
-      grafo.swap(tmpgrafo);
-      destroy.clear();
-    }
+      if(debug) {
+        console->debug("*** tmp maps ***");
+        console->debug("tmp_old2new, tmp_new2old");
+        console->debug("tmp_old2new.size() is {}", tmp_old2new.size());
 
-    new2old.clear();
-    old2new.clear();
+        int c = 0;
+        for (auto const& pp : tmp_old2new) {
+          console->debug("{0:d} => {1:d}, {2:d} => {3:d}",
+                         pp.first,
+                         pp.second,
+                         c,
+                         tmp_new2old[c]);
+          c++;
+        }
 
-    tmp_new2old.swap(new2old);
-    tmp_old2new.swap(old2new);
+        console->debug("*** maps BBB ***");
+        console->debug("old2new.size() is {}", old2new.size());
+        console->debug("old2new, new2old");
+        c = 0;
+        for (auto const& pp : old2new) {
+          console->debug("{0:d} => {1:d}, {2:d} => {3:d}",
+                         pp.first,
+                         pp.second,
+                         pp.second,
+                         new2old[pp.second]);
+          c++;
+        }
+        console->debug("~~~");
 
-
-    if(debug) {
-      console->debug("map indexes");
-      console->debug("old2new.size() is {}", old2new.size());
-
-      for (auto const& pp : old2new) {
-        console->debug("{0:d} => {1:d}, {2:d} => {3:d}",
-                       pp.first,
-                       pp.second,
-                       pp.second,
-                       new2old[pp.second]);
+        console->debug("*** 1 ***");
       }
-      console->debug("~~~");
-    }
 
-    // *************************************************************************
-    // get remapped source node (S)
-    newS = get_remapped_node_or_fail(S, old2new);
-    console->info("S: {0}, newS: {1}", S, newS);
-    // ********** end: get remapped source node (S)
+      {
+        int oldi = -1, tmpnewi = -1;
+        int oldv = -1, tmpnewv = -1;
+
+        vector<nodo> tmpgrafo;
+        tmpgrafo.resize(remaining);
+        for(unsigned int i=0; i<grafo.size(); i++) {
+          if(grafo[i].active) {
+
+            oldi = new2old[i];
+            tmpnewi = tmp_old2new[oldi];
+            tmpgrafo[tmpnewi].dist = grafo[i].dist;
+            tmpgrafo[tmpnewi].active = true;
+            for (int v: grafo[i].adj) {
+              if(grafo[v].active) {
+                oldv = new2old[v];
+                tmpnewv = tmp_old2new[oldv];
+                tmpgrafo[tmpnewi].adj.push_back(tmpnewv);
+              }
+            }
+          }
+        }
+
+        grafo.clear();
+        grafo.swap(tmpgrafo);
+        destroy.clear();
+      }
+
+      new2old.clear();
+      old2new.clear();
+
+      tmp_new2old.swap(new2old);
+      tmp_old2new.swap(old2new);
+
+
+      if(debug) {
+        console->debug("map indexes");
+        console->debug("old2new.size() is {}", old2new.size());
+
+        for (auto const& pp : old2new) {
+          console->debug("{0:d} => {1:d}, {2:d} => {3:d}",
+                         pp.first,
+                         pp.second,
+                         pp.second,
+                         new2old[pp.second]);
+        }
+        console->debug("~~~");
+      }
+
+      // *********************************************************************
+      // get remapped source node (S)
+      newS = get_remapped_node_or_fail(S, old2new);
+      console->info("S: {0}, newS: {1}", S, newS);
+      // ********** end: get remapped source node (S)
+    }
   } else {
     console->info("Running on the whole network");
     // we have the original network
