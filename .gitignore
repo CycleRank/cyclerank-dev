@@ -1,7 +1,7 @@
 # ignore data, logs, misc directories
-data/
-logs/
-misc/
+data
+logs
+misc
 
 # ignore txt and csv files in the repo root (input/output files)
 *.txt
