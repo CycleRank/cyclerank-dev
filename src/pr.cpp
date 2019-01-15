@@ -212,7 +212,6 @@ int main(int argc, const char* argv[]) {
   bool transposed = false;
   bool undirected = false;
   bool directed = true;
-  bool wholenetwork = false;
   bool forcebfstransposed = false;
 
   try {
@@ -241,8 +240,6 @@ int main(int argc, const char* argv[]) {
        "transposed network. This is needed only if -u is specified, " \
        "otherwise it is effectively ignored.",
        cxxopts::value(forcebfstransposed))
-      ("w,whole-network", "Run on the whole network (ignore K).",
-       cxxopts::value(wholenetwork))
       ;
 
     auto arguments = options->parse(argc, argv);
@@ -285,7 +282,6 @@ int main(int argc, const char* argv[]) {
   console->debug("transposed: {}", transposed);
   console->debug("undirected: {}", undirected);
   console->debug("directed: {}", directed);
-  console->debug("whole-network: {}", wholenetwork);
   // ********** end: start logging
 
   // *************************************************************************
@@ -424,10 +420,10 @@ int main(int argc, const char* argv[]) {
   //   igraph_integer_t n, igraph_bool_t directed);
   igraph_create(&igrafo, &iedges, num_nodes, directed);
 
-  igraph_vector_t pprscore;
+  igraph_vector_t prscore;
 
   // init result vector
-  igraph_vector_init(&pprscore, 0);
+  igraph_vector_init(&prscore,  0);
 
   /*
   * int igraph_pagerank(
@@ -466,7 +462,7 @@ int main(int argc, const char* argv[]) {
   ret=igraph_pagerank(
      &igrafo,                         // const igraph_t *graph
      IGRAPH_PAGERANK_ALGO_PRPACK,     // igraph_pagerank_algo_t algo
-     &pprscore,                       // igraph_vector_t *vector
+     &prscore,                        // igraph_vector_t *vector
      0,                               // igraph_real_t *value
      igraph_vss_all(),                // const igraph_vs_t vids
      directed,                        // igraph_bool_t directed
@@ -481,13 +477,7 @@ int main(int argc, const char* argv[]) {
   FILE* outfp;
   outfp = fopen(output_file.c_str(), "w+");
   for (unsigned int i=0; i<num_nodes; i++) {
-    int oldi;
-    if(!wholenetwork) {
-      oldi = new2old[i];
-    } else {
-      oldi = i;
-    }
-    fprintf(outfp, "score(%d):\t%.10f\n", oldi, VECTOR(pprscore)[i]);
+    fprintf(outfp, "score(%d):\t%.10f\n", i, VECTOR(prscore)[i]);
   }
 
   console->info("Log stop!");
