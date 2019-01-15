@@ -296,8 +296,6 @@ int main(int argc, const char* argv[]) {
   map<int,int> old2new;
   vector<int> new2old;
 
-  int count_destroied = 0;
-
   // *************************************************************************
   // read input
   {
@@ -426,6 +424,8 @@ int main(int argc, const char* argv[]) {
   //   igraph_integer_t n, igraph_bool_t directed);
   igraph_create(&igrafo, &iedges, num_nodes, directed);
 
+  igraph_vector_t pprscore;
+
   // init result vector
   igraph_vector_init(&pprscore, 0);
 
@@ -463,7 +463,7 @@ int main(int argc, const char* argv[]) {
   */
 
   int ret = -1;
-  ret=igraph_personalized_pagerank(
+  ret=igraph_pagerank(
      &igrafo,                         // const igraph_t *graph
      IGRAPH_PAGERANK_ALGO_PRPACK,     // igraph_pagerank_algo_t algo
      &pprscore,                       // igraph_vector_t *vector
