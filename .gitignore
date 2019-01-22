@@ -6,6 +6,7 @@ misc
 # ignore txt and csv files in the repo root (input/output files)
 *.txt
 *.csv
+*.csv.gz
 
 # ignore log files in the repo root (input/output files)
 *.log
