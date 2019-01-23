@@ -17,7 +17,7 @@ if __name__ == '__main__':
                         help='Graph file.')
     parser.add_argument('-d', '--delimiter',
                         type=str,
-                        default=' ',
+                        default='\t',
                         help='output file name [default: stdout].')
     parser.add_argument('--skip-header',
                         action='store_true',
