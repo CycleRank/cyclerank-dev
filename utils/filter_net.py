@@ -7,6 +7,12 @@ import argparse
 import pathlib
 import itertools
 
+ALLOWED_FIELDS = set(['source_id',
+                      'source_title',
+                      'target_id',
+                      'target_title'
+                      ])
+
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(
@@ -18,14 +24,22 @@ if __name__ == '__main__':
     parser.add_argument('-d', '--delimiter',
                         type=str,
                         default='\t',
-                        help='output file name [default: stdout].')
+                        help="Graph file delimiter [default: '\t'].")
     parser.add_argument('--skip-header',
                         action='store_true',
                         help='Skip graph file header.')
 
     parser.add_argument('-o', '--output',
                         type=pathlib.Path,
-                        help='output file name [default: stdout].')
+                        help='Output file name [default: stdout].')
+    parser.add_argument('--print',
+                        type=str,
+                        nargs='+',
+                        help='Output format.')
+    parser.add_argument('--output-delimiter',
+                        type=str,
+                        default='\t',
+                        help="Output file delimiter [default: '\t'].")
 
     parser.add_argument('--match-titles',
                         action='store_true',
@@ -55,51 +69,118 @@ if __name__ == '__main__':
     parser.add_argument('--snapshot-delimiter',
                         type=str,
                         default='\t',
-                        help="Wikipedia snapshot delimiter [default: ' ']."
+                        help="Wikipedia snapshot delimiter [default: '\t']."
                         )
 
     parser.add_argument('--map',
                         type=pathlib.Path,
                         help="Map new ids to old ids."
                         )
+    parser.add_argument('--map-delimiter',
+                        type=str,
+                        default=' ',
+                        help="Map file delimiter [default: ' ']."
+                        )
+    parser.add_argument('--mapped-snapshot',
+                        action='store_true',
+                        help="Use mapped ids for the snapshot file."
+                        )
 
 
     args = parser.parse_args()
-    print(args)
 
     graphfile = args.GRAPH
     filterfile = args.filter
-    snapshot = args.snapshot
-    mapo2n = args.map
+    snapshotfile = args.snapshot
+    mapfile = args.map
     K = args.K
     output = args.output
+    output_fields = args.print
 
-    with graphfile.open('r') as graphfp:
-        reader = csv.reader(graphfp, delimiter=args.delimiter)
-        if args.skip_header:
-            next(reader)
-        foo = [_ for _ in reader]
-        import ipdb; ipdb.set_trace()
+    assert (set(output_fields) <= ALLOWED_FIELDS)
 
-    ids = set()
-    titles = set()
+    graphfp = graphfile.open('r')
+    graph_reader = csv.reader(graphfp, delimiter=args.delimiter)
+    if args.skip_header:
+        next(reader)
+
+    tofilter = set()
     with filterfile.open('r') as filterfp:
-        reader = csv.reader(filterfp, delimiter=args.filter_delimiter)
+        filter_reader = csv.reader(filterfp, delimiter=args.filter_delimiter)
+        for line in filter_reader:
+            # if (K is None) or (K and len(line) >= K)
+            if not K or len(line) >= K:
+                for el in line:
+                    if args.match_titles:
+                        tofilter.add(el)
+                    else:
+                        tofilter.add(int(el))
+
+    snapshot = dict()
+    with snapshotfile.open('r') as snapfp:
+        snap_reader = csv.reader(snapfp, delimiter=args.snapshot_delimiter)
+        snapshot = dict([(int(line[0]), line[1])
+                         for line in snap_reader])
+
+    mapo2n = dict()
+    if mapfile:
+        with mapfile.open('r') as mapfp:
+            map_reader = csv.reader(mapfp, delimiter=args.map_delimiter)
+            smapo2n = dict([(int(line[0]), line[1])
+                            for line in map_reader])
+
+
+    outfile = None
+    if output is None:
+        outfile = sys.stdout
+    else:
+        outfile = output.open('w+')
+
+    outwriter = csv.DictWriter(outfile,
+                               delimiter=args.output_delimiter,
+                               fieldnames=output_fields)
+    outwriter.writeheader()
+
+    for line in graph_reader:
+        fullout = None
+        if len(line) == 2:
+            # graph file is just: source, target
+            if args.match_titles:
+                source_title, target_title = line[0], line[1]
+            else:
+                source, target = int(line[0]), int(line[1])
+                source_title = snapshot[source]
+                target_title = snapshot[target]
+        elif len(line) == 4:
+            # graph file is: source_id, source_title, target_id, target_title
+            source, target = int(line[0]), int(line[2])
+            source_title = snapshot[source]
+            target_title = snapshot[target]
+
         if args.match_titles:
-            titles = set([title for title
-                          in itertools.chain.from_iterable([_ for _ in reader])
-                          ])
+            if source_title == target_title:
+                continue
         else:
-            ids = set([int(idx) for idx
-                       in itertools.chain.from_iterable([_ for _ in reader])
-                       ])
+            if source == target:
+                continue
 
-    snapshotdict = dict()
-    with snapshot.open('r') as snapfp:
-        reader = csv.reader(snapfp, delimiter=args.snapshot_delimiter)
-        snapshotdict = dict([(int(line[0]), line[1]) 
-                             for line in reader])
+        if args.match_titles:
+            if source_title in tofilter and target_title in tofilter:
+                fullout = {'source_title': source_title,
+                           'target_title': target_title
+                           }
+        else:
+            if source in tofilter and target in tofilter:
+                fullout = {'source_id': source,
+                           'source_title': source_title,
+                           'target_id': target,
+                           'target_title': target_title
+                           }
 
-    import ipdb; ipdb.set_trace()
+        if fullout:
+            out = {key: fullout[key]
+                   for key in output_fields}
+
+            outwriter.writerow(out)
 
     exit(0)
