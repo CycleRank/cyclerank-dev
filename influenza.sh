@@ -39,13 +39,15 @@ for lang in "${langs[@]}"; do
 
       title="${INFLUENZA["$lang"]}"
 
+      echo "Page to search for ${title} (${lang})"
       echo "Processing ${lang}wiki.wikigraph.snapshot.${year}-${month}-${day}.csv ..."
 
       # shellcheck disable=SC2002
       \cat "${lang}wiki.wikigraph.snapshot.${year}-${month}-${day}.csv" \
         | dos2unix \
         | grep -E -i '^[0-9]+\s+'"$title"'$' \
-        > "influenza/${lang}wiki.influenza.keywords.${year}-${month}-${day}.txt"
+        > "influenza/${lang}wiki.influenza.keywords.${year}-${month}-${day}.txt" \
+        || true
     )
   done
 done
