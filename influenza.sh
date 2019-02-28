@@ -22,9 +22,9 @@ declare -A INFLUENZA=( \
 ['sv']='Influensa' \
 )
 
-for key in "${!INFLUENZA[@]}"; do
-  echo "$key: ${INFLUENZA["$key"]}"
-done
+# for key in "${!INFLUENZA[@]}"; do
+#   echo "$key: ${INFLUENZA["$key"]}"
+# done
 
 adate='20180301'
 month='03'; day='01'
@@ -37,12 +37,14 @@ for lang in "${langs[@]}"; do
       cd "${lang}wiki/${adate}/${year}-${month}-${day}"
       mkdir -pv influenza
 
+      title="${INFLUENZA["$lang"]}"
+
       echo "Processing ${lang}wiki.wikigraph.snapshot.${year}-${month}-${day}.csv ..."
 
       # shellcheck disable=SC2002
       \cat "${lang}wiki.wikigraph.snapshot.${year}-${month}-${day}.csv" \
         | dos2unix \
-        | grep -E -i '^[0-9]+\s+Influenza$' \
+        | grep -E -i '^[0-9]+\s+'"$title"'$' \
         > "influenza/${lang}wiki.influenza.keywords.${year}-${month}-${day}.txt"
     )
   done
