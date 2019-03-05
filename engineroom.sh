@@ -279,7 +279,7 @@ for title in "${!pages[@]}"; do
            "-k" "$MAXLOOP" \
            )
 
-  if $debug_flag || $verbose_flag; then set -x; fi 
+  if $debug_flag || $verbose_flag; then set -x; fi
   if $debug_flag; then
     "${command[@]}" | tee "${logfile}"
   else
