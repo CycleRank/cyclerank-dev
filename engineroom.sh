@@ -262,13 +262,14 @@ for title in "${!pages[@]}"; do
   idx="${pages[$title]}"
   normtitle="${title/ /_}"
 
+  echo "Logging to ${OUTPUTDIR}/${PROJECT}.looprank.${normtitle}.${MAXLOOP}.${DATE}.log"
   if $debug_flag; then set -x; fi
   ./pageloop_back_map_noscore \
     -d \
     -f "$INPUT_GRAPH" \
     -o "${OUTPUTDIR}/${PROJECT}.looprank.${normtitle}.${MAXLOOP}.${DATE}.txt" \
     -s "${idx}" \
-    -k 4 | tee "${OUTPUTDIR}/${PROJECT}.looprank.${normtitle}.${MAXLOOP}.${DATE}.log"
+    -k 4 > "${OUTPUTDIR}/${PROJECT}.looprank.${normtitle}.${MAXLOOP}.${DATE}.log"
   if $debug_flag; then set +x; fi
 
 done
