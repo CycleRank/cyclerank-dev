@@ -98,6 +98,7 @@ Arguments:
 
 Options:
   -d                  Enable debug output.
+  -v                  Enable verbose output.
   -k MAXLOOP          Max loop length (K) [default: 4].
   -l PROJECT          Project name [default: infer from pages list].
   -D DATE             Date [default: infer from input graph].
@@ -115,6 +116,7 @@ pageslist_unset=true
 project_set=false
 date_set=false
 debug_flag=false
+verbose_flag=false
 help_flag=false
 
 INPUT_GRAPH=''
@@ -123,7 +125,7 @@ PAGES_LIST=''
 PROJECT=''
 MAXLOOP=4
 
-while getopts ":dD:hi:k:l:o:p:" opt; do
+while getopts ":dD:hi:k:l:o:p:v" opt; do
   case $opt in
     d)
       debug_flag=true
@@ -163,6 +165,9 @@ while getopts ":dD:hi:k:l:o:p:" opt; do
       check_file "$OPTARG" '-p'
 
       PAGES_LIST="$OPTARG"
+      ;;
+    v)
+      verbose_flag=true
       ;;
     \?)
       (>&2 echo "Error. Invalid option: -$OPTARG")
@@ -245,6 +250,7 @@ echodebug
 
 echodebug "Options:"
 echodebug "  * debug_flag (-d): $debug_flag"
+echodebug "  * verbose_flag (-v): $verbose_flag"
 echodebug "  * DATE (-D): $DATE"
 echodebug "  * PROJECT (-l): $PROJECT"
 echodebug "  * MAXLOOP (-k): $MAXLOOP"
@@ -262,14 +268,23 @@ for title in "${!pages[@]}"; do
   idx="${pages[$title]}"
   normtitle="${title/ /_}"
 
-  echo "Logging to ${OUTPUTDIR}/${PROJECT}.looprank.${normtitle}.${MAXLOOP}.${DATE}.log"
-  if $debug_flag; then set -x; fi
-  ./pageloop_back_map_noscore \
-    -d \
-    -f "$INPUT_GRAPH" \
-    -o "${OUTPUTDIR}/${PROJECT}.looprank.${normtitle}.${MAXLOOP}.${DATE}.txt" \
-    -s "${idx}" \
-    -k 4 > "${OUTPUTDIR}/${PROJECT}.looprank.${normtitle}.${MAXLOOP}.${DATE}.log"
-  if $debug_flag; then set +x; fi
+  logfile="${OUTPUTDIR}/${PROJECT}.looprank.${normtitle}.${MAXLOOP}.${DATE}.log"
+  echo "Logging to ${logfile}"
+
+  command=("./pageloop_back_map_noscore" \
+           "-d" \
+           "-f" "$INPUT_GRAPH" \
+           "-o" "${OUTPUTDIR}/${PROJECT}.looprank.${normtitle}.${MAXLOOP}.${DATE}.txt" \
+           "-s" "${idx}" \
+           "-k" "$MAXLOOP" \
+           )
+
+  if $debug_flag || $verbose_flag; then set -x; fi 
+  if $debug_flag; then
+    "${command[@]}" | tee "${logfile}"
+  else
+    "${command[@]}" >  "${logfile}"
+  fi
+  if $debug_flag || $verbose_flag; then set +x; fi
 
 done
