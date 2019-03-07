@@ -100,6 +100,7 @@ Options:
   -d                  Enable debug output.
   -v                  Enable verbose output.
   -k MAXLOOP          Max loop length (K) [default: 4].
+  -w                  Compute the pagerank on the whole network.
   -l PROJECT          Project name [default: infer from pages list].
   -D DATE             Date [default: infer from input graph].
   -h                  Show this help and exits.
@@ -118,6 +119,7 @@ date_set=false
 debug_flag=false
 verbose_flag=false
 help_flag=false
+wholenetwork=false
 
 INPUT_GRAPH=''
 OUTPUTDIR=''
@@ -125,7 +127,7 @@ PAGES_LIST=''
 PROJECT=''
 MAXLOOP=4
 
-while getopts ":dD:hi:k:l:o:p:v" opt; do
+while getopts ":dD:hi:k:l:o:p:vw" opt; do
   case $opt in
     d)
       debug_flag=true
@@ -168,6 +170,9 @@ while getopts ":dD:hi:k:l:o:p:v" opt; do
       ;;
     v)
       verbose_flag=true
+      ;;
+    w)
+      wholenetwork=true
       ;;
     \?)
       (>&2 echo "Error. Invalid option: -$OPTARG")
@@ -254,6 +259,7 @@ echodebug "  * verbose_flag (-v): $verbose_flag"
 echodebug "  * DATE (-D): $DATE"
 echodebug "  * PROJECT (-l): $PROJECT"
 echodebug "  * MAXLOOP (-k): $MAXLOOP"
+echodebug "  * wholenetwork (-w): $wholenetwork"
 echodebug
 
 echodebug "Pages from $PROJECT ($DATE):"
@@ -271,12 +277,18 @@ for title in "${!pages[@]}"; do
   logfile="${OUTPUTDIR}/${PROJECT}.looprank.${normtitle}.${MAXLOOP}.${DATE}.log"
   echo "Logging to ${logfile}"
 
+  wholenetwork_flag=''
+  if $wholenetwork; then
+    wholenetwork_flag='-w'
+  fi
+
   command=("./ssppr" \
            "-d" \
            "-f" "$INPUT_GRAPH" \
-           "-o" "${OUTPUTDIR}/${PROJECT}.looprank.${normtitle}.${MAXLOOP}.${DATE}.txt" \
+           "-o" "${OUTPUTDIR}/${PROJECT}.ssppr.${normtitle}.${MAXLOOP}.${DATE}.txt" \
            "-s" "${idx}" \
            "-k" "$MAXLOOP" \
+           ${wholenetwork_flag:-}
            )
 
   if $debug_flag || $verbose_flag; then set -x; fi
