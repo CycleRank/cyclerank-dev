@@ -274,7 +274,7 @@ for title in "${!pages[@]}"; do
   idx="${pages[$title]}"
   normtitle="${title/ /_}"
 
-  logfile="${OUTPUTDIR}/${PROJECT}.looprank.${normtitle}.${MAXLOOP}.${DATE}.log"
+  logfile="${OUTPUTDIR}/${PROJECT}.ssppr.${normtitle}.${MAXLOOP}.${DATE}.log"
   echo "Logging to ${logfile}"
 
   wholenetwork_flag=''
