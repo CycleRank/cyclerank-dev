@@ -288,7 +288,7 @@ for title in "${!pages[@]}"; do
            "-o" "${OUTPUTDIR}/${PROJECT}.ssppr.${normtitle}.${MAXLOOP}.${DATE}.txt" \
            "-s" "${idx}" \
            "-k" "$MAXLOOP" \
-           ${wholenetwork_flag:-}
+           ${wholenetwork_flag[@]:+"${wholenetwork_flag[@]}"}
            )
 
   if $debug_flag || $verbose_flag; then set -x; fi
