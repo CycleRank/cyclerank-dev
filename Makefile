@@ -1,14 +1,14 @@
-SRC_DIR := src
-OBJ_DIR := obj
-SRC_FILES := $(wildcard $(SRC_DIR)/*.cpp)
-OBJ_FILES := $(patsubst $(SRC_DIR)/%.cpp,$(OBJ_DIR)/%.o,$(SRC_FILES))
-LDFLAGS := -I/usr/local/include/igraph -L/usr/local/lib -ligraph
-CPPFLAGS := -Wall -std=c++11 -O2 -pthread
-CXXFLAGS := 
+help:
+	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
 
-main.exe: $(OBJ_FILES)
-	g++ $(LDFLAGS) -o $@ $^
+build: pageloop_back_map ## Generates pageloop_back_map binary
 
-$(OBJ_DIR)/%.o: $(SRC_DIR)/%.cpp
-	g++ $(CPPFLAGS) $(CXXFLAGS) -c -o $@ $<
+pageloop_back_map: src/pageloop_back_map.cpp
+	${CXX} -Wall -Werror -std=c++11 -O2 -flto -pipe \
+			-pthread \
+			-Ilibs \
+			-o pageloop_back_map \
+			src/pageloop_back_map.cpp
 
+clean:  ## Remove generated binary and object files
+	rm -f pageloop_back_map
