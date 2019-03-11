@@ -39,6 +39,10 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(
         description='Map wikipedia page ids to page titles.')
 
+    parser.add_argument('-i', '--input',
+                        type=pathlib.Path,
+                        help='File with scores [default: read from stdin].'
+                        )
     parser.add_argument('-s', '--snapshot',
                         type=pathlib.Path,
                         required=True,
@@ -66,8 +70,14 @@ if __name__ == '__main__':
         snapshot = dict((int(l[0]), l[1]) for l in reader)
 
     all_outlines = []
+    infile = None
+    if args.input:
+        infile = open(args.input, 'r')
+    else:
+        infile = sys.stdin
+
     try:
-        for line in sys.stdin:
+        for line in infile:
             title, score = process_line(line)
 
             if title:
