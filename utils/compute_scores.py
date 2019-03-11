@@ -9,6 +9,23 @@ from collections import defaultdict
 
 NDIGITS = 5
 
+def linear_score(scores, cycle):
+    csize = len(cycle)
+    for node in cycle:
+        scores[node] += 1.0/csize
+
+
+def square_score(scores, cycle):
+    csize = len(cycle)
+    for node in cycle:
+        scores[node] += 1.0/(csize*csize)
+
+
+SCORING_FUNCTIONS = {
+'linear': linear_score,
+'square': square_score,
+}
+
 
 if __name__ == '__main__':
     desc = 'Assign score to pageloop cyles.'
@@ -17,22 +34,25 @@ if __name__ == '__main__':
     parser.add_argument('FILE',
                         type=pathlib.Path,
                         help='Input file (w/ pageloop cycles).')
-
-    parser.add_argument('-o', '--output',
-                        type=pathlib.Path,
-                        help='output file name [default: stdout].')
-
     parser.add_argument('-k', '--maxloop',
                         type=int,
                         dest='K',
                         help='Limit cycles to this length (K) '
                              '[default: No limit].')
+    parser.add_argument('-o', '--output',
+                        type=pathlib.Path,
+                        help='output file name [default: stdout].')
+    parser.add_argument('-f', '--scoring-function',
+                        choices=list(SCORING_FUNCTIONS.keys()),
+                        default='linear',
+                        help='Scoring function [default: linear]')
 
     args = parser.parse_args()
 
     infile = args.FILE
     output = args.output
     K = args.K
+    scoring_function = SCORING_FUNCTIONS[args.scoring_function]
 
     scores = defaultdict(float)
     with infile.open('r') as infp:
@@ -44,8 +64,7 @@ if __name__ == '__main__':
 
             cycle = [int(node) for node in cycle]
 
-            for node in cycle:
-                scores[node] += 1.0/csize
+            scoring_function(scores, cycle)
 
     outfile = None
     if output is None:
