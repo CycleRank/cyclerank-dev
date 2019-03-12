@@ -10,7 +10,7 @@ import itertools
 ALLOWED_FIELDS = set(['source_id',
                       'source_title',
                       'target_id',
-                      'target_title'
+                      'target_title',
                       ])
 
 
@@ -32,11 +32,21 @@ if __name__ == '__main__':
     parser.add_argument('-o', '--output',
                         type=pathlib.Path,
                         help='Output file name [default: stdout].')
-    parser.add_argument('--print',
+    parser.add_argument('--select',
                         type=str,
                         nargs='+',
                         required=True,
-                        help='Output format.')
+                        help='Filter selected as output.')
+    group = parser.add_mutually_exclusive_group()
+    group.add_argument('--output-header',
+                        type=str,
+                        nargs='*',
+                        help='Column names for the output file [default: '
+                             'selected fields].')
+    group.add_argument('--suppress-output-header',
+                        action='store_true',
+                        help='Do no print the header in the output.')
+
     parser.add_argument('--output-delimiter',
                         type=str,
                         default='\t',
@@ -96,9 +106,15 @@ if __name__ == '__main__':
     mapfile = args.map
     K = args.K
     output = args.output
-    output_fields = args.print
+    select_fields = args.select
+    output_header = args.output_header
 
-    assert (set(output_fields) <= ALLOWED_FIELDS)
+    assert (set(select_fields) <= ALLOWED_FIELDS), \
+           'Some selected fields were not recognized.'
+
+    assert (len(select_fields) ==  len(output_header)), \
+           ('The number of fields in the output header must match the number '
+            'of selected fields')
 
     graphfp = graphfile.open('r')
     graph_reader = csv.reader(graphfp, delimiter=args.delimiter)
@@ -139,8 +155,13 @@ if __name__ == '__main__':
 
     outwriter = csv.DictWriter(outfile,
                                delimiter=args.output_delimiter,
-                               fieldnames=output_fields)
-    outwriter.writeheader()
+                               fieldnames=select_fields)
+
+    if not args.suppress_output_header:
+        if output_header is not None:
+            outwriter.writerow(dict(zip(select_fields, output_header)))
+        else:
+            outwriter.writeheader()
 
     for line in graph_reader:
         fullout = None
@@ -180,7 +201,7 @@ if __name__ == '__main__':
 
         if fullout:
             out = {key: fullout[key]
-                   for key in output_fields}
+                   for key in select_fields}
 
             outwriter.writerow(out)
 
