@@ -35,6 +35,7 @@ if __name__ == '__main__':
     parser.add_argument('--print',
                         type=str,
                         nargs='+',
+                        required=True,
                         help='Output format.')
     parser.add_argument('--output-delimiter',
                         type=str,
@@ -102,7 +103,7 @@ if __name__ == '__main__':
     graphfp = graphfile.open('r')
     graph_reader = csv.reader(graphfp, delimiter=args.delimiter)
     if args.skip_header:
-        next(reader)
+        next(graph_reader)
 
     tofilter = set()
     with filterfile.open('r') as filterfp:
