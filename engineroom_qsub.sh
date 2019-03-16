@@ -352,13 +352,12 @@ for title in "${!pages[@]}"; do
   idx="${pages[$title]}"
   normtitle="${title/ /_}"
 
-  pbsjobname="$idx"
+  pbsjobname="lr_${MAXLOOP}_$idx"
 
   logfile="${OUTPUTDIR}/${PROJECT}.looprank.${normtitle}.${MAXLOOP}.${DATE}.log"
   echo "Logging to ${logfile}"
 
   command=("./pageloop_back_map_noscore" \
-           "-d" \
            "-f" "$INPUT_GRAPH" \
            "-o" "${OUTPUTDIR}/${PROJECT}.looprank.${normtitle}.${MAXLOOP}.${DATE}.txt" \
            "-s" "${idx}" \
