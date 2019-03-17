@@ -87,7 +87,7 @@ if __name__ == '__main__':
     print('* Read the "snapshot" file: ', file=sys.stderr)
     snap_id2title = dict()
     snap_title2id = dict()
-    snaplen = count_file_lines(idmap_file)
+    snaplen = count_file_lines(snapshot_file)
     with tqdm.tqdm(total=snaplen) as pbar:
         with snapshot_file.open('r') as snapfp:
             snapreader = csv.DictReader(snapfp,
