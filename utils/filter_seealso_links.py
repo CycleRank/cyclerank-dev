@@ -9,6 +9,22 @@ import subprocess
 from collections import defaultdict
 
 
+# Create (sane/safe) filename from any (unsafe) string
+# https://stackoverflow.com/a/7406369/2377454
+def safe_filename(filename):
+ eliminate_chars = ('/')
+ return "".join(c for c in filename
+                if c not in eliminate_chars).rstrip()
+
+
+def normalize_title(title):
+    norm_title = title[0].upper() + title[1:]
+    norm_title = norm_title.replace('_', ' ')
+    norm_title = ' '.join(norm_title.split())
+
+    return norm_title
+
+
 # How to get line count cheaply in Python?
 # https://stackoverflow.com/a/45334571/2377454
 def count_file_lines(file_path):
@@ -132,14 +148,25 @@ if __name__ == '__main__':
 
             for data in sareader:
                 seealso_page_oldid = int(data['page_id'])
-                link_title = data['wikilink.link']
+
+                if not data['wikilink.link']:
+                    continue
+
+                link_title = normalize_title(data['wikilink.link'])
+
+                if not link_title:
+                    import ipdb; ipdb.set_trace()
+
                 is_active = True if int(data['wikinlink.is_active']) == 1 \
                                  else False
 
                 seealso_page_newid = idmap_o2n[seealso_page_oldid]
 
                 if is_active and seealso_page_newid in filter_newids:
-                    link_id = snap_title2id[link_title]
+                    try:
+                        link_id = snap_title2id[link_title]
+                    except KeyError:
+                        import ipdb; ipdb.set_trace()
                     (seealso_links[seealso_page_newid]
                      .append((link_id, link_title))
                      )
@@ -149,9 +176,10 @@ if __name__ == '__main__':
     for sa_newid, link_list in seealso_links.items():
         sa_title = snap_id2title[sa_newid]
 
+        safe_title = safe_filename(sa_title.replace(' ', '_'))
         outfile = ('{lang}.comparison.{title}.seealso.txt'
                    .format(lang='enwiki',
-                           title=sa_title.replace(' ', '_'))
+                           title=safe_title)
                    )
         with open(outfile, 'w+') as outfp:
             writer = csv.writer(outfp, delimiter='\t')
