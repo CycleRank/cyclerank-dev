@@ -14,6 +14,8 @@ ALGOS = ('looprank', 'ssppr')
 SCORES_FILENAMES = {'looprank': 'enwiki.{algo}.{title}.4.2018-03-01.scores.txt',
                     'ssppr': 'enwiki.{algo}.{title}.4.2018-03-01.txt',
                     }
+OUTPUT_FILENAME = 'enwiki.{algo}.{title}.2018-03-01.compare_lr-pr.txt'
+
 
 # How to get line count cheaply in Python?
 # https://stackoverflow.com/a/45334571/2377454
@@ -66,6 +68,11 @@ if __name__ == '__main__':
                         type=pathlib.Path,
                         default=pathlib.Path('.'),
                         help='Directory with the link files [default: .]'
+                        )
+    parser.add_argument('--output-dir',
+                        type=pathlib.Path,
+                        default=pathlib.Path('.'),
+                        help='Directory where to put output files [default: .]'
                         )
     parser.add_argument('--scores-dir',
                         type=pathlib.Path,
@@ -157,21 +164,26 @@ if __name__ == '__main__':
 
             print('      * Print results for algo {}:'.format(algo),
                   file=sys.stderr)
-            outline = '{pos}\t{title}\t{lid}\t{score}\n'
-            try:
+
+            output_dir = args.output_dir
+            output_filename = (OUTPUT_FILENAME.format(algo=algo,
+                               title=title.replace(' ', '_'))
+                               )
+            output_file = output_dir/output_filename
+
+            with output_file.open('w+') as outfp:
+                outwriter = csv.writer(outfp, delimiter='\t')
                 for lid in link_positions:
                     link_title = snapshot[lid]
                     link_pos = link_positions[lid]
                     link_score = scores[lid]
-                    sys.stdout.write(outline.format(pos=link_pos,
-                                                    title=link_title,
-                                                    lid=lid,
-                                                    score=repr(link_score)
-                                                    )
-                                     )
 
-            except IOError as err:
-                if err.errno == errno.EPIPE:
-                    pass
+                    # 'pos title lid score'
+                    outwriter((link_pos,
+                               link_title,
+                               lid,
+                               repr(link_score)
+                               )
+                              )
 
     exit(0)
