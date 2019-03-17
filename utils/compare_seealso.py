@@ -1,11 +1,32 @@
 #!/usr/bin/env python3
 
+import re
 import sys
 import csv
-import re
+import tqdm
 import argparse
 import pathlib
 import itertools
+import subprocess
+
+
+ALGOS = ('looprank', 'ssppr')
+SCORES_FILENAMES = {'looprank': 'enwiki.{algo}.{title}.4.2018-03-01.scores.txt',
+                    'ssppr': 'enwiki.{algo}.{title}.4.2018-03-01.txt',
+                    }
+
+# How to get line count cheaply in Python?
+# https://stackoverflow.com/a/45334571/2377454
+def count_file_lines(file_path):
+    """
+    Counts the number of lines in a file using wc utility.
+    :param file_path: path to file
+    :return: int, no of lines
+    """
+    num = subprocess.check_output(['wc', '-l', file_path])
+    num = num.decode('utf-8').strip().split(' ')
+    return int(num[0])
+
 
 # Regex:
 #  score(<pageid>):<spaces><score>
@@ -37,19 +58,19 @@ def process_line(line):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(
         description='Map wikipedia page ids to page titles.')
-
     parser.add_argument('-i', '--input',
                         type=pathlib.Path,
                         help='File with scores [default: read from stdin].'
                         )
-    parser.add_argument('-l', '--links',
+    parser.add_argument('-l', '--links-dir',
                         type=pathlib.Path,
-                        help='File with link.'
+                        default=pathlib.Path('.'),
+                        help='Directory with the link files [default: .]'
                         )
-    parser.add_argument('-o', '--output',
+    parser.add_argument('--scores-dir',
                         type=pathlib.Path,
-                        help='Sort results in desceding order. If --sort is '
-                             'not given this option is effectively ignored.'
+                        default=pathlib.Path('.'),
+                        help='Directory with the scores files [default: .]'
                         )
     parser.add_argument('-s', '--snapshot',
                         type=pathlib.Path,
@@ -59,63 +80,98 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
 
-    snapshot_file = args.snapshot
-    with snapshot_file.open('r') as snapfp:
-        reader = csv.reader(snapfp, delimiter='\t')
-        snapshot = dict((int(l[0]), l[1]) for l in reader)
-
-    links_file = args.links
-    with links_file.open('r') as linkfp:
-        reader = csv.reader(linkfp, delimiter='\t')
-        next(reader)
-        links_ids = dict((int(l[1]), l[0]) for l in reader)
-
-    all_outlines = []
+    print('* Read input. ', file=sys.stderr)
     infile = None
     if args.input:
-        infile = open(args.input, 'r')
+        infile = args.input.open('r')
     else:
         infile = sys.stdin
 
-    try:
-        for line in infile:
-            page_id, score = process_line(line)
+    titles = [_.strip() for _ in infile.readlines()]
 
-            if page_id:
-                all_outlines.append((page_id, score))
+    print('* Read the "snapshot" file: ', file=sys.stderr)
+    snapshot_file = args.snapshot
+    snaplen = count_file_lines(snapshot_file)
+    snapshot = dict()
+    with tqdm.tqdm(total=snaplen) as pbar:
+        with snapshot_file.open('r') as snapfp:
+            reader = csv.reader(snapfp, delimiter='\t')
+            for l in reader:
+                snapshot[int(l[0])] = l[1]
+                pbar.update(1)
 
-    except IOError as err:
-        if err.errno == errno.EPIPE:
-            pass
+    print('* Processing titles: ', file=sys.stderr)
+    links_dir = args.links_dir
+    scores_dir = args.scores_dir
+    for title in titles:
+        print('-'*80)
+        print('    - {}'.format(title), file=sys.stderr)
 
-    sorted_lines = sorted(all_outlines,
-                          key=lambda tup: tup[1],
-                          reverse=True
-                          )
-    scores = dict(sorted_lines)
 
-    link_positions = dict()
-    for lid in links_ids:
-        for pos, item in enumerate(sorted_lines):
-            if lid == item[0]:
-                link_positions[lid] = pos + 1
-                break
+        links_filename = ('enwiki.comparison.{title}.seealso.txt'
+                      .format(title=title))
+        links_file = links_dir/links_filename
 
-    outline = '{pos}\t{title}\t{lid}\t{score}\n'
-    try:
-        for lid in link_positions:
-            title = snapshot[lid]
-            pos = link_positions[lid]
-            score = scores[lid]
-            sys.stdout.write(outline.format(pos=pos,
-                                            title=title,
-                                            lid=lid,
-                                            score=repr(score)
-                                            )
-                             )
+        with links_file.open('r') as linkfp:
+            reader = csv.reader(linkfp, delimiter='\t')
+            next(reader)
+            links_ids = dict((int(l[1]), l[0]) for l in reader)
 
-    except IOError as err:
-        if err.errno == errno.EPIPE:
-            pass
+        for  lid in links_ids:
+            link_title = snapshot[lid]
+            print('        > {}'.format(link_title), file=sys.stderr)
+
+        for algo in ALGOS:
+            print('      * Read score ({}) file'.format(algo),
+                  file=sys.stderr)
+            scores_filename = (SCORES_FILENAMES[algo].format(algo=algo,
+                               title=title.replace(' ', '_'))
+                               )
+            scores_file = scores_dir/scores_filename
+
+            all_outlines = []
+            scoreslen = count_file_lines(scores_file)
+            with scores_file.open('r') as scoresfp:
+                with tqdm.tqdm(total=scoreslen, leave=False) as pbar:
+                    for line in scoresfp:
+                        page_id, score = process_line(line)
+
+                        if page_id:
+                            all_outlines.append((page_id, score))
+
+                        pbar.update(1)
+
+
+            sorted_lines = sorted(all_outlines,
+                                  key=lambda tup: tup[1],
+                                  reverse=True
+                                  )
+            scores = dict(sorted_lines)
+
+            link_positions = dict()
+            for lid in links_ids:
+                for pos, item in enumerate(sorted_lines):
+                    if lid == item[0]:
+                        link_positions[lid] = pos + 1
+                        break
+
+            print('      * Print results for algo {}:'.format(algo),
+                  file=sys.stderr)
+            outline = '{pos}\t{title}\t{lid}\t{score}\n'
+            try:
+                for lid in link_positions:
+                    link_title = snapshot[lid]
+                    link_pos = link_positions[lid]
+                    link_score = scores[lid]
+                    sys.stdout.write(outline.format(pos=link_pos,
+                                                    title=link_title,
+                                                    lid=lid,
+                                                    score=repr(link_score)
+                                                    )
+                                     )
+
+            except IOError as err:
+                if err.errno == errno.EPIPE:
+                    pass
 
     exit(0)
