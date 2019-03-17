@@ -59,10 +59,11 @@ def process_line(line):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(
-        description='Map wikipedia page ids to page titles.')
+        description='Compute "See also" position from LR and SSPPR.')
     parser.add_argument('-i', '--input',
                         type=pathlib.Path,
-                        help='File with scores [default: read from stdin].'
+                        help='File with page titles '
+                             '[default: read from stdin].'
                         )
     parser.add_argument('-l', '--links-dir',
                         type=pathlib.Path,
@@ -116,7 +117,7 @@ if __name__ == '__main__':
 
 
         links_filename = ('enwiki.comparison.{title}.seealso.txt'
-                      .format(title=title))
+                          .format(title=title))
         links_file = links_dir/links_filename
 
         with links_file.open('r') as linkfp:
@@ -162,7 +163,7 @@ if __name__ == '__main__':
                         link_positions[lid] = pos + 1
                         break
 
-            print('      * Print results for algo {}:'.format(algo),
+            print('      * Print results for algo {}'.format(algo),
                   file=sys.stderr)
 
             output_dir = args.output_dir
@@ -179,11 +180,11 @@ if __name__ == '__main__':
                     link_score = scores[lid]
 
                     # 'pos title lid score'
-                    outwriter((link_pos,
-                               link_title,
-                               lid,
-                               repr(link_score)
-                               )
-                              )
+                    outwriter.writerow((link_pos,
+                                        link_title,
+                                        lid,
+                                        repr(link_score)
+                                        )
+                                       )
 
     exit(0)
