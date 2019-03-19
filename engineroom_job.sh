@@ -67,6 +67,23 @@ function check_file() {
 
 }
 
+function check_int() {
+  local re='^[0-9]+$'
+  local mynum="$1"
+  local option="$2"
+
+  if ! [[ "$mynum" =~ $re ]] ; then
+     (echo -n "Error in option '$option': " >&2)
+     (echo "must be a positive integer, got $mynum." >&2)
+     exit 1
+  fi
+
+  if ! [ "$mynum" -ge 0 ] ; then
+     (echo "Error in option '$option': must be positive, got $mynum." >&2)
+     exit 1
+  fi
+}
+
 function check_posint() {
   local re='^[0-9]+$'
   local mynum="$1"
@@ -92,11 +109,9 @@ function short_usage() {
   engineroom_job.sh [options] -i INPUT_GRAPH
                               -o OUTPUTDIR
                               -s SNAPSHOT
+                              -l LINKS_DIR
                               -I INDEX
                               -T TITLE
-                              -p PROJECT
-                              -k MAXLOOP
-
 "
   )
 }
@@ -113,6 +128,9 @@ Arguments:
   -i INPUT_GRAPH      Absolute path of the input file.
   -o OUTPUTDIR        Absolute path of the output directory.
   -s SNAPSHOT         Absolute path of the file with the list of pages.
+  -l LINKS_DIR
+  -I INDEX
+  -T TITLE
 
 
 Options:
@@ -120,7 +138,8 @@ Options:
   -D DATE             Date [default: infer from input graph].
   -h                  Show this help and exits.
   -k MAXLOOP          Max loop length (K) [default: 4].
-  -l PROJECT          Project name [default: infer from pages list].
+  -p PROJECT          Project name [default: infer from input graph].
+  -w                  Compute the pagerank on the whole network.
   -n                  Dry run, do not really launch the jobs.
   -v                  Enable verbose output.
 
@@ -132,7 +151,12 @@ Example:
 
 inputgraph_unset=true
 outputdir_unset=true
-pageslist_unset=true
+snapshot_unset=true
+linksdir_unset=true
+index_unset=true
+title_unset=true
+wholenetwork=false
+
 project_set=false
 date_set=false
 debug_flag=false
@@ -142,23 +166,12 @@ dryrun_flag=false
 
 INPUT_GRAPH=''
 OUTPUTDIR=''
-PAGES_LIST=''
+LINKS_DIR=''
+DATE=''
 PROJECT=''
 MAXLOOP=4
 
-# PBS
-pbs_nodes_set=false
-pbs_ppn_set=false
-pbs_ncpus_set=false
-
-PBS_QUEUE='cpuq'
-PBS_NCPUS=''
-PBS_NODES=''
-PBS_PPN=''
-PBS_WALLTIME=''
-PBS_HOST=''
-
-while getopts ":cdD:hH:i:k:l:nN:o:p:P:q:vw:" opt; do
+while getopts ":dD:hi:I:k:l:no:p:s:T:vw" opt; do
   case $opt in
     d)
       debug_flag=true
@@ -177,15 +190,22 @@ while getopts ":cdD:hH:i:k:l:nN:o:p:P:q:vw:" opt; do
 
       INPUT_GRAPH="$OPTARG"
       ;;
+    I)
+      index_unset=false
+      check_int "$OPTARG" '-I'
+
+      INDEX="$OPTARG"
+      ;;
     k)
       check_posint "$OPTARG" '-k'
 
       MAXLOOP="$OPTARG"
       ;;
     l)
-      project_set=true
+      linksdir_unset=false
+      check_dir "$OPTARG" '-l'
 
-      PROJECT="$OPTARG"
+      LINKS_DIR="$OPTARG"
       ;;
     n)
       dryrun_flag=true
@@ -197,13 +217,26 @@ while getopts ":cdD:hH:i:k:l:nN:o:p:P:q:vw:" opt; do
       OUTPUTDIR="$OPTARG"
       ;;
     p)
-      pageslist_unset=false
-      check_file "$OPTARG" '-p'
+      project_set=true
 
-      PAGES_LIST="$OPTARG"
+      PROJECT="$OPTARG"
+      ;;
+    s)
+      snapshot_unset=false
+      check_file "$OPTARG" '-s'
+
+      SNAPSHOT="$OPTARG"
+      ;;
+    T)
+      title_unset=false
+
+      TITLE="$OPTARG"
       ;;
     v)
       verbose_flag=true
+      ;;
+    w)
+      wholenetwork=true
       ;;
     \?)
       (>&2 echo "Error. Invalid option: -$OPTARG")
@@ -227,48 +260,212 @@ if $inputgraph_unset; then
   exit 1
 fi
 
+if $outputdir_unset; then
+  (>&2 echo "Error. Option -o is required.")
+  short_usage
+  exit 1
+fi
+
+if $snapshot_unset; then
+  (>&2 echo "Error. Option -s is required.")
+  short_usage
+  exit 1
+fi
+
+if $linksdir_unset; then
+  (>&2 echo "Error. Option -l is required.")
+  short_usage
+  exit 1
+fi
+
+if $index_unset; then
+  (>&2 echo "Error. Option -I is required.")
+  short_usage
+  exit 1
+fi
+
+if $title_unset; then
+  (>&2 echo "Error. Option -T is required.")
+  short_usage
+  exit 1
+fi
+
+if ! $date_set; then
+  DATE="$(basename "$INPUT_GRAPH" | \
+          grep -Eo '[0-9]{4}-[0-9]{2}-[0-9]{2}\.' | \
+          tr -d '.')" || \
+  (>&2 echo "Error: could not infer date from input. Exiting";
+       exit 2;
+  )
+fi
+
+if ! $project_set; then
+  PROJECT="$(basename "$INPUT_GRAPH" | \
+             grep -Eo '..wiki\.' | \
+             tr -d '.')" || \
+  (>&2 echo "Error: could not infer project name from input. Exiting";
+       exit 2;
+  )
+fi
+
+#################### utils
+if $debug_flag; then
+  function echodebug() {
+    (>&2 echo -en "[$(date '+%F_%H:%M:%S')][debug]\\t")
+    (>&2 echo "$@" 1>&2)
+  }
+else
+  function echodebug() { true; }
+fi
+
+if $dryrun_flag; then
+  function wrap_run() {
+    ( echo -en "[dry run]\\t" )
+    ( echo "$@" )
+  }
+else
+  function wrap_run() { "$@"; }
+fi
+
+function safe_head() {
+  local num="$1"
+  local input="$2"
+
+  if [ "$num" -gt 0 ]; then
+    head -n "$num" "$input" 
+  else
+    cat "$input"
+  fi
+}
+#################### end: utils
+
+#################### debug info
+echodebug "Arguments:"
+echodebug "  * INPUT_GRAPH (-i): $INPUT_GRAPH"
+echodebug "  * OUTPUTDIR (-o): $OUTPUTDIR"
+echodebug "  * SNAPSHOT (-s): $SNAPSHOT"
+echodebug "  * LINKS_DIR (-l): $LINKS_DIR"
+echodebug "  * INDEX (-I): $INDEX"
+echodebug "  * TITLE (-T): $TITLE"
+echodebug
+
+echodebug "Options:"
+echodebug "  * debug_flag (-d): $debug_flag"
+echodebug "  * MAXLOOP (-k): $MAXLOOP"
+echodebug "  * DATE (-D): $DATE"
+echodebug "  * PROJECT (-p): $PROJECT"
+echodebug "  * dryrun_flag (-n): $dryrun_flag"
+echodebug "  * verbose_flag (-v): $verbose_flag"
+echodebug "  * wholenetwork (-w): $wholenetwork"
+echodebug
+
+#################### end: debug info
+
+# create temporary output  directory
+tmpoutdir="${scratch}/output" 
+mkdir -p "${tmpoutdir}"
+echodebug "Created ${tmpoutdir}"
+
+# convert spaces to underscores
+NORMTITLE="${TITLE/ /_}"
+
+##### LoopRank
+outfileLR="${PROJECT}.looprank.${NORMTITLE}.${MAXLOOP}.${DATE}.txt"
+logfileLR="${OUTPUTDIR}/${PROJECT}.looprank.${NORMTITLE}.${MAXLOOP}.${DATE}.log"
+
+verbosity_flagLR=''
+if $debug_flag; then
+  verbosity_flagLR='-d'
+elif $verbose_flag; then
+  verbosity_flagLR='-v'
+fi
+
+commandLR=("$SCRIPTDIR/pageloop_back_map_noscore" \
+           "-f" "${INPUT_GRAPH}" \
+           "-o" "${tmpoutdir}/${outfileLR}" \
+           "-s" "${INDEX}" \
+           "-k" "${MAXLOOP}" \
+           "${verbosity_flagLR:+"$verbosity_flagLR"}"
+           )
+
+if $debug_flag || $verbose_flag; then set -x; fi
+if $debug_flag; then
+  "${commandLR[@]}" | tee "${logfileLR}"
+elif $verbose_flag; then
+  "${commandLR[@]}" >  "${logfileLR}"
+else
+  "${commandLR[@]}"
+fi
+if $debug_flag || $verbose_flag; then set +x; fi
+
+# Compute LoopRank scores
+scorefile="${PROJECT}.looprank.${NORMTITLE}.${MAXLOOP}.${DATE}.scores.txt"
+inputfile="${tmpoutdir}/${outfileLR}"
+
+./utils/compute_scores.py -o "${tmpoutdir}/${scorefile}" "${inputfile}"  
 
 
-outfile="${PROJECT}.looprank.${TITLE}.${MAXLOOP}.${DATE}.txt"
-
-mkdir -pv "${scratch}/output"
-
-
-command=("$SCRIPTDIR/pageloop_back_map_noscore" \
-       "-f" "$INPUT_GRAPH" \
-       "-o" "${scratch}/output/${outfile}" \
-       "-s" "${idx}" \
-       "-k" "$MAXLOOP" \
-       )
-
+##### Single-source Personalized PageRank
 ##############################################################################
-# $ ./utils/compare_seealso.py -h
-# usage: compare_seealso.py [-h] [-i INPUT] [-l LINKS_DIR]
-#                           [--output-dir OUTPUT_DIR] [--scores-dir SCORES_DIR]
-#                           -s SNAPSHOT
-#
-# Compute "See also" position from LR and SSPPR.
-#
-# optional arguments:
-#   -h, --help            show this help message and exit
-#   -i INPUT, --input INPUT
-#                         File with page titles [default: read from stdin].
-#   -l LINKS_DIR, --links-dir LINKS_DIR
-#                         Directory with the link files [default: .]
-#   --output-dir OUTPUT_DIR
-#                         Directory where to put output files [default: .]
-#   --scores-dir SCORES_DIR
-#                         Directory with the scores files [default: .]
-#   -s SNAPSHOT, --snapshot SNAPSHOT
-#                         Wikipedia snapshot with the id-title mapping.
-#
+outfileSSPPR="${PROJECT}.ssppr.${NORMTITLE}.${MAXLOOP}.${DATE}.txt"
+logfileSSPPR="${OUTPUTDIR}/${PROJECT}.ssppr.${NORMTITLE}.${MAXLOOP}.${DATE}.log"
+
+wholenetwork_flag=''
+if $wholenetwork; then
+  wholenetwork_flag='-w'
+fi
+
+commandSSPPR=("$SCRIPTDIR/ssppr" \
+              "-d" \
+              "-f" "${INPUT_GRAPH}" \
+              "-o" "${tmpoutdir}/${outfileSSPPR}" \
+              "-s" "${INDEX}" \
+              "-k" "${MAXLOOP}" \
+              ${wholenetwork_flag[@]:+"${wholenetwork_flag[@]}"}
+              )
+
+if $debug_flag || $verbose_flag; then set -x; fi
+if $debug_flag; then
+  "${commandSSPPR[@]}" | tee "${logfileSSPPR}"
+else
+  "${commandSSPPR[@]}" >  "${logfileSSPPR}"
+fi
+if $debug_flag || $verbose_flag; then set +x; fi
+
+##### Compare See Also
 ##############################################################################
+
+# save page title in scratch/title.txt
+echo "${NORMTITLE}" >> "${scratch}/titles.txt"
+
+if $debug_flag || $verbose_flag; then set -x; fi
 
 "$SCRIPTDIR/utils/compare_seealso.py" \
-  --scores-dir "${scratch}/output" \
-  -i "${scratch}/output/titles.txt" \
-  -s "$SNAPSHOT" \
-  -l "$LINKS"
+  -i "${scratch}/titles.txt" \
+  -l "$LINKS_DIR" \
+  --output-dir "$OUTPUTDIR" \
+  --scores-dir "${tmpoutdir}" \
+  -s "$SNAPSHOT"
 
+if $debug_flag || $verbose_flag; then set +x; fi
+
+
+comparefileLR="${PROJECT}.looprank.${NORMTITLE}.${DATE}.compare_lr-pr.txt"
+maxrowLR="$(LC_ALL=C \
+  awk 'BEGIN{a=0}{if ($1>0+a) a=$1} END{print a}' \
+    "${OUTPUTDIR}/${comparefileLR}"
+  )"
+
+comparefileSSPPR="${PROJECT}.ssppr.${NORMTITLE}.${DATE}.compare_lr-pr.txt"
+maxrowSSPPR="$(LC_ALL=C \
+  awk 'BEGIN{a=0}{if ($1>0+a) a=$1} END{print a}' \
+    "${OUTPUTDIR}/${comparefileSSPPR}"
+  )"
+
+# outfileLR="${PROJECT}.looprank.${NORMTITLE}.${MAXLOOP}.${DATE}.txt"
+# outfileSSPPR="${PROJECT}.ssppr.${NORMTITLE}.${MAXLOOP}.${DATE}.txt"
+
+safe_head "$maxrowLR" "${tmpoutdir}/${outfileLR}" > "${OUTPUTDIR}/${outfileLR}"
+safe_head "$maxrowSSPPR" "${tmpoutdir}/${outfileSSPPR}" > "${OUTPUTDIR}/${outfileSSPPR}"
 
 exit 0
