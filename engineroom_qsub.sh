@@ -490,7 +490,7 @@ for title in "${!pages[@]}"; do
   ############################################################################
   command=("${SCRIPTDIR}/engineroom_job.sh" \
            "-k" "$MAXLOOP" \
-           "-x" "$PYTHON_VERSION" \
+           "-P" "$PYTHON_VERSION" \
            "-V" "$VENV_PATH" \
            "-i" "$INPUT_GRAPH" \
            "-o" "${OUTPUTDIR}" \
