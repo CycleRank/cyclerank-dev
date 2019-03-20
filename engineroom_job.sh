@@ -449,7 +449,7 @@ if $debug_flag || $verbose_flag; then set +x; fi
 scorefileLR="${PROJECT}.looprank.${NORMTITLE}.${MAXLOOP}.${DATE}.scores.txt"
 inputfileLR="${tmpoutdir}/${outfileLR}"
 
-"${SCRIPTDIR}/utils/compute_scores.py" \
+python3 "${SCRIPTDIR}/utils/compute_scores.py" \
   -o "${tmpoutdir}/${scorefileLR}" \
     "${inputfileLR}"
 
@@ -490,7 +490,7 @@ echodebug "${NORMTITLE}"
 
 if $debug_flag || $verbose_flag; then set -x; fi
 
-"$SCRIPTDIR/utils/compare_seealso.py" \
+python3 "$SCRIPTDIR/utils/compare_seealso.py" \
   -i "${scratch}/titles.txt" \
   -l "$LINKS_DIR" \
   --output-dir "$OUTPUTDIR" \
