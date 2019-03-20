@@ -1,9 +1,12 @@
 #!/usr/bin/env bash
+#PBS -V
+#PBS -l walltime=01:00:00
+#PBS -l nodes=1:ncpus=1:ppn=1
+#PBS -q short_cpuQ
 
 # This script does two things:
 #   - Executes the looprank algorithm on the input
 #   - Filters the results to get the see also.
-
 
 #shellcheck disable=SC2128
 SOURCED=false && [ "$0" = "$BASH_SOURCE" ] || SOURCED=true
