@@ -161,7 +161,7 @@ PBS_HOST=''
 MAX_JOBS_PER_BATCH=30
 SLEEP_PER_BATCH=1800
 
-while getopts ":cdD:hH:i:I:k:l:M:nN:o:p:P:q:s:vw:W" opt; do
+while getopts ":cdD:hH:i:I:k:l:M:nN:o:p:P:q:s:S:vw:W" opt; do
   case $opt in
     c)
       check_posint "$OPTARG" '-c'
