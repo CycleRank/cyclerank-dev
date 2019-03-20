@@ -524,8 +524,8 @@ for title in "${!pages[@]}"; do
   counter=$((counter+1))
 
   echodebug "counter: $counter"
-  echo "Sleep for $SLEEP_PER_BATCH seconds... "
   if [[ $((counter % MAX_JOBS_PER_BATCH )) == 0 ]]; then
+    echo "Sleep for $SLEEP_PER_BATCH seconds... "
     secs="$SLEEP_PER_BATCH"
     waitsec=1
     while [ "$secs" -gt 0 ]; do
