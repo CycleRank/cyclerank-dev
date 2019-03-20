@@ -13,12 +13,6 @@ if ! $SOURCED; then
   IFS=$'\n\t'
 fi
 
-scratch=$(mktemp -d -t tmp.XXXXXXXXXX)
-function finish {
-  rm -rf "$scratch"
-}
-trap finish EXIT
-
 SCRIPTDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 
 # check if path is absolute
@@ -138,6 +132,7 @@ Options:
   -D DATE             Date [default: infer from input graph].
   -h                  Show this help and exits.
   -k MAXLOOP          Max loop length (K) [default: 4].
+  -K                  Keep temporary files.
   -p PROJECT          Project name [default: infer from input graph].
   -w                  Compute the pagerank on the whole network.
   -n                  Dry run, do not really launch the jobs.
@@ -163,6 +158,7 @@ debug_flag=false
 verbose_flag=false
 help_flag=false
 dryrun_flag=false
+keeptmp_flag=false
 
 INPUT_GRAPH=''
 OUTPUTDIR=''
@@ -171,7 +167,7 @@ DATE=''
 PROJECT=''
 MAXLOOP=4
 
-while getopts ":dD:hi:I:k:l:no:p:s:T:vw" opt; do
+while getopts ":dD:hi:I:k:Kl:no:p:s:T:vw" opt; do
   case $opt in
     d)
       debug_flag=true
@@ -200,6 +196,9 @@ while getopts ":dD:hi:I:k:l:no:p:s:T:vw" opt; do
       check_posint "$OPTARG" '-k'
 
       MAXLOOP="$OPTARG"
+      ;;
+    K)
+      keeptmp_flag=true
       ;;
     l)
       linksdir_unset=false
@@ -361,6 +360,14 @@ echodebug
 
 #################### end: debug info
 
+scratch=$(mktemp -d -t tmp.engineroom_job.XXXXXXXXXX)
+if ! $keeptmp_flag; then
+  function finish {
+    rm -rf "$scratch"
+  }
+  trap finish EXIT
+fi
+
 # create temporary output  directory
 tmpoutdir="${scratch}/output" 
 mkdir -p "${tmpoutdir}"
@@ -369,23 +376,25 @@ echodebug "Created ${tmpoutdir}"
 # convert spaces to underscores
 NORMTITLE="${TITLE/ /_}"
 
+# verbosity flag
+verbosity_flag=''
+if $debug_flag; then
+  verbosity_flag='-d'
+elif $verbose_flag; then
+  verbosity_flag='-v'
+fi
+
 ##### LoopRank
 outfileLR="${PROJECT}.looprank.${NORMTITLE}.${MAXLOOP}.${DATE}.txt"
 logfileLR="${OUTPUTDIR}/${PROJECT}.looprank.${NORMTITLE}.${MAXLOOP}.${DATE}.log"
 
-verbosity_flagLR=''
-if $debug_flag; then
-  verbosity_flagLR='-d'
-elif $verbose_flag; then
-  verbosity_flagLR='-v'
-fi
 
 commandLR=("$SCRIPTDIR/pageloop_back_map_noscore" \
            "-f" "${INPUT_GRAPH}" \
            "-o" "${tmpoutdir}/${outfileLR}" \
            "-s" "${INDEX}" \
            "-k" "${MAXLOOP}" \
-           "${verbosity_flagLR:+"$verbosity_flagLR"}"
+           ${verbosity_flag:+"$verbosity_flag"}
            )
 
 if $debug_flag || $verbose_flag; then set -x; fi
@@ -399,10 +408,10 @@ fi
 if $debug_flag || $verbose_flag; then set +x; fi
 
 # Compute LoopRank scores
-scorefile="${PROJECT}.looprank.${NORMTITLE}.${MAXLOOP}.${DATE}.scores.txt"
-inputfile="${tmpoutdir}/${outfileLR}"
+scorefileLR="${PROJECT}.looprank.${NORMTITLE}.${MAXLOOP}.${DATE}.scores.txt"
+inputfileLR="${tmpoutdir}/${outfileLR}"
 
-./utils/compute_scores.py -o "${tmpoutdir}/${scorefile}" "${inputfile}"  
+./utils/compute_scores.py -o "${tmpoutdir}/${scorefileLR}" "${inputfileLR}"
 
 
 ##### Single-source Personalized PageRank
@@ -416,11 +425,11 @@ if $wholenetwork; then
 fi
 
 commandSSPPR=("$SCRIPTDIR/ssppr" \
-              "-d" \
               "-f" "${INPUT_GRAPH}" \
               "-o" "${tmpoutdir}/${outfileSSPPR}" \
               "-s" "${INDEX}" \
               "-k" "${MAXLOOP}" \
+              ${verbosity_flag:+"$verbosity_flag"} \
               ${wholenetwork_flag[@]:+"${wholenetwork_flag[@]}"}
               )
 
@@ -449,13 +458,6 @@ if $debug_flag || $verbose_flag; then set -x; fi
 
 if $debug_flag || $verbose_flag; then set +x; fi
 
-
-comparefileLR="${PROJECT}.looprank.${NORMTITLE}.${DATE}.compare_lr-pr.txt"
-maxrowLR="$(LC_ALL=C \
-  awk 'BEGIN{a=0}{if ($1>0+a) a=$1} END{print a}' \
-    "${OUTPUTDIR}/${comparefileLR}"
-  )"
-
 comparefileSSPPR="${PROJECT}.ssppr.${NORMTITLE}.${DATE}.compare_lr-pr.txt"
 maxrowSSPPR="$(LC_ALL=C \
   awk 'BEGIN{a=0}{if ($1>0+a) a=$1} END{print a}' \
@@ -463,9 +465,14 @@ maxrowSSPPR="$(LC_ALL=C \
   )"
 
 # outfileLR="${PROJECT}.looprank.${NORMTITLE}.${MAXLOOP}.${DATE}.txt"
+# scorefileLR="${PROJECT}.looprank.${NORMTITLE}.${MAXLOOP}.${DATE}.scores.txt"
 # outfileSSPPR="${PROJECT}.ssppr.${NORMTITLE}.${MAXLOOP}.${DATE}.txt"
 
-safe_head "$maxrowLR" "${tmpoutdir}/${outfileLR}" > "${OUTPUTDIR}/${outfileLR}"
-safe_head "$maxrowSSPPR" "${tmpoutdir}/${outfileSSPPR}" > "${OUTPUTDIR}/${outfileSSPPR}"
+LC_ALL=C sort -t$'\t' -k2 -r -n "${tmpoutdir}/${outfileSSPPR}" \
+  > "${tmpoutdir}/${outfileSSPPR}.sorted"
+
+cp "${tmpoutdir}/${outfileLR}" "${OUTPUTDIR}/${outfileLR}"
+cp "${tmpoutdir}/${scorefileLR}" "${OUTPUTDIR}/${scorefileLR}"
+safe_head "$((maxrowSSPPR+1))" "${tmpoutdir}/${outfileSSPPR}.sorted" > "${OUTPUTDIR}/${outfileSSPPR}"
 
 exit 0
