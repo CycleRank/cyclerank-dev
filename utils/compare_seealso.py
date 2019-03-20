@@ -95,7 +95,9 @@ if __name__ == '__main__':
     else:
         infile = sys.stdin
 
-    titles = [_.strip() for _ in infile.readlines()]
+    titles = [_.decode('utf-8').strip()
+              for _ in infile.readlines()
+              ]
 
     print('* Read the "snapshot" file: ', file=sys.stderr)
     snapshot_file = args.snapshot
