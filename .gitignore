@@ -12,6 +12,10 @@ misc
 # ignore log files in the repo root (input/output files)
 *.log
 
+# ignore HPC stdout, stderr files
+./*.e*
+./*.o*
+
 # ignore executable files
 pageloop_tarjan
 pageloop_back
