@@ -116,11 +116,11 @@ if __name__ == '__main__':
     scores_dir = args.scores_dir
     for title in titles:
         print('-'*80)
-        print('    - {}'.format(title.decode()), file=sys.stderr)
+        print('    - {}'.format(title.encode('utf-8')), file=sys.stderr)
 
 
         links_filename = ('enwiki.comparison.{title}.seealso.txt'
-                          .format(title=title.decode()))
+                          .format(title=title.encode('utf-8')))
         links_file = links_dir/links_filename
 
         with links_file.open('rb') as linkfp:
