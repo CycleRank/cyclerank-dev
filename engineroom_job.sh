@@ -176,7 +176,7 @@ DATE=''
 PROJECT=''
 MAXLOOP=4
 
-while getopts ":dD:hi:I:k:Kl:no:p:P:s:T:vVw" opt; do
+while getopts ":dD:hi:I:k:Kl:no:p:P:s:T:vV:w" opt; do
   case $opt in
     d)
       debug_flag=true
@@ -247,7 +247,7 @@ while getopts ":dD:hi:I:k:Kl:no:p:P:s:T:vVw" opt; do
       verbose_flag=true
       ;;
     V)
-      check_dir "$OPTARG" '-v'
+      check_dir "$OPTARG" '-V'
 
       VENV_PATH="$OPTARG"
       ;;
@@ -373,8 +373,8 @@ echodebug "  * PROJECT (-p): $PROJECT"
 echodebug "  * PYTHON_VERSION (-P): $PYTHON_VERSION"
 echodebug "  * dryrun_flag (-n): $dryrun_flag"
 echodebug "  * verbose_flag (-v): $verbose_flag"
-echodebug "  * wholenetwork (-w): $wholenetwork"
 echodebug "  * VENV_PATH (-V): $VENV_PATH"
+echodebug "  * wholenetwork (-w): $wholenetwork"
 echodebug
 
 #################### end: debug info
