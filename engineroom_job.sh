@@ -411,7 +411,9 @@ if $debug_flag || $verbose_flag; then set +x; fi
 scorefileLR="${PROJECT}.looprank.${NORMTITLE}.${MAXLOOP}.${DATE}.scores.txt"
 inputfileLR="${tmpoutdir}/${outfileLR}"
 
-./utils/compute_scores.py -o "${tmpoutdir}/${scorefileLR}" "${inputfileLR}"
+"${SCRIPTDIR}/utils/compute_scores.py" \
+  -o "${tmpoutdir}/${scorefileLR}" \
+    "${inputfileLR}"
 
 
 ##### Single-source Personalized PageRank
