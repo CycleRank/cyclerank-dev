@@ -449,6 +449,14 @@ for title in "${!pages[@]}"; do
   logfile="${OUTPUTDIR}/${PROJECT}.looprank.${normtitle}.${MAXLOOP}.${DATE}.log"
   echo "Logging to ${logfile}"
 
+  # verbosity flag
+  verbosity_flag=''
+  if $debug_flag; then
+    verbosity_flag='-d'
+  elif $verbose_flag; then
+    verbosity_flag='-v'
+  fi
+
   ############################################################################
   # $ ./engineroom_job.sh -h
   # Usage:
@@ -495,9 +503,10 @@ for title in "${!pages[@]}"; do
            "-i" "$INPUT_GRAPH" \
            "-o" "${OUTPUTDIR}" \
            "-s" "${SNAPSHOT}" \
-           "-l" "${LINKS_DIR}"
-           "-I" "${idx}"
-           "-T" "${normtitle}"
+           "-l" "${LINKS_DIR}" \
+           "-I" "${idx}" \
+           "-T" "${normtitle}" \
+           ${verbosity_flag:+"${verbosity_flag}"}
            )
 
   # qsub -N <pbsjobname> -q cpuq [psb_options] -- \
