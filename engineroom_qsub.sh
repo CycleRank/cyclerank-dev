@@ -119,6 +119,8 @@ Options:
   -q PBS_QUEUE            PBS queue name [default: cpuq].
   -S SLEEP_PER_BATCH      Sleeping time in seconds between batches [default: 1800].
   -v                      Enable verbose output.
+  -V VENV_PATH            Absolute path of the virtualenv directory [default: \$PWD/wikidump].
+  -x PYTHON_VERSION       Python version [default: 3.6].
   -w PBS_WALLTIME         Max walltime for the job, a time period formatted as hh:mm:ss.
   -W                      Compute the pagerank on the whole network.
 
@@ -146,6 +148,9 @@ PAGES_LIST=''
 PROJECT=''
 MAXLOOP=4
 
+VENV_PATH="$PWD/looprank3"
+PYTHON_VERSION='3.6'
+
 # PBS
 pbs_ncpus_set=false
 pbs_nodes_set=false
@@ -161,7 +166,7 @@ PBS_HOST=''
 MAX_JOBS_PER_BATCH=30
 SLEEP_PER_BATCH=1800
 
-while getopts ":cdD:hH:i:I:k:l:M:nN:o:p:P:q:s:S:vw:W" opt; do
+while getopts ":cdD:hH:i:I:k:l:M:nN:o:p:P:q:s:S:vV:x:w:W" opt; do
   case $opt in
     c)
       check_posint "$OPTARG" '-c'
@@ -251,6 +256,14 @@ while getopts ":cdD:hH:i:I:k:l:M:nN:o:p:P:q:s:S:vw:W" opt; do
       ;;
     v)
       verbose_flag=true
+      ;;
+    V)
+      check_dir "$OPTARG" '-v'
+
+      VENV_PATH="$OPTARG"
+      ;;
+    x)
+      PYTHON_VERSION="$OPTARG"
       ;;
     w)
       PBS_WALLTIME="$OPTARG"
@@ -381,6 +394,8 @@ echodebug "  * PBS_PPN (-P): $PBS_PPN"
 echodebug "  * PBS_QUEUE (-q): $PBS_QUEUE"
 echodebug "  * SLEEP_PER_BATCH (-S): $SLEEP_PER_BATCH"
 echodebug "  * verbose_flag (-v): $verbose_flag"
+echodebug "  * VENV_PATH (-V): $VENV_PATH"
+echodebug "  * PYTHON_VERSION (-x): $PYTHON_VERSION"
 echodebug "  * PBS_WALLTIME (-w): $PBS_WALLTIME"
 echodebug "  * wholenetwork (-W): $wholenetwork"
 echodebug
@@ -475,6 +490,8 @@ for title in "${!pages[@]}"; do
   ############################################################################
   command=("${SCRIPTDIR}/engineroom_job.sh" \
            "-k" "$MAXLOOP" \
+           "-x" "$PYTHON_VERSION" \
+           "-V" "$VENV_PATH" \
            "-i" "$INPUT_GRAPH" \
            "-o" "${OUTPUTDIR}" \
            "-s" "${SNAPSHOT}" \

@@ -137,15 +137,18 @@ Options:
   -k MAXLOOP          Max loop length (K) [default: 4].
   -K                  Keep temporary files.
   -p PROJECT          Project name [default: infer from input graph].
+  -P PYTHON_VERSION   Python version [default: 3.6].
   -w                  Compute the pagerank on the whole network.
   -n                  Dry run, do not really launch the jobs.
   -v                  Enable verbose output.
+  -V VENV_PATH        Absolute path of the virtualenv directory [default: \$PWD/looprank3].
 
 Example:
   engineroom_job.sh  -i /home/user/pagerank/enwiki/20180301/enwiki.wikigraph.pagerank.2018-03-01.csv \\
                      -o /home/user/pagerank/enwiki/20180301/ \\
                      -p enwiki.pages.txt")
 }
+
 
 inputgraph_unset=true
 outputdir_unset=true
@@ -163,6 +166,9 @@ help_flag=false
 dryrun_flag=false
 keeptmp_flag=false
 
+VENV_PATH="$PWD/looprank3"
+PYTHON_VERSION='3.6'
+
 INPUT_GRAPH=''
 OUTPUTDIR=''
 LINKS_DIR=''
@@ -170,7 +176,7 @@ DATE=''
 PROJECT=''
 MAXLOOP=4
 
-while getopts ":dD:hi:I:k:Kl:no:p:s:T:vw" opt; do
+while getopts ":dD:hi:I:k:Kl:no:p:P:s:T:vVw" opt; do
   case $opt in
     d)
       debug_flag=true
@@ -223,6 +229,9 @@ while getopts ":dD:hi:I:k:Kl:no:p:s:T:vw" opt; do
 
       PROJECT="$OPTARG"
       ;;
+    P)
+      PYTHON_VERSION="$OPTARG"
+      ;;
     s)
       snapshot_unset=false
       check_file "$OPTARG" '-s'
@@ -236,6 +245,11 @@ while getopts ":dD:hi:I:k:Kl:no:p:s:T:vw" opt; do
       ;;
     v)
       verbose_flag=true
+      ;;
+    V)
+      check_dir "$OPTARG" '-v'
+
+      VENV_PATH="$OPTARG"
       ;;
     w)
       wholenetwork=true
@@ -353,15 +367,36 @@ echodebug
 
 echodebug "Options:"
 echodebug "  * debug_flag (-d): $debug_flag"
-echodebug "  * MAXLOOP (-k): $MAXLOOP"
 echodebug "  * DATE (-D): $DATE"
+echodebug "  * MAXLOOP (-k): $MAXLOOP"
 echodebug "  * PROJECT (-p): $PROJECT"
+echodebug "  * PYTHON_VERSION (-P): $PYTHON_VERSION"
 echodebug "  * dryrun_flag (-n): $dryrun_flag"
 echodebug "  * verbose_flag (-v): $verbose_flag"
 echodebug "  * wholenetwork (-w): $wholenetwork"
+echodebug "  * VENV_PATH (-V): $VENV_PATH"
 echodebug
 
 #################### end: debug info
+
+########## start job
+echo "job running on: $(hostname)"
+
+set +ue
+echodebug "activate virtualenv: source '$VENV_PATH/bin/activate'"
+# shellcheck disable=SC1090
+source "$VENV_PATH/bin/activate"
+echodebug "... done!"
+set -ue
+
+reference_python="$(command -v "python${PYTHON_VERSION}")"
+echodebug "reference Python path: $reference_python"
+
+if [ -z "$reference_python" ]; then
+  (>&2 echo "Error. No reference Python found for version: $PYTHON_VERSION")
+  exit 1
+fi
+
 
 scratch=$(mktemp -d -t tmp.engineroom_job.XXXXXXXXXX)
 if ! $keeptmp_flag; then
