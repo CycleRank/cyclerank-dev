@@ -89,7 +89,7 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
 
-    print('* Read input. ', file=sys.stderr)
+    # print('* Read input. ', file=sys.stderr)
     infile = None
     if args.input:
         infile = args.input.open('r', encoding='UTF-8')
@@ -100,7 +100,7 @@ if __name__ == '__main__':
               for _ in infile.readlines()
               ]
 
-    print('* Read the "snapshot" file: ', file=sys.stderr)
+    # print('* Read the "snapshot" file: ', file=sys.stderr)
     snapshot_file = args.snapshot
     snaplen = count_file_lines(snapshot_file)
     snapshot = dict()
@@ -111,16 +111,16 @@ if __name__ == '__main__':
                 snapshot[int(l[0])] = l[1]
                 pbar.update(1)
 
-    print('* Processing titles: ', file=sys.stderr)
+    # print('* Processing titles: ', file=sys.stderr)
     links_dir = args.links_dir
     scores_dir = args.scores_dir
     for title in titles:
-        print('-'*80)
-        print('    - {}'.format(title.encode('utf-8')), file=sys.stderr)
+        # print('-'*80)
+        # print('    - {}'.format(title), file=sys.stderr)
 
 
         links_filename = ('enwiki.comparison.{title}.seealso.txt'
-                          .format(title=title.encode('utf-8')))
+                          .format(title=title))
         links_file = links_dir/links_filename
 
         with links_file.open('rb') as linkfp:
@@ -133,11 +133,11 @@ if __name__ == '__main__':
 
         for  lid in links_ids:
             link_title = snapshot[lid]
-            print('        > {}'.format(link_title), file=sys.stderr)
+            # print('        > {}'.format(link_title), file=sys.stderr)
 
         for algo in ALGOS:
-            print('      * Read score ({}) file'.format(algo),
-                  file=sys.stderr)
+            # print('      * Read score ({}) file'.format(algo),
+            #      file=sys.stderr)
             scores_filename = (SCORES_FILENAMES[algo].format(algo=algo,
                                title=title.replace(' ', '_'))
                                )
@@ -169,8 +169,8 @@ if __name__ == '__main__':
                         link_positions[lid] = pos + 1
                         break
 
-            print('      * Print results for algo {}'.format(algo),
-                  file=sys.stderr)
+            # print('      * Print results for algo {}'.format(algo),
+            #       file=sys.stderr)
 
             output_dir = args.output_dir
             output_filename = (OUTPUT_FILENAME.format(algo=algo,
