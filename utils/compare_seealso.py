@@ -116,17 +116,20 @@ if __name__ == '__main__':
     scores_dir = args.scores_dir
     for title in titles:
         print('-'*80)
-        print('    - {}'.format(title), file=sys.stderr)
+        print('    - {}'.format(title.decode()), file=sys.stderr)
 
 
         links_filename = ('enwiki.comparison.{title}.seealso.txt'
-                          .format(title=title))
+                          .format(title=title.decode()))
         links_file = links_dir/links_filename
 
-        with links_file.open('r', encoding='UTF-8') as linkfp:
-            reader = csv.reader(linkfp, delimiter='\t')
+        with links_file.open('rb') as linkfp:
+            reader = csv.reader(linkfp, delimiter=b'\t')
             next(reader)
-            links_ids = dict((int(l[1]), l[0]) for l in reader)
+            links_ids = dict((int(l[1].decode('utf-8')),
+                              l[0].decode('utf-8'))
+                             for l in reader
+                             )
 
         for  lid in links_ids:
             link_title = snapshot[lid]
