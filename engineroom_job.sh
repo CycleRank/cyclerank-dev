@@ -486,6 +486,7 @@ if $debug_flag || $verbose_flag; then set +x; fi
 
 # save page title in scratch/title.txt
 echo "${NORMTITLE}" >> "${scratch}/titles.txt"
+echodebug "${NORMTITLE}"
 
 if $debug_flag || $verbose_flag; then set -x; fi
 
