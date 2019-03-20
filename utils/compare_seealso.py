@@ -4,8 +4,8 @@ import re
 import sys
 import csv
 import tqdm
-import argparse
 import pathlib
+import argparse
 import itertools
 import subprocess
 
@@ -122,7 +122,7 @@ if __name__ == '__main__':
                           .format(title=title))
         links_file = links_dir/links_filename
 
-        with links_file.open('r', encoding='utf-8') as linkfp:
+        with links_file.open('r') as linkfp:
             reader = csv.reader(linkfp, delimiter='\t')
             next(reader)
             links_ids = dict((int(l[1]), l[0]) for l in reader)
