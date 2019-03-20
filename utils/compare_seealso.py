@@ -91,7 +91,7 @@ if __name__ == '__main__':
     print('* Read input. ', file=sys.stderr)
     infile = None
     if args.input:
-        infile = args.input.open('r', encoding='utf-8')
+        infile = args.input.open('r')
     else:
         infile = sys.stdin
 
@@ -104,7 +104,7 @@ if __name__ == '__main__':
     snaplen = count_file_lines(snapshot_file)
     snapshot = dict()
     with tqdm.tqdm(total=snaplen) as pbar:
-        with snapshot_file.open('r', encoding='utf-8') as snapfp:
+        with snapshot_file.open('r') as snapfp:
             reader = csv.reader(snapfp, delimiter='\t')
             for l in reader:
                 snapshot[int(l[0])] = l[1]
@@ -141,7 +141,7 @@ if __name__ == '__main__':
 
             all_outlines = []
             scoreslen = count_file_lines(scores_file)
-            with scores_file.open('r', encoding='utf-8') as scoresfp:
+            with scores_file.open('r') as scoresfp:
                 with tqdm.tqdm(total=scoreslen, leave=False) as pbar:
                     for line in scoresfp:
                         page_id, score = process_line(line)
@@ -174,7 +174,7 @@ if __name__ == '__main__':
                                )
             output_file = output_dir/output_filename
 
-            with output_file.open('w+', encoding='utf-8') as outfp:
+            with output_file.open('w+') as outfp:
                 outwriter = csv.writer(outfp, delimiter='\t')
                 for lid in link_positions:
                     link_title = snapshot[lid]

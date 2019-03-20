@@ -516,4 +516,7 @@ cp "${tmpoutdir}/${outfileLR}" "${OUTPUTDIR}/${outfileLR}"
 cp "${tmpoutdir}/${scorefileLR}" "${OUTPUTDIR}/${scorefileLR}"
 safe_head "$((maxrowSSPPR+1))" "${tmpoutdir}/${outfileSSPPR}.sorted" > "${OUTPUTDIR}/${outfileSSPPR}"
 
+echo "Done processing ${NORMTITLE}!"
+(>&2 echo "Done processing ${NORMTITLE}!" )
+
 exit 0
