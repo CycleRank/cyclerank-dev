@@ -429,7 +429,7 @@ for title in "${!pages[@]}"; do
   idx="${pages[$title]}"
   normtitle="${title/ /_}"
 
-  pbsjobname="lr_${MAXLOOP}_$idx"
+  pbsjobname="ngi_${MAXLOOP}_${idx}"
 
   logfile="${OUTPUTDIR}/${PROJECT}.looprank.${normtitle}.${MAXLOOP}.${DATE}.log"
   echo "Logging to ${logfile}"
