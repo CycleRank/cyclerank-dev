@@ -97,28 +97,30 @@ Run pageloop_back_map on the graph INPUT_GRAPH for the pages listed in
 PAGES_LIST and output results in OUTPUTDIR.
 
 Arguments:
-  -i INPUT_GRAPH      Absolute path of the input file.
-  -o OUTPUTDIR        Absolute path of the output directory.
-  -s SNAPSHOT         Absolute path of the file with the graph snapshot.
-  -l LINKS_DIR        Absolute path of the directory with the link files .
-  -I PAGES_LIST       Absolute path of the file with the list of pages.
+  -i INPUT_GRAPH          Absolute path of the input file.
+  -o OUTPUTDIR            Absolute path of the output directory.
+  -s SNAPSHOT             Absolute path of the file with the graph snapshot.
+  -l LINKS_DIR            Absolute path of the directory with the link files .
+  -I PAGES_LIST           Absolute path of the file with the list of pages.
 
 
 Options:
-  -c PBS_NCPUS        Number of PBS cpus to request (needs also -n and -P to be specified).
-  -d                  Enable debug output.
-  -D DATE             Date [default: infer from input graph].
-  -h                  Show this help and exits.
-  -H PBS_HOST         PBS host to run on.
-  -k MAXLOOP          Max loop length (K) [default: 4].
-  -p PROJECT          Project name [default: infer from pages list].
-  -n                  Dry run, do not really launch the jobs.
-  -N PBS_NODES        Number of PBS nodes to request (needs also -c  and -P to be specified).
-  -P PBS_PPN          Number of PBS processors per node to request (needs also -n  and -P to be specified).
-  -q PBS_QUEUE        PBS queue name [default: cpuq].
-  -v                  Enable verbose output.
-  -w PBS_WALLTIME     Max walltime for the job, a time period formatted as hh:mm:ss.
-  -W                  Compute the pagerank on the whole network.
+  -c PBS_NCPUS            Number of PBS cpus to request (needs also -n and -P to be specified).
+  -d                      Enable debug output.
+  -D DATE                 Date [default: infer from input graph].
+  -h                      Show this help and exits.
+  -H PBS_HOST             PBS host to run on.
+  -k MAXLOOP              Max loop length (K) [default: 4].
+  -M MAX_JOBS_PER_BATCH   Nunber of jobs to submit in batch [default: 30].
+  -n                      Dry run, do not really launch the jobs.
+  -N PBS_NODES            Number of PBS nodes to request (needs also -c  and -P to be specified).
+  -p PROJECT              Project name [default: infer from pages list].
+  -P PBS_PPN              Number of PBS processors per node to request (needs also -n  and -P to be specified).
+  -q PBS_QUEUE            PBS queue name [default: cpuq].
+  -S SLEEP_PER_BATCH      Sleeping time in seconds between batches [default: 1800].
+  -v                      Enable verbose output.
+  -w PBS_WALLTIME         Max walltime for the job, a time period formatted as hh:mm:ss.
+  -W                      Compute the pagerank on the whole network.
 
 Example:
   engineroom_qsub.sh")
@@ -156,7 +158,10 @@ PBS_PPN=''
 PBS_WALLTIME=''
 PBS_HOST=''
 
-while getopts ":cdD:hH:i:I:k:l:nN:o:p:P:q:s:vw:W" opt; do
+MAX_JOBS_PER_BATCH=30
+SLEEP_PER_BATCH=1800
+
+while getopts ":cdD:hH:i:I:k:l:M:nN:o:p:P:q:s:vw:W" opt; do
   case $opt in
     c)
       check_posint "$OPTARG" '-c'
@@ -201,6 +206,11 @@ while getopts ":cdD:hH:i:I:k:l:nN:o:p:P:q:s:vw:W" opt; do
 
       LINKS_DIR="$OPTARG"
       ;;
+    M)
+      check_posint "$OPTARG" '-M'
+
+      MAXLOOP="$OPTARG"
+      ;;
     n)
       dryrun_flag=true
       ;;
@@ -235,6 +245,9 @@ while getopts ":cdD:hH:i:I:k:l:nN:o:p:P:q:s:vw:W" opt; do
       check_file "$OPTARG" '-s'
 
       SNAPSHOT="$OPTARG"
+      ;;
+    S)
+      SLEEP_PER_BATCH="$OPTARG"
       ;;
     v)
       verbose_flag=true
@@ -408,6 +421,7 @@ if [ -n "$PBS_HOST" ]; then
   pbsoptions+=('-l' "host=$PBS_HOST")
 fi
 
+counter=0
 for title in "${!pages[@]}"; do
   echo "Processing $title ($idx) ..."
   idx="${pages[$title]}"
@@ -469,8 +483,8 @@ for title in "${!pages[@]}"; do
 
   # qsub -N <pbsjobname> -q cpuq [psb_options] -- \
   #   <scriptdir>/engineroom_job.sh ...
-  if $debug_flag; then { set -x; }  fi
 
+  if $debug_flag; then { set -x; }  fi
   wrap_run \
   qsub \
     -N "$pbsjobname" \
@@ -479,4 +493,15 @@ for title in "${!pages[@]}"; do
       "${command[@]}"
   if $debug_flag || $verbose_flag; then set +x; fi
 
+  counter=$((counter+1))
+
+  if [[ $((counter % MAX_JOBS_PER_BATCH )) == 0 ]]; then
+    secs="$SLEEP_PER_BATCH"
+    waitsec=1
+    while [ "$secs" -gt 0 ]; do
+     echo -ne "$secs\033[0K\r"
+     sleep "$waitsec"
+     secs=$((secs-waitsec))
+    done
+  fi
 done
