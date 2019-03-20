@@ -209,7 +209,7 @@ while getopts ":cdD:hH:i:I:k:l:M:nN:o:p:P:q:s:S:vw:W" opt; do
     M)
       check_posint "$OPTARG" '-M'
 
-      MAXLOOP="$OPTARG"
+      MAX_JOBS_PER_BATCH="$OPTARG"
       ;;
     n)
       dryrun_flag=true
@@ -497,6 +497,8 @@ for title in "${!pages[@]}"; do
 
   counter=$((counter+1))
 
+  echodebug "counter: $counter"
+  echo "Sleep for $SLEEP_PER_BATCH seconds... "
   if [[ $((counter % MAX_JOBS_PER_BATCH )) == 0 ]]; then
     secs="$SLEEP_PER_BATCH"
     waitsec=1
