@@ -449,6 +449,8 @@ if $debug_flag || $verbose_flag; then set +x; fi
 scorefileLR="${PROJECT}.looprank.${NORMTITLE}.${MAXLOOP}.${DATE}.scores.txt"
 inputfileLR="${tmpoutdir}/${outfileLR}"
 
+echodebug python3 -c 'import locale; print(locale.getpreferredencoding(False))'
+
 python3 "${SCRIPTDIR}/utils/compute_scores.py" \
   -o "${tmpoutdir}/${scorefileLR}" \
     "${inputfileLR}"
