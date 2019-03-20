@@ -8,6 +8,8 @@ if ! $SOURCED; then
   IFS=$'\n\t'
 fi
 
+SCRIPTDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
+
 # check if path is absolute
 # https://stackoverflow.com/a/20204890/2377454
 function is_abs_path() {
@@ -77,9 +79,12 @@ function check_posint() {
 function short_usage() {
   (>&2 echo \
 "Usage:
-  engineroom.sh [options] -i INPUT_GRAPH
-                          -o OUTPUTDIR
-                          -p PAGE_LIST"
+  engineroom_qsub.sh [options] -i INPUT_GRAPH
+                               -o OUTPUTDIR
+                               -s SNAPSHOT
+                               -l LINKS_DIR
+                               -I PAGES_LIST
+  "
   )
 }
 
@@ -94,7 +99,9 @@ PAGES_LIST and output results in OUTPUTDIR.
 Arguments:
   -i INPUT_GRAPH      Absolute path of the input file.
   -o OUTPUTDIR        Absolute path of the output directory.
-  -p PAGES_LIST       Absolute path of the file with the list of pages.
+  -s SNAPSHOT         Absolute path of the file with the graph snapshot.
+  -l LINKS_DIR        Absolute path of the directory with the link files .
+  -I PAGES_LIST       Absolute path of the file with the list of pages.
 
 
 Options:
@@ -104,29 +111,32 @@ Options:
   -h                  Show this help and exits.
   -H PBS_HOST         PBS host to run on.
   -k MAXLOOP          Max loop length (K) [default: 4].
-  -l PROJECT          Project name [default: infer from pages list].
+  -p PROJECT          Project name [default: infer from pages list].
   -n                  Dry run, do not really launch the jobs.
   -N PBS_NODES        Number of PBS nodes to request (needs also -c  and -P to be specified).
   -P PBS_PPN          Number of PBS processors per node to request (needs also -n  and -P to be specified).
   -q PBS_QUEUE        PBS queue name [default: cpuq].
   -v                  Enable verbose output.
   -w PBS_WALLTIME     Max walltime for the job, a time period formatted as hh:mm:ss.
+  -W                  Compute the pagerank on the whole network.
 
 Example:
-  engineroom.sh  -i /home/user/pagerank/enwiki/20180301/enwiki.wikigraph.pagerank.2018-03-01.csv \\
-                 -o /home/user/pagerank/enwiki/20180301/ \\
-                 -p enwiki.pages.txt")
+  engineroom_qsub.sh")
 }
 
 inputgraph_unset=true
 outputdir_unset=true
+snapshot_unset=true
+linksdir_unset=true
 pageslist_unset=true
+
 project_set=false
 date_set=false
 debug_flag=false
 verbose_flag=false
 help_flag=false
 dryrun_flag=false
+wholenetwork=false
 
 INPUT_GRAPH=''
 OUTPUTDIR=''
@@ -135,9 +145,9 @@ PROJECT=''
 MAXLOOP=4
 
 # PBS
+pbs_ncpus_set=false
 pbs_nodes_set=false
 pbs_ppn_set=false
-pbs_ncpus_set=false
 
 PBS_QUEUE='cpuq'
 PBS_NCPUS=''
@@ -146,7 +156,7 @@ PBS_PPN=''
 PBS_WALLTIME=''
 PBS_HOST=''
 
-while getopts ":cdD:hH:i:k:l:nN:o:p:P:q:vw:" opt; do
+while getopts ":cdD:hH:i:I:k:l:nN:o:p:P:q:s:vw:W" opt; do
   case $opt in
     c)
       check_posint "$OPTARG" '-c'
@@ -174,15 +184,22 @@ while getopts ":cdD:hH:i:k:l:nN:o:p:P:q:vw:" opt; do
 
       INPUT_GRAPH="$OPTARG"
       ;;
+    I)
+      pageslist_unset=false
+      check_file "$OPTARG" '-I'
+
+      PAGES_LIST="$OPTARG"
+      ;;
     k)
       check_posint "$OPTARG" '-k'
 
       MAXLOOP="$OPTARG"
       ;;
     l)
-      project_set=true
+      linksdir_unset=false
+      check_dir "$OPTARG" '-l'
 
-      PROJECT="$OPTARG"
+      LINKS_DIR="$OPTARG"
       ;;
     n)
       dryrun_flag=true
@@ -200,10 +217,9 @@ while getopts ":cdD:hH:i:k:l:nN:o:p:P:q:vw:" opt; do
       OUTPUTDIR="$OPTARG"
       ;;
     p)
-      pageslist_unset=false
-      check_file "$OPTARG" '-p'
+      project_set=true
 
-      PAGES_LIST="$OPTARG"
+      PROJECT="$OPTARG"
       ;;
     P)
       check_posint "$OPTARG" '-P'
@@ -214,11 +230,20 @@ while getopts ":cdD:hH:i:k:l:nN:o:p:P:q:vw:" opt; do
     q)
       PBS_QUEUE="$OPTARG"
       ;;
+    s)
+      snapshot_unset=false
+      check_file "$OPTARG" '-s'
+
+      SNAPSHOT="$OPTARG"
+      ;;
     v)
       verbose_flag=true
       ;;
     w)
       PBS_WALLTIME="$OPTARG"
+      ;;
+    W)
+      wholenetwork=true
       ;;
     \?)
       (>&2 echo "Error. Invalid option: -$OPTARG")
@@ -248,8 +273,20 @@ if $outputdir_unset; then
   exit 1
 fi
 
+if $snapshot_unset; then
+  (>&2 echo "Error. Option -s is required.")
+  short_usage
+  exit 1
+fi
+
+if $linksdir_unset; then
+  (>&2 echo "Error. Option -l is required.")
+  short_usage
+  exit 1
+fi
+
 if $pageslist_unset; then
-  (>&2 echo "Error. Option -p is required.")
+  (>&2 echo "Error. Option -I is required.")
   short_usage
   exit 1
 fi
@@ -272,17 +309,21 @@ if ! $date_set; then
   )
 fi
 
-declare -A pages
+# PBS nodes, PBS ncpus and PBS ppn must be set all togheter.
+# A xor B == ( A or B ) && ( not ( A && B ) )
+if ($pbs_nodes_set || $pbs_ncpus_set) && \
+    ! ($pbs_nodes_set && $pbs_ncpus_set); then
+  (>&2 echo "Options -c, -n, -P must be specified togheter.")
+  short_usage
+  exit 1
+fi
 
-# Read file into associative array
-# https://stackoverflow.com/a/25251400/2377454
-while read -r line; do
-    key=$(echo "$line" | awk -F$'\t' '{print $1}')
-    value=$(echo "$line" | awk -F$'\t' '{print $2}')
-
-    pages[$key]="$value"
-done < "$PAGES_LIST"
-
+if ($pbs_nodes_set || $pbs_ppn_set) && \
+    ! ($pbs_nodes_set && $pbs_ppn_set); then
+  (>&2 echo "Options -c, -n, -P must be specified togheter.")
+  short_usage
+  exit 1
+fi
 
 #################### utils
 if $debug_flag; then
@@ -304,12 +345,13 @@ else
 fi
 #################### end: utils
 
-
 #################### debug info
 echodebug "Arguments:"
 echodebug "  * INPUT_GRAPH (-i): $INPUT_GRAPH"
 echodebug "  * OUTPUTDIR (-o): $OUTPUTDIR"
-echodebug "  * PAGES_LIST  (-p): $PAGES_LIST"
+echodebug "  * SNAPSHOT (-s): $SNAPSHOT"
+echodebug "  * LINKS_DIR (-l): $LINKS_DIR"
+echodebug "  * PAGES_LIST (-I): $PAGES_LIST"
 echodebug
 
 echodebug "Options:"
@@ -325,8 +367,27 @@ echodebug "  * PBS_PPN (-P): $PBS_PPN"
 echodebug "  * PBS_QUEUE (-q): $PBS_QUEUE"
 echodebug "  * verbose_flag (-v): $verbose_flag"
 echodebug "  * PBS_WALLTIME (-w): $PBS_WALLTIME"
+echodebug "  * wholenetwork (-W): $wholenetwork"
+echodebug
+#################### end: debug info
+
+declare -A pages
+
+# Read file into associative array
+# https://stackoverflow.com/a/25251400/2377454
+count_pages=0
+while read -r line; do
+  key=$(echo "$line" | awk -F$'\t' '{print $1}')
+  value=$(echo "$line" | awk -F$'\t' '{print $2}')
+
+  echodebug -ne "-> processed pages: $count_pages\033[0K\r"
+
+  pages[$key]="$value"
+  count_pages=$((count_pages+1))
+done < "$PAGES_LIST"
 echodebug
 
+#################### debug info
 echodebug "Pages from $PROJECT ($DATE):"
 for title in "${!pages[@]}"; do
   idx="${pages[$title]}"
@@ -357,16 +418,65 @@ for title in "${!pages[@]}"; do
   logfile="${OUTPUTDIR}/${PROJECT}.looprank.${normtitle}.${MAXLOOP}.${DATE}.log"
   echo "Logging to ${logfile}"
 
-  command=("./pageloop_back_map_noscore" \
-           "-f" "$INPUT_GRAPH" \
-           "-o" "${OUTPUTDIR}/${PROJECT}.looprank.${normtitle}.${MAXLOOP}.${DATE}.txt" \
-           "-s" "${idx}" \
+  ############################################################################
+  # $ ./engineroom_job.sh -h
+  # Usage:
+  #   engineroom_job.sh [options] -i INPUT_GRAPH
+  #                               -o OUTPUTDIR
+  #                               -s SNAPSHOT
+  #                               -l LINKS_DIR
+  #                               -I INDEX
+  #                               -T TITLE
+  #
+  #
+  # Run pageloop_back_map on the graph INPUT_GRAPH for the pages listed in
+  # PAGES_LIST and output results in OUTPUTDIR.
+  #
+  # Arguments:
+  #   -i INPUT_GRAPH      Absolute path of the input file.
+  #   -o OUTPUTDIR        Absolute path of the output directory.
+  #   -s SNAPSHOT         Absolute path of the file with the list of pages.
+  #   -l LINKS_DIR
+  #   -I INDEX
+  #   -T TITLE
+  #
+  #
+  # Options:
+  #   -d                  Enable debug output.
+  #   -D DATE             Date [default: infer from input graph].
+  #   -h                  Show this help and exits.
+  #   -k MAXLOOP          Max loop length (K) [default: 4].
+  #   -K                  Keep temporary files.
+  #   -p PROJECT          Project name [default: infer from input graph].
+  #   -w                  Compute the pagerank on the whole network.
+  #   -n                  Dry run, do not really launch the jobs.
+  #   -v                  Enable verbose output.
+  #
+  # Example:
+  #   engineroom_job.sh  -i /home/user/pagerank/enwiki/20180301/enwiki.wikigraph.pagerank.2018-03-01.csv \
+  #                      -o /home/user/pagerank/enwiki/20180301/ \
+  #                      -p enwiki.pages.txt
+  ############################################################################
+  command=("${SCRIPTDIR}/engineroom_job.sh" \
            "-k" "$MAXLOOP" \
+           "-i" "$INPUT_GRAPH" \
+           "-o" "${OUTPUTDIR}" \
+           "-s" "${SNAPSHOT}" \
+           "-l" "${LINKS_DIR}"
+           "-I" "${idx}"
+           "-T" "${normtitle}"
            )
 
+  # qsub -N <pbsjobname> -q cpuq [psb_options] -- \
+  #   <scriptdir>/engineroom_job.sh ...
+  if $debug_flag; then { set -x; }  fi
+
   wrap_run \
-  qsub -N "$pbsjobname" -q "$PBS_QUEUE" ${pbsoptions[@]:+"${pbsoptions[@]}"} -- \
-    "${command[@]}"
+  qsub \
+    -N "$pbsjobname" \
+    -q "$PBS_QUEUE" \
+    ${pbsoptions[@]:+"${pbsoptions[@]}"} -- \
+      "${command[@]}"
   if $debug_flag || $verbose_flag; then set +x; fi
 
 done
