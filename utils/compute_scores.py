@@ -56,7 +56,7 @@ if __name__ == '__main__':
     scoring_function = SCORING_FUNCTIONS[args.scoring_function]
 
     scores = defaultdict(float)
-    with infile.open('r', enconding='UTF-8') as infp:
+    with infile.open('r', encoding='UTF-8') as infp:
         reader = csv.reader(infp, delimiter=' ')
 
         for cycle in reader:
@@ -71,7 +71,7 @@ if __name__ == '__main__':
     if output is None:
         outfile = sys.stdout
     else:
-        outfile = output.open('w+', enconding='UTF-8')
+        outfile = output.open('w+', encoding='UTF-8')
 
     for nid, score in sorted(scores.items()):
         rounded_score = round(score, NDIGITS)
