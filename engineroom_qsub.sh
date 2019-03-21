@@ -441,6 +441,20 @@ if [ -n "$PBS_HOST" ]; then
   pbsoptions+=('-l' "host=$PBS_HOST")
 fi
 
+# wholenetwork
+wholenetwork_flag=''
+if $wholenetwork; then
+  wholenetwork_flag='-w'
+fi
+
+# verbosity flag
+verbosity_flag=''
+if $debug_flag; then
+  verbosity_flag='-d'
+elif $verbose_flag; then
+  verbosity_flag='-v'
+fi
+
 counter=0
 for title in "${!pages[@]}"; do
   echo "Processing $title ($idx) ..."
@@ -452,13 +466,6 @@ for title in "${!pages[@]}"; do
   logfile="${OUTPUTDIR}/${PROJECT}.looprank.${normtitle}.${MAXLOOP}.${DATE}.log"
   echo "Logging to ${logfile}"
 
-  # verbosity flag
-  verbosity_flag=''
-  if $debug_flag; then
-    verbosity_flag='-d'
-  elif $verbose_flag; then
-    verbosity_flag='-v'
-  fi
 
   ############################################################################
   # $ ./engineroom_job.sh -h
@@ -509,7 +516,8 @@ for title in "${!pages[@]}"; do
            "-l" "${LINKS_DIR}" \
            "-I" "${idx}" \
            "-T" "${normtitle}" \
-           ${verbosity_flag:+"${verbosity_flag}"}
+           ${verbosity_flag:+"${verbosity_flag}"} \
+           ${wholenetwork:+"${wholenetwork}"}
            )
 
   # qsub -N <pbsjobname> -q cpuq [psb_options] -- \

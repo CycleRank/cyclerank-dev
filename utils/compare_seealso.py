@@ -123,7 +123,7 @@ if __name__ == '__main__':
                           .format(title=title))
         links_file = links_dir/links_filename
 
-        with links_file.open('r', encoding='utf-8') as linkfp:
+        with open(str(links_file), 'r', encoding='utf-8') as linkfp:
             reader = csv.reader(linkfp, delimiter='\t')
             next(reader)
 
