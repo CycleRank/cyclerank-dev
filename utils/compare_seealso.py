@@ -26,7 +26,7 @@ def count_file_lines(file_path):
     :param file_path: path to file
     :return: int, no of lines
     """
-    num = subprocess.check_output(['wc', '-l', file_path])
+    num = subprocess.check_output(['wc', '-l', str(file_path)])
     num = num.decode('utf-8').strip().split(' ')
     return int(num[0])
 
