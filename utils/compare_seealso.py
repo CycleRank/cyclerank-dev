@@ -71,6 +71,9 @@ if __name__ == '__main__':
                         default=pathlib.Path('.'),
                         help='Directory with the link files [default: .]'
                         )
+    parser.add_argument('--links-filename',
+                        help='Links file name (default: derive from title)'
+                        )
     parser.add_argument('--output-dir',
                         type=pathlib.Path,
                         default=pathlib.Path('.'),
@@ -118,12 +121,15 @@ if __name__ == '__main__':
         # print('-'*80)
         # print('    - {}'.format(title), file=sys.stderr)
 
+        if args.links_filename is None:
+            links_filename = ('enwiki.comparison.{title}.seealso.txt'
+                              .format(title=title))
+        else:
+            links_filename = args.links_filename
 
-        links_filename = ('enwiki.comparison.{title}.seealso.txt'
-                          .format(title=title))
         links_file = links_dir/links_filename
 
-        with open(str(links_file), 'rb') as linkfp:
+        with open(str(links_file), 'r', encoding='utf-8') as linkfp:
             reader = csv.reader(linkfp, delimiter='\t')
             next(reader)
 

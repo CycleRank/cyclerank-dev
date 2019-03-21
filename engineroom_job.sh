@@ -490,11 +490,15 @@ if $debug_flag || $verbose_flag; then set +x; fi
 echo "${NORMTITLE}" >> "${scratch}/titles.txt"
 echodebug "${NORMTITLE}"
 
+cp "${LINKS_DIR}/enwiki.comparison.${NORMTITLE}.seealso.txt" \
+   "${scratch}/links.txt"
+
 if $debug_flag || $verbose_flag; then set -x; fi
 
 python3 "$SCRIPTDIR/utils/compare_seealso.py" \
   -i "${scratch}/titles.txt" \
-  -l "$LINKS_DIR" \
+  -l "${scratch}" \
+  --links-filename "links.txt" \
   --output-dir "$OUTPUTDIR" \
   --scores-dir "${tmpoutdir}" \
   -s "$SNAPSHOT"
