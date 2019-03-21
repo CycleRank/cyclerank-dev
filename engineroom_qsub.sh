@@ -517,7 +517,7 @@ for title in "${!pages[@]}"; do
            "-I" "${idx}" \
            "-T" "${normtitle}" \
            ${verbosity_flag:+"${verbosity_flag}"} \
-           ${wholenetwork:+"${wholenetwork}"}
+           ${wholenetwork_flag:+"${wholenetwork_flag}"}
            )
 
   # qsub -N <pbsjobname> -q cpuq [psb_options] -- \
