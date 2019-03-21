@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
+import os
 import sys
 import csv
 import re
@@ -26,6 +27,13 @@ SCORING_FUNCTIONS = {
 'linear': linear_score,
 'square': square_score,
 }
+
+
+# Processing non-UTF-8 Posix filenames using Python pathlib?
+# https://stackoverflow.com/a/45724695/2377454
+def safe_path(path: pathlib.Path) -> pathlib.Path:
+    encoded_path = path.as_posix().encode('utf-8')
+    return pathlib.Path(os.fsdecode(encoded_path))
 
 
 if __name__ == '__main__':
@@ -56,7 +64,7 @@ if __name__ == '__main__':
     scoring_function = SCORING_FUNCTIONS[args.scoring_function]
 
     scores = defaultdict(float)
-    with infile.open('r', encoding='UTF-8') as infp:
+    with safe_path(infile).open('r', encoding='UTF-8') as infp:
         reader = csv.reader(infp, delimiter=' ')
 
         for cycle in reader:
@@ -71,7 +79,7 @@ if __name__ == '__main__':
     if output is None:
         outfile = sys.stdout
     else:
-        outfile = output.open('w+', encoding='UTF-8')
+        outfile = safe_path(output).open('w+', encoding='UTF-8')
 
     for nid, score in sorted(scores.items()):
         rounded_score = round(score, NDIGITS)

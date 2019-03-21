@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
+import os
 import re
 import sys
 import csv
@@ -18,17 +19,24 @@ SCORES_FILENAMES = {'looprank': 'enwiki.{algo}.{title}.4.2018-03-01.scores.txt',
 OUTPUT_FILENAME = 'enwiki.{algo}.{title}.2018-03-01.compare_lr-pr.txt'
 
 
+# Processing non-UTF-8 Posix filenames using Python pathlib?
+# https://stackoverflow.com/a/45724695/2377454
+def safe_path(path: pathlib.Path) -> pathlib.Path:
+    encoded_path = path.as_posix().encode('utf-8')
+    return pathlib.Path(os.fsdecode(encoded_path))
+
+
 # How to get line count cheaply in Python?
 # https://stackoverflow.com/a/45334571/2377454
-def count_file_lines(file_path):
+def count_file_lines(file_path: pathlib.Path) -> int:
     """
     Counts the number of lines in a file using wc utility.
     :param file_path: path to file
     :return: int, no of lines
     """
+
     num = subprocess.check_output(
-        ['wc', '-l', file_path.decode().encode('ascii',  errors='surrogatepass')
-         ])
+        ['wc', '-l', safe_path(file_path)])
     num = num.decode('utf-8').strip().split(' ')
     return int(num[0])
 
@@ -97,7 +105,7 @@ if __name__ == '__main__':
     # print('* Read input. ', file=sys.stderr)
     infile = None
     if args.input:
-        infile = args.input.open('r', encoding='utf-8')
+        infile = safe_path(args.input).open('r', encoding='utf-8')
     else:
         infile = sys.stdin
 
@@ -110,7 +118,7 @@ if __name__ == '__main__':
     snaplen = count_file_lines(snapshot_file)
     snapshot = dict()
     with tqdm.tqdm(total=snaplen) as pbar:
-        with snapshot_file.open('r', encoding='utf-8') as snapfp:
+        with safe_path(snapshot_file).open('r', encoding='utf-8') as snapfp:
             reader = csv.reader(snapfp, delimiter='\t')
             for l in reader:
                 snapshot[int(l[0])] = l[1]
@@ -131,7 +139,7 @@ if __name__ == '__main__':
 
         links_file = links_dir/links_filename
 
-        with open(str(links_file), 'r', encoding='utf-8') as linkfp:
+        with safe_path(links_file).open('r', encoding='utf-8') as linkfp:
             reader = csv.reader(linkfp, delimiter='\t')
             next(reader)
 
@@ -154,7 +162,10 @@ if __name__ == '__main__':
 
             all_outlines = []
             scoreslen = count_file_lines(scores_file)
-            with scores_file.open('r', encoding='UTF-8') as scoresfp:
+
+
+            with safe_path(scores_file).open('r', encoding='UTF-8') \
+                    as scoresfp:
                 with tqdm.tqdm(total=scoreslen, leave=False) as pbar:
                     for line in scoresfp:
                         page_id, score = process_line(line)
@@ -187,7 +198,7 @@ if __name__ == '__main__':
                                )
             output_file = output_dir/output_filename
 
-            with output_file.open('w+', encoding='UTF-8') as outfp:
+            with safe_path(output_file).open('w+', encoding='UTF-8') as outfp:
                 outwriter = csv.writer(outfp, delimiter='\t')
                 for lid in link_positions:
                     link_title = snapshot[lid]
