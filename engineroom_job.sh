@@ -16,6 +16,10 @@ if ! $SOURCED; then
   IFS=$'\n\t'
 fi
 
+export LC_ALL='en_US.UTF-8'
+export LC_CTYPE='en_US.UTF-8'
+export LANG='en_US.UTF-8'
+
 SCRIPTDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 
 # check if path is absolute
