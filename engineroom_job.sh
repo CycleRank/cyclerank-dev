@@ -329,6 +329,23 @@ if ! $project_set; then
 fi
 
 #################### utils
+# How to remove invalid characters from filenames?
+# https://serverfault.com/a/776229/155367
+function sanitize() {
+  shopt -s extglob;
+  filename="$1"
+
+  filename_clean=$(echo "$filename" | \
+    sed -e 's/[\\/:\*\?"<>\|\x01-\x1F\x7F]//g' \
+        -e 's/^\(nul\|prn\|con\|lpt[0-9]\|com[0-9]\|aux\)\(\.\|$\)//i' \
+        -e 's/^\.*$//' \
+        -e 's/^$/NONAME/'\
+    )
+
+  echo "$filename_clean"
+
+}
+
 if $debug_flag; then
   function echodebug() {
     (>&2 echo -en "[$(date '+%F_%H:%M:%S')][debug]\\t")
@@ -415,8 +432,9 @@ tmpoutdir="${scratch}/output"
 mkdir -p "${tmpoutdir}"
 echodebug "Created ${tmpoutdir}"
 
-# convert spaces to underscores
-NORMTITLE="${TITLE/ /_}"
+# convert spaces to underscores and sanitize title
+NORMTITLE="$(sanitize "${TITLE/ /_}")"
+echodebug "TITLE: $TITLE - NORMTITLE: $NORMTITLE"
 
 # verbosity flag
 verbosity_flag=''
