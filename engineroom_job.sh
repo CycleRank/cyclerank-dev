@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #PBS -V
-#PBS -l walltime=01:00:00
+#PBS -l walltime=10:00:00
 #PBS -l nodes=1:ncpus=1:ppn=1
 #PBS -q short_cpuQ
 
