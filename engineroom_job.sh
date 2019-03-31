@@ -346,6 +346,38 @@ function sanitize() {
 
 }
 
+function find_sanitized() {
+  local target="$1"
+  local adir="$2"
+  local found=''
+
+
+  (>&2 echo "target: ${target}")
+  (>&2 echo "adir: ${adir}")
+
+  mkfifo "${scratch}/mypipe"
+
+  ( cd "$adir"
+    find . \
+      -mindepth 1 \
+      -maxdepth 1 \
+      -type f \
+      -name  '*.seealso.txt' > "${scratch}/mypipe" &
+  )
+
+  while read -r afile; do
+    atitle=$(echo "$afile" | \
+             sed -re 's#\./enwiki\.comparison\.(.+)\.seealso.txt#\1#g')
+    asanetitle=$( sanitize "$atitle" )
+    if [[ "${asanetitle}" == "${target}" ]]; then
+      found="${afile}"
+      break
+    fi
+  done < "${scratch}/mypipe"
+
+  realpath "${adir}/${found}"
+}
+
 if $debug_flag; then
   function echodebug() {
     (>&2 echo -en "[$(date '+%F_%H:%M:%S')][debug]\\t")
@@ -513,10 +545,19 @@ if $debug_flag || $verbose_flag; then set +x; fi
 
 # save page title in scratch/title.txt
 echo "${NORMTITLE}" >> "${scratch}/titles.txt"
-echodebug "${NORMTITLE}"
+echodebug "NORMTITLE: ${NORMTITLE}"
 
+# cp "${LINKS_DIR}/enwiki.comparison.${NORMTITLE}.seealso.txt" \
+#   "${scratch}/links.txt"
+# FIXME
 cp "${LINKS_DIR}/enwiki.comparison.${NORMTITLE}.seealso.txt" \
-   "${scratch}/links.txt"
+   "${scratch}/links.txt" || \
+  cp "${LINKS_DIR}/enwiki.comparison.${TITLE}.seealso.txt" \
+     "${scratch}/links.txt" || \
+  (
+   sanitized_file=$(find_sanitized "$NORMTITLE" "$LINKS_DIR")
+   cp "${sanitized_file}" "${scratch}/links.txt"
+  )
 
 touch "${scratch}/links.txt"
 if $debug_flag || $verbose_flag; then set -x; fi
