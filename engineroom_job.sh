@@ -448,8 +448,8 @@ fi
 outfileLR="${PROJECT}.looprank.${NORMTITLE}.${MAXLOOP}.${DATE}.txt"
 logfileLR="${OUTPUTDIR}/${PROJECT}.looprank.${NORMTITLE}.${MAXLOOP}.${DATE}.log"
 
-
-commandLR=("$SCRIPTDIR/pageloop_back_map_noscore" \
+commandLR=("wrap_run" \
+           "$SCRIPTDIR/pageloop_back_map_noscore" \
            "-f" "${INPUT_GRAPH}" \
            "-o" "${tmpoutdir}/${outfileLR}" \
            "-s" "${INDEX}" \
@@ -471,9 +471,11 @@ if $debug_flag || $verbose_flag; then set +x; fi
 scorefileLR="${PROJECT}.looprank.${NORMTITLE}.${MAXLOOP}.${DATE}.scores.txt"
 inputfileLR="${tmpoutdir}/${outfileLR}"
 
+touch "${inputfileLR}"
+
 echodebug "encoding: $(python3 -c 'import locale; print(locale.getpreferredencoding(False))')"
 
-python3 "${SCRIPTDIR}/utils/compute_scores.py" \
+wrap_run python3 "${SCRIPTDIR}/utils/compute_scores.py" \
   -o "${tmpoutdir}/${scorefileLR}" \
     "${inputfileLR}"
 
@@ -488,7 +490,8 @@ if $wholenetwork; then
   wholenetwork_flag='-w'
 fi
 
-commandSSPPR=("$SCRIPTDIR/ssppr" \
+commandSSPPR=("wrap_run" \
+              "$SCRIPTDIR/ssppr" \
               "-f" "${INPUT_GRAPH}" \
               "-o" "${tmpoutdir}/${outfileSSPPR}" \
               "-s" "${INDEX}" \
@@ -515,9 +518,10 @@ echodebug "${NORMTITLE}"
 cp "${LINKS_DIR}/enwiki.comparison.${NORMTITLE}.seealso.txt" \
    "${scratch}/links.txt"
 
+touch "${scratch}/links.txt"
 if $debug_flag || $verbose_flag; then set -x; fi
 
-python3 "$SCRIPTDIR/utils/compare_seealso.py" \
+wrap_run python3 "$SCRIPTDIR/utils/compare_seealso.py" \
   -i "${scratch}/titles.txt" \
   -l "${scratch}" \
   --links-filename "links.txt" \
@@ -528,6 +532,8 @@ python3 "$SCRIPTDIR/utils/compare_seealso.py" \
 if $debug_flag || $verbose_flag; then set +x; fi
 
 comparefileSSPPR="${PROJECT}.ssppr.${NORMTITLE}.${DATE}.compare_lr-pr.txt"
+touch "${OUTPUTDIR}/${comparefileSSPPR}"
+
 maxrowSSPPR="$(LC_ALL=C \
   awk 'BEGIN{a=0}{if ($1>0+a) a=$1} END{print a}' \
     "${OUTPUTDIR}/${comparefileSSPPR}"
@@ -537,6 +543,7 @@ maxrowSSPPR="$(LC_ALL=C \
 # scorefileLR="${PROJECT}.looprank.${NORMTITLE}.${MAXLOOP}.${DATE}.scores.txt"
 # outfileSSPPR="${PROJECT}.ssppr.${NORMTITLE}.${MAXLOOP}.${DATE}.txt"
 
+touch "${tmpoutdir}/${outfileSSPPR}.sorted"
 LC_ALL=C sort -t$'\t' -k2 -r -n "${tmpoutdir}/${outfileSSPPR}" \
   > "${tmpoutdir}/${outfileSSPPR}.sorted"
 
