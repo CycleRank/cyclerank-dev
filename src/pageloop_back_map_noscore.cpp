@@ -432,6 +432,7 @@ int main(int argc, const char* argv[]) {
       }
     }
 
+    /*
     if(debug) {
       console->debug("index map (1)");
       console->debug("old2new.size() is {}", old2new.size());
@@ -447,6 +448,7 @@ int main(int argc, const char* argv[]) {
       }
       console->debug("~~~");
     }
+    */
 
     destroy_nodes(grafo, destroy);
 
@@ -539,16 +541,17 @@ int main(int argc, const char* argv[]) {
 
         tmp_new2old[newindex] = oldi;
         tmp_old2new.insert(pair<int,int>(oldi, newindex));
-        console->debug("tmp_new2old[{0}]: {1}",
-                       newindex,
-                       tmp_new2old[newindex]);
-        console->debug("tmp_old2new.insert(pair<int,int>({0}, {1}))",
-                       oldi,
-                       newindex);
+        // console->debug("tmp_new2old[{0}]: {1}",
+        //                newindex,
+        //                tmp_new2old[newindex]);
+        // console->debug("tmp_old2new.insert(pair<int,int>({0}, {1}))",
+        //                oldi,
+        //                newindex);
       }
     }
   }
 
+  /*
   if(debug) {
     console->debug("*** tmp maps ***");
     console->debug("tmp_old2new, tmp_new2old");
@@ -580,6 +583,7 @@ int main(int argc, const char* argv[]) {
 
     console->debug("*** 1 ***");
   }
+  */
 
   {
     int oldi = -1, tmpnewi = -1;
@@ -615,7 +619,7 @@ int main(int argc, const char* argv[]) {
   tmp_new2old.swap(new2old);
   tmp_old2new.swap(old2new);
 
-
+  /*
   if(debug) {
     console->debug("map indexes");
     console->debug("old2new.size() is {}", old2new.size());
@@ -629,6 +633,7 @@ int main(int argc, const char* argv[]) {
     }
     console->debug("~~~");
   }
+  */
 
   // *************************************************************************
   // get remapped source node (S)
