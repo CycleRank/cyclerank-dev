@@ -140,12 +140,14 @@ Options:
   -h                  Show this help and exits.
   -k MAXLOOP          Max loop length (K) [default: 4].
   -K                  Keep temporary files.
+  -n                  Dry run, do not really launch the jobs.
   -p PROJECT          Project name [default: infer from input graph].
   -P PYTHON_VERSION   Python version [default: 3.6].
-  -w                  Compute the pagerank on the whole network.
-  -n                  Dry run, do not really launch the jobs.
+  -t TIMEOUT          Timeout (in seconds) for executing the LoopRank and
+                      SSPPR commands.
   -v                  Enable verbose output.
   -V VENV_PATH        Absolute path of the virtualenv directory [default: \$PWD/looprank3].
+  -w                  Compute the pagerank on the whole network.
 
 Example:
   engineroom_job.sh  -i /home/user/pagerank/enwiki/20180301/enwiki.wikigraph.pagerank.2018-03-01.csv \\
@@ -179,8 +181,9 @@ LINKS_DIR=''
 DATE=''
 PROJECT=''
 MAXLOOP=4
+TIMEOUT=-1
 
-while getopts ":dD:hi:I:k:Kl:no:p:P:s:T:vV:w" opt; do
+while getopts ":dD:hi:I:k:Kl:no:p:P:s:t:T:vV:w" opt; do
   case $opt in
     d)
       debug_flag=true
@@ -241,6 +244,11 @@ while getopts ":dD:hi:I:k:Kl:no:p:P:s:T:vV:w" opt; do
       check_file "$OPTARG" '-s'
 
       SNAPSHOT="$OPTARG"
+      ;;
+    t)
+      check_posint "$OPTARG" '-t'
+
+      TIMEOUT="$OPTARG"
       ;;
     T)
       title_unset=false
@@ -336,7 +344,7 @@ function sanitize() {
   filename="$1"
 
   filename_clean=$(echo "$filename" | \
-    sed -e 's/[\\/:\*\?"<>\|\x01-\x1F\x7F]//g' \
+    sed -e 's/[\\/:&\*\?"<>\|\x01-\x1F\x7F]//g' \
         -e 's/^\(nul\|prn\|con\|lpt[0-9]\|com[0-9]\|aux\)\(\.\|$\)//i' \
         -e 's/^\.*$//' \
         -e 's/^$/NONAME/'\
@@ -350,10 +358,6 @@ function find_sanitized() {
   local target="$1"
   local adir="$2"
   local found=''
-
-
-  (>&2 echo "target: ${target}")
-  (>&2 echo "adir: ${adir}")
 
   mkfifo "${scratch}/mypipe"
 
@@ -406,6 +410,71 @@ function safe_head() {
     cat "$input"
   fi
 }
+
+function log_cmd() {
+  local arr
+  local cmd
+  local logfile
+
+  arr=( "$@" )
+
+  logfile="${arr[0]}"
+  cmd=( "${arr[@]:1}" )
+
+  echodebug "logfile: ${logfile}"
+  # shellcheck disable=SC2116
+  echodebug "cmd to log: $(echo "${cmd[@] | tr '\n' ' '}")"
+
+  if $debug_flag || $verbose_flag; then set -x; fi
+
+  if $debug_flag; then
+    eval "${cmd[@]}" | tee "${logfile}"
+  elif $verbose_flag; then
+    eval "${cmd[@]}" >  "${logfile}"
+  else
+    eval "${cmd[@]}"
+  fi
+
+  if $debug_flag || $verbose_flag; then set +x; fi
+}
+
+# Execute a shell function with timeout
+# https://stackoverflow.com/a/24416732/2377454
+function timeout_cmd {
+  local arr
+  local cmd
+  local timeout
+
+  arr=( "$@" )
+
+  timeout="${arr[0]}"
+  cmd=( "${arr[@]:1}" )
+
+  echodebug "timeout: $timeout"
+  # shellcheck disable=SC2116
+  echodebug "cmd to timeout: $(echo "${cmd[@] | tr $'\n' ' '}")"
+
+  (
+    # Preserving quotes in bash function parameters
+    # https://stackoverflow.com/questions/3260920/
+    #   preserving-quotes-in-bash-function-parameters
+    #   #comment62219545_24179878
+    #
+    # Much better would be to use printf %q, which the shell guarantees will
+    # generate eval-safe output.
+    eval "${cmd[@]}" &
+    child="$!"
+
+    echodebug "child: $child"
+    trap -- "" SIGTERM
+    (
+      sleep "$timeout"
+      kill "$child" 2> /dev/null
+    ) &
+    wait "$child"
+  )
+}
+
 #################### end: utils
 
 #################### debug info
@@ -465,7 +534,7 @@ mkdir -p "${tmpoutdir}"
 echodebug "Created ${tmpoutdir}"
 
 # convert spaces to underscores and sanitize title
-NORMTITLE="$(sanitize "${TITLE/ /_}")"
+NORMTITLE="$(printf "%q" "$(sanitize "${TITLE/ /_}")")"
 echodebug "TITLE: $TITLE - NORMTITLE: $NORMTITLE"
 
 # verbosity flag
@@ -489,15 +558,29 @@ commandLR=("wrap_run" \
            ${verbosity_flag:+"$verbosity_flag"}
            )
 
-if $debug_flag || $verbose_flag; then set -x; fi
-if $debug_flag; then
-  "${commandLR[@]}" | tee "${logfileLR}"
-elif $verbose_flag; then
-  "${commandLR[@]}" >  "${logfileLR}"
+
+echodebug "Running commandLR"
+if [ "$TIMEOUT" -gt 0 ]; then
+  echodebug "Set timeout to: $TIMEOUT"
+  set +e
+  timeout_cmd "$TIMEOUT" log_cmd "${logfileLR}" "${commandLR[@]}"
+  retval="$?"
+  set -e
+
+  echodebug "retval: $retval"
+  echodebug "BASHPID: $BASHPID"
+
+  if [[ "$((retval % 128))" -eq 15 ]]; then
+    echodebug "The command timed out"
+    subshell_pid="$(pgrep -f "$SCRIPTDIR/pageloop_back_map_noscore")"
+    kill "$subshell_pid" 2>/dev/null
+  fi
+
 else
-  "${commandLR[@]}"
+  echodebug "No timeout"
+  log_cmd "${logfileLR}" "${commandLR[@]}"
 fi
-if $debug_flag || $verbose_flag; then set +x; fi
+touch "${tmpoutdir}/${outfileLR}"
 
 # Compute LoopRank scores
 scorefileLR="${PROJECT}.looprank.${NORMTITLE}.${MAXLOOP}.${DATE}.scores.txt"
@@ -532,13 +615,33 @@ commandSSPPR=("wrap_run" \
               ${wholenetwork_flag[@]:+"${wholenetwork_flag[@]}"}
               )
 
-if $debug_flag || $verbose_flag; then set -x; fi
-if $debug_flag; then
-  "${commandSSPPR[@]}" | tee "${logfileSSPPR}"
+echodebug "Running commandSSPPR"
+# if $debug_flag || $verbose_flag; then set -x; fi
+# if $debug_flag; then
+#   "${commandSSPPR[@]}" | tee "${logfileSSPPR}"
+# else
+#   "${commandSSPPR[@]}" >  "${logfileSSPPR}"
+# fi
+# if $debug_flag || $verbose_flag; then set +x; fi
+if [ "$TIMEOUT" -gt 0 ]; then
+  echodebug "Set timeout to: $TIMEOUT"
+  set +e
+  timeout_cmd "$TIMEOUT" log_cmd "${logfileSSPPR}" "${commandSSPPR[@]}"
+  retval="$?"
+  set -e
+
+  echodebug "retval: $retval"
+  if [[ "$((retval % 128))" -eq 15 ]]; then
+    echodebug "The command timed out"
+    subshell_pid="$(pgrep -f "$SCRIPTDIR/ssppr")"
+    kill "$subshell_pid" 2>/dev/null
+  fi
+
 else
-  "${commandSSPPR[@]}" >  "${logfileSSPPR}"
+  echodebug "No timeout"
+  log_cmd "${logfileSSPPR}" "${commandSSPPR[@]}"
 fi
-if $debug_flag || $verbose_flag; then set +x; fi
+touch "${tmpoutdir}/${outfileSSPPR}"
 
 ##### Compare See Also
 ##############################################################################
@@ -551,9 +654,9 @@ echodebug "NORMTITLE: ${NORMTITLE}"
 #   "${scratch}/links.txt"
 # FIXME
 cp "${LINKS_DIR}/enwiki.comparison.${NORMTITLE}.seealso.txt" \
-   "${scratch}/links.txt" || \
+   "${scratch}/links.txt" 2>/dev/null || \
   cp "${LINKS_DIR}/enwiki.comparison.${TITLE}.seealso.txt" \
-     "${scratch}/links.txt" || \
+     "${scratch}/links.txt" 2>/dev/null || \
   (
    sanitized_file=$(find_sanitized "$NORMTITLE" "$LINKS_DIR")
    cp "${sanitized_file}" "${scratch}/links.txt"
@@ -580,17 +683,15 @@ maxrowSSPPR="$(LC_ALL=C \
     "${OUTPUTDIR}/${comparefileSSPPR}"
   )"
 
-# outfileLR="${PROJECT}.looprank.${NORMTITLE}.${MAXLOOP}.${DATE}.txt"
-# scorefileLR="${PROJECT}.looprank.${NORMTITLE}.${MAXLOOP}.${DATE}.scores.txt"
-# outfileSSPPR="${PROJECT}.ssppr.${NORMTITLE}.${MAXLOOP}.${DATE}.txt"
-
+touch "${tmpoutdir}/${outfileSSPPR}"
 touch "${tmpoutdir}/${outfileSSPPR}.sorted"
 LC_ALL=C sort -t$'\t' -k2 -r -n "${tmpoutdir}/${outfileSSPPR}" \
   > "${tmpoutdir}/${outfileSSPPR}.sorted"
 
-cp "${tmpoutdir}/${outfileLR}" "${OUTPUTDIR}/${outfileLR}"
-cp "${tmpoutdir}/${scorefileLR}" "${OUTPUTDIR}/${scorefileLR}"
-safe_head "$((maxrowSSPPR+1))" "${tmpoutdir}/${outfileSSPPR}.sorted" > "${OUTPUTDIR}/${outfileSSPPR}"
+wrap_run cp "${tmpoutdir}/${outfileLR}" "${OUTPUTDIR}/${outfileLR}"
+wrap_run cp "${tmpoutdir}/${scorefileLR}" "${OUTPUTDIR}/${scorefileLR}"
+wrap_run safe_head "$((maxrowSSPPR+1))" "${tmpoutdir}/${outfileSSPPR}.sorted" \
+  > "${OUTPUTDIR}/${outfileSSPPR}"
 
 echo "Done processing ${NORMTITLE}!"
 (>&2 echo "Done processing ${NORMTITLE}!" )
