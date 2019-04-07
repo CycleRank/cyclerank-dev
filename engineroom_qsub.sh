@@ -118,6 +118,7 @@ Options:
   -P PBS_PPN              Number of PBS processors per node to request (needs also -n  and -P to be specified).
   -q PBS_QUEUE            PBS queue name [default: cpuq].
   -S SLEEP_PER_BATCH      Sleeping time in seconds between batches [default: 1800].
+  -t TIMEOUT              Timeout (in seconds) for executing the LoopRank and SSPPR commands.
   -v                      Enable verbose output.
   -V VENV_PATH            Absolute path of the virtualenv directory [default: \$PWD/wikidump].
   -x PYTHON_VERSION       Python version [default: 3.6].
@@ -136,6 +137,7 @@ pageslist_unset=true
 
 project_set=false
 date_set=false
+timeout_set=false
 debug_flag=false
 verbose_flag=false
 help_flag=false
@@ -147,6 +149,7 @@ OUTPUTDIR=''
 PAGES_LIST=''
 PROJECT=''
 MAXLOOP=4
+TIMEOUT=''
 
 VENV_PATH="$PWD/looprank3"
 PYTHON_VERSION='3.6'
@@ -166,7 +169,7 @@ PBS_HOST=''
 MAX_JOBS_PER_BATCH=30
 SLEEP_PER_BATCH=1800
 
-while getopts ":cdD:hH:i:I:k:l:M:nN:o:p:P:q:s:S:vV:x:w:W" opt; do
+while getopts ":cdD:hH:i:I:k:l:M:nN:o:p:P:q:s:S:t:vV:x:w:W" opt; do
   case $opt in
     c)
       check_posint "$OPTARG" '-c'
@@ -254,11 +257,17 @@ while getopts ":cdD:hH:i:I:k:l:M:nN:o:p:P:q:s:S:vV:x:w:W" opt; do
     S)
       SLEEP_PER_BATCH="$OPTARG"
       ;;
+    t)
+      check_posint "$OPTARG" '-t'
+
+      timeout_set=true
+      TIMEOUT="$OPTARG"
+      ;;
     v)
       verbose_flag=true
       ;;
     V)
-      check_dir "$OPTARG" '-v'
+      check_dir "$OPTARG" '-V'
 
       VENV_PATH="$OPTARG"
       ;;
@@ -393,6 +402,14 @@ echodebug "  * dryrun_flag (-N): $dryrun_flag"
 echodebug "  * PBS_PPN (-P): $PBS_PPN"
 echodebug "  * PBS_QUEUE (-q): $PBS_QUEUE"
 echodebug "  * SLEEP_PER_BATCH (-S): $SLEEP_PER_BATCH"
+
+if $timeout_set; then
+  echodebug "  * TIMEOUT (-t): $TIMEOUT"
+else
+  echodebug "  * TIMEOUT (-t): (not set)"
+fi
+
+echodebug "  * SLEEP_PER_BATCH (-S): $SLEEP_PER_BATCH"
 echodebug "  * verbose_flag (-v): $verbose_flag"
 echodebug "  * VENV_PATH (-V): $VENV_PATH"
 echodebug "  * PYTHON_VERSION (-x): $PYTHON_VERSION"
@@ -450,6 +467,11 @@ if $debug_flag; then
   verbosity_flag='-d'
 elif $verbose_flag; then
   verbosity_flag='-v'
+fi
+
+declare -a timeout_flag
+if $timeout_set; then
+  timeout_flag+=('-t' "${TIMEOUT}")
 fi
 
 counter=0
@@ -510,6 +532,7 @@ for title in "${!pages[@]}"; do
            "-i" "$INPUT_GRAPH" \
            "-o" "${OUTPUTDIR}" \
            "-s" "${SNAPSHOT}" \
+           ${timeout_flag[@]:+"${timeout_flag[@]}"} \
            "-l" "${LINKS_DIR}" \
            "-I" "${idx}" \
            "-T" "${normtitle}" \
