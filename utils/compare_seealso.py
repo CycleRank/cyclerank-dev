@@ -5,6 +5,7 @@ import os
 import re
 import sys
 import csv
+import glob
 import tqdm
 import pathlib
 import argparse
@@ -17,6 +18,22 @@ SCORES_FILENAMES = {'looprank': 'enwiki.{algo}.{title}.4.2018-03-01.scores.txt',
                     'ssppr': 'enwiki.{algo}.{title}.4.2018-03-01.txt',
                     }
 OUTPUT_FILENAME = 'enwiki.{algo}.{title}.2018-03-01.compare_lr-pr.txt'
+
+
+# sanitize regex
+sanre01 = re.compile(r'[\\/:&\*\?"<>\|\x01-\x1F\x7F]')
+sanre02 = re.compile(r'^\(nul\|prn\|con\|lpt[0-9]\|com[0-9]\|aux\)\(\.\|$\)',
+                     re.IGNORECASE)
+sanre03 = re.compile(r'^\.*$')
+sanre04 = re.compile(r'^$')
+
+def sanitize(filename: str) -> str:
+    res = sanre01.sub('', filename)
+    res = sanre02.sub('', res)
+    res = sanre03.sub('', res)
+    res = sanre04.sub('', res)
+
+    return res
 
 
 # Processing non-UTF-8 Posix filenames using Python pathlib?
@@ -36,7 +53,7 @@ def count_file_lines(file_path: pathlib.Path) -> int:
     """
 
     num = subprocess.check_output(
-        ['wc', '-l', safe_path(file_path)])
+        ['wc', '-l', safe_path(file_path).as_posix()])
     num = num.decode('utf-8').strip().split(' ')
     return int(num[0])
 
@@ -132,12 +149,17 @@ if __name__ == '__main__':
         # print('    - {}'.format(title), file=sys.stderr)
 
         if args.links_filename is None:
-            links_filename = ('enwiki.comparison.{title}.seealso.txt'
+            links_filename = sanitize('enwiki.comparison.{title}.seealso.txt'
                               .format(title=title))
         else:
-            links_filename = args.links_filename
+            links_filename = sanitize(args.links_filename)
 
-        links_file = links_dir/links_filename
+
+        for alinkfile in (os.path.basename(x)
+                          for x in glob.glob(links_dir.as_posix() + '/*')):
+            if sanitize(alinkfile) == links_filename:
+                links_file = links_dir/pathlib.Path(alinkfile)
+                break
 
         with safe_path(links_file).open('r', encoding='utf-8') as linkfp:
             reader = csv.reader(linkfp, delimiter='\t')
@@ -155,10 +177,15 @@ if __name__ == '__main__':
         for algo in ALGOS:
             # print('      * Read score ({}) file'.format(algo),
             #      file=sys.stderr)
-            scores_filename = (SCORES_FILENAMES[algo].format(algo=algo,
-                               title=title.replace(' ', '_'))
-                               )
-            scores_file = scores_dir/scores_filename
+            scores_filename = sanitize(SCORES_FILENAMES[algo].format(algo=algo,
+                                       title=title.replace(' ', '_'))
+                                       )
+
+            for ascorefile in (os.path.basename(x)
+                            for x in glob.glob(scores_dir.as_posix() + '/*')):
+                if sanitize(ascorefile) == scores_filename:
+                    scores_file = scores_dir/pathlib.Path(ascorefile)
+                    break
 
             all_outlines = []
             scoreslen = count_file_lines(scores_file)
@@ -193,9 +220,9 @@ if __name__ == '__main__':
             #       file=sys.stderr)
 
             output_dir = args.output_dir
-            output_filename = (OUTPUT_FILENAME.format(algo=algo,
-                               title=title.replace(' ', '_'))
-                               )
+            output_filename = sanitize(OUTPUT_FILENAME.format(algo=algo,
+                                       title=title.replace(' ', '_'))
+                                       )
             output_file = output_dir/output_filename
 
             with safe_path(output_file).open('w+', encoding='UTF-8') as outfp:
