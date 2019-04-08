@@ -79,11 +79,11 @@ function check_posint() {
 function short_usage() {
   (>&2 echo \
 "Usage:
-  engineroom_qsub.sh [options] -i INPUT_GRAPH
-                               -o OUTPUTDIR
-                               -s SNAPSHOT
-                               -l LINKS_DIR
-                               -I PAGES_LIST
+  engineroom_qsub_cr.sh [options] -i INPUT_GRAPH
+                                  -o OUTPUTDIR
+                                  -s SNAPSHOT
+                                  -l LINKS_DIR
+                                  -I PAGES_LIST
   "
   )
 }
@@ -126,7 +126,7 @@ Options:
   -W                      Compute the pagerank on the whole network.
 
 Example:
-  engineroom_qsub.sh")
+  engineroom_qsub_cr.sh")
 }
 
 inputgraph_unset=true
@@ -479,7 +479,7 @@ for title in "${!pages[@]}"; do
   idx="${pages[$title]}"
   normtitle="${title/ /_}"
 
-  pbsjobname="ngi_${MAXLOOP}_${idx}"
+  pbsjobname="ngi_cr_${MAXLOOP}_${idx}"
 
   logfile="${OUTPUTDIR}/${PROJECT}.looprank.${normtitle}.${MAXLOOP}.${DATE}.log"
   echo "Logging to ${logfile}"

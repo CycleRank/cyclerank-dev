@@ -107,12 +107,12 @@ function check_posint() {
 function short_usage() {
   (>&2 echo \
 "Usage:
-  engineroom_job.sh [options] -i INPUT_GRAPH
-                              -o OUTPUTDIR
-                              -s SNAPSHOT
-                              -l LINKS_DIR
-                              -I INDEX
-                              -T TITLE
+  engineroom_job_cr.sh [options] -i INPUT_GRAPH
+                                 -o OUTPUTDIR
+                                 -s SNAPSHOT
+                                 -l LINKS_DIR
+                                 -I INDEX
+                                 -T TITLE
 "
   )
 }
@@ -150,9 +150,9 @@ Options:
   -w                  Compute the pagerank on the whole network.
 
 Example:
-  engineroom_job.sh  -i /home/user/pagerank/enwiki/20180301/enwiki.wikigraph.pagerank.2018-03-01.csv \\
-                     -o /home/user/pagerank/enwiki/20180301/ \\
-                     -p enwiki.pages.txt")
+  engineroom_job_cr.sh  -i /home/user/pagerank/enwiki/20180301/enwiki.wikigraph.pagerank.2018-03-01.csv \\
+                        -o /home/user/pagerank/enwiki/20180301/ \\
+                        -p enwiki.pages.txt")
 }
 
 
@@ -194,7 +194,7 @@ while getopts ":dD:hi:I:k:Kl:no:p:P:s:t:T:vV:w" opt; do
       DATE="$OPTARG"
       ;;
     h)
-      help_flag=true
+       help_flag=true
       ;;
     i)
       inputgraph_unset=false
