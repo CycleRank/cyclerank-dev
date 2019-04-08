@@ -2,6 +2,7 @@
 data
 logs
 misc
+results
 
 # ignore txt and csv files in the repo root (input/output files)
 *.txt
