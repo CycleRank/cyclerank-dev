@@ -427,10 +427,9 @@ while read -r line; do
   key=$(echo "$line" | awk -F$'\t' '{print $1}')
   value=$(echo "$line" | awk -F$'\t' '{print $2}')
 
-  echodebug -ne "-> processed pages: $count_pages\033[0K\r"
-
   pages[$key]="$value"
   count_pages=$((count_pages+1))
+  echodebug -ne "-> processed pages: $count_pages\033[0K\r"
 done < "$PAGES_LIST"
 echodebug
 
