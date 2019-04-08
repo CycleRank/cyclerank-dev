@@ -9,6 +9,22 @@ INPUT_FILENAME = 'enwiki.{algo}.{title}.2018-03-01.compare_lr-pr.txt'
 COMPARISON_FILE_HEADER = ('pos', 'title', 'page_id', 'score')
 
 
+# sanitize regex
+sanre01 = re.compile(r'[\\/:&\*\?"<>\|\x01-\x1F\x7F]')
+sanre02 = re.compile(r'^\(nul\|prn\|con\|lpt[0-9]\|com[0-9]\|aux\)\(\.\|$\)',
+                     re.IGNORECASE)
+sanre03 = re.compile(r'^\.*$')
+sanre04 = re.compile(r'^$')
+
+def sanitize(filename: str) -> str:
+    res = sanre01.sub('', filename)
+    res = sanre02.sub('', res)
+    res = sanre03.sub('', res)
+    res = sanre04.sub('', res)
+
+    return res
+
+
 def read_comparison_file(algo, title, comparison_dir):
     input_filename = INPUT_FILENAME.format(algo=algo, title=title)
     input_file = comparison_dir/input_filename
@@ -111,8 +127,8 @@ if __name__ == '__main__':
             scores[title] = score_link
 
 
-        outfile = ('enwiki.{title}.2018-03-01.compare_lr-pr.scores.txt'
-                   .format(title=title.replace(' ', '_')))
+        outfile = sanitize('enwiki.{title}.2018-03-01.compare_lr-pr.scores.txt'
+                           .format(title=title.replace(' ', '_')))
         with open(outfile, 'w+') as outfp:
             writer = csv.writer(outfp, delimiter='\t')
             writer.writerow((score,))
