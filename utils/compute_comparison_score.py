@@ -30,7 +30,7 @@ def read_comparison_file(algo, title, comparison_dir):
 
                 links[page_id] = data
     except FileNotFoundError:
-        print("File {} not found.", file=sys.stderr)
+        print("File {} not found.".format(input_file), file=sys.stderr)
 
     return links
 
