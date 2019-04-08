@@ -15,19 +15,22 @@ def read_comparison_file(algo, title, comparison_dir):
 
 
     links = {}
-    with input_file.open('r') as infp:
-        reader = csv.reader(infp, delimiter='\t')
+    try:
+        with input_file.open('r') as infp:
+            reader = csv.reader(infp, delimiter='\t')
 
-        # ['5', 'Bijbehara railway station', '11119524', '2.41667']
-        for line in reader:
-            data = dict()
-            data['pos'] = int(line[0])
-            data['title'] = line[1]
-            data['score'] = float(line[3])
+            # ['5', 'Bijbehara railway station', '11119524', '2.41667']
+            for line in reader:
+                data = dict()
+                data['pos'] = int(line[0])
+                data['title'] = line[1]
+                data['score'] = float(line[3])
 
-            page_id = int(line[2])
+                page_id = int(line[2])
 
-            links[page_id] = data
+                links[page_id] = data
+    except FileNotFoundError:
+        print("File {} not found.", file=sys.stderr)
 
     return links
 
