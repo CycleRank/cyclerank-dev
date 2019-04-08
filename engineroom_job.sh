@@ -564,17 +564,28 @@ if [ "$TIMEOUT" -gt 0 ]; then
   echodebug "Set timeout to: $TIMEOUT"
   set +e
   timeout_cmd "$TIMEOUT" log_cmd "${logfileLR}" "${commandLR[@]}"
-  retval="$?"
+  timeout_retval="$?"
   set -e
 
-  echodebug "retval: $retval"
+  echodebug "timeout_retval: $timeout_retval"
   echodebug "BASHPID: $BASHPID"
 
-  if [[ "$((retval % 128))" -eq 15 ]]; then
+  if [[ "$((timeout_retval % 128))" -eq 15 ]]; then
     echodebug "The command timed out"
+
+    set +e
     subshell_pid="$(pgrep -f "$SCRIPTDIR/pageloop_back_map_noscore")"
-    kill "$subshell_pid" 2>/dev/null
+    pgrep_retval=$?
+    set -e
+
+    echodebug "pgrep_retval: $pgrep_retval"
+    if [ "$pgrep_retval" -eq 0 ]; then
+      kill "$subshell_pid" 2>/dev/null
+    fi
   fi
+  unset subshell_pid
+  unset timeout_retval
+  unset pgrep_retval
 
 else
   echodebug "No timeout"
@@ -627,15 +638,26 @@ if [ "$TIMEOUT" -gt 0 ]; then
   echodebug "Set timeout to: $TIMEOUT"
   set +e
   timeout_cmd "$TIMEOUT" log_cmd "${logfileSSPPR}" "${commandSSPPR[@]}"
-  retval="$?"
+  timeout_retval="$?"
   set -e
 
-  echodebug "retval: $retval"
-  if [[ "$((retval % 128))" -eq 15 ]]; then
+  echodebug "timeout_retval: $timeout_retval"
+  if [[ "$((timeout_retval % 128))" -eq 15 ]]; then
     echodebug "The command timed out"
+
+    set +e
     subshell_pid="$(pgrep -f "$SCRIPTDIR/ssppr")"
-    kill "$subshell_pid" 2>/dev/null
+    pgrep_retval=$?
+    set -e
+
+    echodebug "pgrep_retval: $pgrep_retval"
+    if [ "$pgrep_retval" -eq 0 ]; then
+      kill "$subshell_pid" 2>/dev/null
+    fi
   fi
+  unset subshell_pid
+  unset timeout_retval
+  unset pgrep_retval
 
 else
   echodebug "No timeout"
