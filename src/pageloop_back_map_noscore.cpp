@@ -536,8 +536,8 @@ int main(int argc, const char* argv[]) {
 
         oldi = new2old[i];
 
-        console->debug("newindex: {}", newindex);
-        console->debug("i: {} - oldi: {}", i, oldi);
+        // console->debug("newindex: {}", newindex);
+        // console->debug("i: {} - oldi: {}", i, oldi);
 
         tmp_new2old[newindex] = oldi;
         tmp_old2new.insert(pair<int,int>(oldi, newindex));
