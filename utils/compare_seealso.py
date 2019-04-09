@@ -13,9 +13,9 @@ import itertools
 import subprocess
 
 
-ALGOS = ('looprank', 'ssppr')
 SCORES_FILENAMES = {'looprank': 'enwiki.{algo}.{title}.4.2018-03-01.scores.txt',
                     'ssppr': 'enwiki.{algo}.{title}.4.2018-03-01.txt',
+                    'cheir': 'enwiki.{algo}.{title}.4.2018-03-01.txt',
                     }
 ALLOWED_ALGOS = list(SCORES_FILENAMES.keys())
 OUTPUT_FILENAME = 'enwiki.{algo}.{title}.2018-03-01.compare.txt'
@@ -88,7 +88,18 @@ def process_line(line):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(
-        description='Compute "See also" position from LR and SSPPR.')
+        description='Compute "See also" position from LR and SSPPR/CHEIR.')
+    parser.add_argument('-a', '--algo',
+                        choices=ALLOWED_ALGOS,
+                        metavar='ALGO',
+                        nargs='+',
+                        type=str,
+                        default=['looprank', 'ssppr'],
+                        help=('Name of the  algorithms to use. '
+                              'Choices: {{{}}}. '
+                              '[default: [looprank, ssppr]].'
+                              ).format(', '.join(ALLOWED_ALGOS))
+                        )
     parser.add_argument('-i', '--input',
                         type=pathlib.Path,
                         help='File with page titles '
@@ -175,7 +186,7 @@ if __name__ == '__main__':
             link_title = snapshot[lid]
             # print('        > {}'.format(link_title), file=sys.stderr)
 
-        for algo in ALGOS:
+        for algo in args.algo:
             # print('      * Read score ({}) file'.format(algo),
             #      file=sys.stderr)
             scores_filename = sanitize(SCORES_FILENAMES[algo].format(algo=algo,

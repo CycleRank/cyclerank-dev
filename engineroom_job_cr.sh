@@ -690,6 +690,7 @@ touch "${scratch}/links.txt"
 if $debug_flag || $verbose_flag; then set -x; fi
 
 wrap_run python3 "$SCRIPTDIR/utils/compare_seealso.py" \
+  -a 'looprank' 'cheir' \
   -i "${scratch}/titles.txt" \
   -l "${scratch}" \
   --links-filename "links.txt" \
