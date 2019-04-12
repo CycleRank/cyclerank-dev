@@ -62,11 +62,11 @@ def sort2d(x):
 def rank(algoscores):
     res = {}
     pos = 0
-    score = -1.0
+    score = 1.0
     for k in sorted(algoscores, key=algoscores.get, reverse=True):
         elscore = algoscores[k]
 
-        if elscore > score:
+        if elscore < score:
             pos = pos + 1
             score = elscore
 
