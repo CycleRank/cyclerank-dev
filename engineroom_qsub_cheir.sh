@@ -524,7 +524,7 @@ for title in "${!pages[@]}"; do
   #                      -o /home/user/pagerank/enwiki/20180301/ \
   #                      -p enwiki.pages.txt
   ############################################################################
-  command=("${SCRIPTDIR}/engineroom_job_cr.sh" \
+  command=("${SCRIPTDIR}/engineroom_job_cheir.sh" \
            "-k" "$MAXLOOP" \
            "-P" "$PYTHON_VERSION" \
            "-V" "$VENV_PATH" \
