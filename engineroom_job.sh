@@ -698,7 +698,7 @@ wrap_run python3 "$SCRIPTDIR/utils/compare_seealso.py" \
 
 if $debug_flag || $verbose_flag; then set +x; fi
 
-comparefileSSPPR="${PROJECT}.ssppr.${NORMTITLE}.${DATE}.compare.txt"
+comparefileSSPPR="${PROJECT}.ssppr.${NORMTITLE}.${MAXLOOP}.${DATE}.compare.txt"
 touch "${OUTPUTDIR}/${comparefileSSPPR}"
 
 maxrowSSPPR="$(LC_ALL=C \

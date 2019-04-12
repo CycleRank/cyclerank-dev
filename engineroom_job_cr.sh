@@ -700,7 +700,7 @@ wrap_run python3 "$SCRIPTDIR/utils/compare_seealso.py" \
 
 if $debug_flag || $verbose_flag; then set +x; fi
 
-comparefileCHEIR="${PROJECT}.cheir.${NORMTITLE}.${DATE}.compare.txt"
+comparefileCHEIR="${PROJECT}.cheir.${NORMTITLE}.${MAXLOOP}.${DATE}.compare.txt"
 touch "${OUTPUTDIR}/${comparefileCHEIR}"
 
 maxrowCHEIR="$(LC_ALL=C \

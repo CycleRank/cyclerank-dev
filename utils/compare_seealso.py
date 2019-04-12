@@ -18,7 +18,7 @@ SCORES_FILENAMES = {'looprank': 'enwiki.{algo}.{title}.4.2018-03-01.scores.txt',
                     'cheir': 'enwiki.{algo}.{title}.4.2018-03-01.txt',
                     }
 ALLOWED_ALGOS = list(SCORES_FILENAMES.keys())
-OUTPUT_FILENAME = 'enwiki.{algo}.{title}.2018-03-01.compare.txt'
+OUTPUT_FILENAME = 'enwiki.{algo}.{title}.4.2018-03-01.compare.txt'
 
 
 # sanitize regex
