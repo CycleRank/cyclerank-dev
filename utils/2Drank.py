@@ -153,10 +153,11 @@ if __name__ == '__main__':
     output_file = output_dir/output_filename
     with output_file.open('w+') as outfp:
         for pageid, positions in rank2d:
-            cheirpos = positions[0]
-            sspprpos = positions[1]
+            # cheirpos = positions[0]
+            # sspprpos = positions[1]
 
-            score = math.sqrt(cheirpos*cheirpos+sspprpos*sspprpos)
-            outfp.write('score({}):\t{}\n'.format(pageid, score))
+            # score = math.sqrt(cheirpos*cheirpos+sspprpos*sspprpos)
+            # outfp.write('score({}):\t{}\n'.format(pageid, score))
+            outfp.write('{}\n'.format(pageid))
 
     exit(0)

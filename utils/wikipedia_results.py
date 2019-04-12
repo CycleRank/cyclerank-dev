@@ -17,15 +17,27 @@ import itertools
 REGEX_SCORE = r'score\(([0-9]+)\):\s+([0-9]+\.?[0-9]*e?-?[0-9]*)'
 regex_score = re.compile(REGEX_SCORE)
 
+REGEX_ID = r'([0-9]+)'
+regex_id = re.compile(REGEX_ID)
+
+
+# output templates
+OUTLINE_SCORE = 'score({title}):\t{score}\n'
+OUTLINE_NOSCORE = '{title}\n'
+
 
 def process_line(line):
-    match = regex_score.match(line)
+    match_score = regex_score.match(line)
+    match_id = regex_id.match(line)
 
     title = None
     score = None
-    if match:
-        pageid = int(match.group(1))
-        score = float(match.group(2))
+    if match_score:
+        pageid = int(match_score.group(1))
+        score = float(match_score.group(2))
+        title = snapshot[pageid]
+    elif match_id:
+        pageid = int(match_id.group(1))
         title = snapshot[pageid]
     else:
         print('Error: could not process line: {}'.format(line),
@@ -64,7 +76,6 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     snapshotname = args.snapshot
-    outline = 'score({title}):\t{score}\n'
     with snapshotname.open('r') as snapshotfile:
         reader = csv.reader(snapshotfile, delimiter='\t')
         snapshot = dict((int(l[0]), l[1]) for l in reader)
@@ -81,18 +92,20 @@ if __name__ == '__main__':
             title, score = process_line(line)
 
             if title:
-                if args.sort:
+                if score and args.sort:
                     all_outlines.append((title, score))
                 else:
-                    sys.stdout.write(outline.format(title=title,
-                                                    score=repr(score)
-                                                    )
-                                     )
+                    if score:
+                        sys.stdout.write(OUTLINE_SCORE.format(
+                            title=title, score=repr(score)))
+                    else:
+                        sys.stdout.write(OUTLINE_NOSCORE.format(title=title))
+
     except IOError as err:
         if err.errno == errno.EPIPE:
             pass
 
-    if args.sort:
+    if all_outlines and args.sort:
         sortkey = args.sort
         if sortkey == 'score':
             sorted_lines = sorted(all_outlines,
@@ -110,10 +123,8 @@ if __name__ == '__main__':
         try:
             for title, score in sorted_lines:
                 if title:
-                    sys.stdout.write(outline.format(title=title,
-                                                    score=repr(score)
-                                                    )
-                                     )
+                    sys.stdout.write(OUTLINE_SCORE.format(
+                        title=title, score=repr(score)))
         except IOError as err:
             if err.errno == errno.EPIPE:
                 pass
