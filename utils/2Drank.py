@@ -4,6 +4,7 @@ import os
 import re
 import sys
 import csv
+import math
 import argparse
 import pathlib
 import itertools
@@ -151,7 +152,11 @@ if __name__ == '__main__':
     output_dir = args.output_dir
     output_file = output_dir/output_filename
     with output_file.open('w+') as outfp:
-        for pageid, _ in rank2d:
-            outfp.write('{}\n'.format(pageid))
+        for pageid, positions in rank2d:
+            cheirpos = positions[0]
+            sspprpos = positions[1]
+
+            score = math.sqrt(cheirpos*cheirpos+sspprpos*sspprpos)
+            outfp.write('score({}):\t{}\n'.format(pageid, score))
 
     exit(0)
