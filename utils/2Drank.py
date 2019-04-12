@@ -99,7 +99,7 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
 
-    cheir_filename = os.path.basename(args.cheirank)
+    cheir_filename = os.path.basename(args.cheirank.as_posix())
     match = regex_name.match(cheir_filename)
 
     proj = match.group(1)
