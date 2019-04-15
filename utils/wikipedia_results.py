@@ -84,7 +84,7 @@ if __name__ == '__main__':
     all_outlines = []
     infile = None
     if args.input:
-        infile = open(args.input, 'r')
+        infile = args.input.open('r')
     else:
         infile = sys.stdin
 
@@ -92,11 +92,11 @@ if __name__ == '__main__':
         for line in infile:
             title, score = process_line(line)
 
-            if title:
-                if score and args.sort:
+            if title is not None:
+                if score is not None and args.sort:
                     all_outlines.append((title, score))
                 else:
-                    if score:
+                    if score is not None:
                         sys.stdout.write(OUTLINE_SCORE.format(
                             title=title, score=repr(score)))
                     else:
@@ -123,7 +123,7 @@ if __name__ == '__main__':
 
         try:
             for title, score in sorted_lines:
-                if title:
+                if title is not None:
                     sys.stdout.write(OUTLINE_SCORE.format(
                         title=title, score=repr(score)))
         except IOError as err:
