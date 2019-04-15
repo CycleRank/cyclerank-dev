@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 
+import re
 import sys
 import csv
-import re
+import errno
 import argparse
 import pathlib
 import itertools
