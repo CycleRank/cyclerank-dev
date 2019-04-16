@@ -20,6 +20,17 @@ echo "Processing title: $title - idx: $idx";
   -f ../enwiki.wikigraph.pagerank.2018-03-01.csv \
   -o "enwiki.looprank.$title.4.2018-03-01.txt"
 
+~/work/engineroom/pageloop/code/utils/compute_scores.py \
+  -o "enwiki.looprank.$title.4.2018-03-01.scores.txt" \
+  "enwiki.looprank.$title.4.2018-03-01.txt"
+
+~/work/engineroom/pageloop/code/utils/wikipedia_results.py \
+  -i "enwiki.looprank.$title.4.2018-03-01.scores.txt" \
+  -s ../enwiki.wikigraph.snapshot.2018-03-01.csv \
+  --sort score \
+  -r \
+    > "enwiki.looprank.$title.4.2018-03-01.results.txt"
+
 ~/work/engineroom/pageloop/code/ssppr \
   -d \
   -w \
@@ -55,11 +66,18 @@ echo "Processing title: $title - idx: $idx";
   -s "enwiki.ssppr.$title.4.2018-03-01.txt"
 
 ~/work/engineroom/pageloop/code/utils/wikipedia_results.py \
-  -i "enwiki.cheir.$title.4.2018-03-01.txt" \
+  -i "enwiki.ssppr.$title.4.2018-03-01.txt" \
   -s ../enwiki.wikigraph.snapshot.2018-03-01.csv \
   --sort score \
   -r \
-    > "enwiki.cheir.$title.4.2018-03-01.results.txt"
+    > "enwiki.ssppr.$title.4.2018-03-01.results.txt"
+
+~/work/engineroom/pageloop/code/utils/wikipedia_results.py \
+  -i "enwiki.cheir.$title.wholenetwork.2018-03-01.txt" \
+  -s ../enwiki.wikigraph.snapshot.2018-03-01.csv \
+  --sort score \
+  -r \
+    > "enwiki.cheir.$title.wholenetwork.2018-03-01.results.txt"
 
 ~/work/engineroom/pageloop/code/utils/wikipedia_results.py \
   -i "enwiki.2Drank.$title.4.2018-03-01.txt" \
@@ -73,15 +91,10 @@ echo "Processing title: $title - idx: $idx";
   -s "enwiki.ssppr.$title.wholenetwork.2018-03-01.txt"
 
 ~/work/engineroom/pageloop/code/utils/wikipedia_results.py \
-  -i "enwiki.cheir.$title.wholenetwork.2018-03-01.txt" \
-  -s ../enwiki.wikigraph.snapshot.2018-03-01.csv \
-  --sort score \
-  -r \
-    > "enwiki.cheir.$title.wholenetwork.2018-03-01.results.txt"
-
-~/work/engineroom/pageloop/code/utils/wikipedia_results.py \
   -i "enwiki.2Drank.$title.wholenetwork.2018-03-01.txt" \
   -s ../enwiki.wikigraph.snapshot.2018-03-01.csv \
   --sort score \
   -r \
     > "enwiki.2Drank.$title.wholenetwork.2018-03-01.results.txt"
+
+exit 0
