@@ -30,6 +30,10 @@ REGEX_NAME = r'([a-z]{2}wiki)\.cheir\.(.+)\.(.+)\.(\d{4}-\d{2}-\d{2})\.txt'
 regex_name = re.compile(REGEX_NAME)
 
 
+# output templates
+OUTLINE_SCORE = 'score({pageid}):\t{score}\n'
+OUTLINE_NOSCORE = '{pageid}\n'
+
 
 def process_line(line):
     match = regex_score.match(line)
@@ -86,6 +90,10 @@ if __name__ == '__main__':
                         type=pathlib.Path,
                         required=True,
                         help='File with scores from CheiRank.'
+                        )
+    parser.add_argument('--no-score',
+                        action='store_true',
+                        help='Just rank results, without scores.'
                         )
     parser.add_argument('-o', '--output-dir',
                         type=pathlib.Path,
@@ -147,17 +155,36 @@ if __name__ == '__main__':
     del sspprsort
 
 
-    rank2d = sorted(scores.items(), key=sort2d, reverse=True)
+    rankscores = sorted(scores.items(), key=sort2d, reverse=True)
+
+    pos = 0
+    prevlow_score = None
+    prevsum_score = None
+    low_score = None
+    sum_score = None
+    rank2d = []
+    for pageid, (cheiscore, sspprscore) in rankscores:
+        low_score, sum_score, _ = sort2d((pageid,(cheiscore,sspprscore)))
+
+        if prevlow_score is None or prevlow_score > low_score or \
+                prevsum_score > sum_score:
+            pos = pos + 1
+            prevlow_score = low_score
+            prevsum_score = sum_score
+
+        # print ("({}) pageid: {} - cheiscore: {}, sspprscore: {}"
+        #        .format(pos, pageid, cheiscore, sspprscore))
+        rank2d.append((pos, pageid))
+    del rankscores
 
     output_dir = args.output_dir
     output_file = output_dir/output_filename
     with output_file.open('w+') as outfp:
-        for pageid, positions in rank2d:
-            # cheirpos = positions[0]
-            # sspprpos = positions[1]
-
-            # score = math.sqrt(cheirpos*cheirpos+sspprpos*sspprpos)
-            # outfp.write('score({}):\t{}\n'.format(pageid, score))
-            outfp.write('{}\n'.format(pageid))
+        for pos, pageid in rank2d:
+            if args.no_score:
+                outfp.write(OUTLINE_NOSCORE.format(pageid=pageid))
+            else:
+                outfp.write(OUTLINE_SCORE.format(pageid=pageid,
+                                                 score=1.0/pos))
 
     exit(0)
