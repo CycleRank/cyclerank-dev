@@ -606,7 +606,6 @@ wrap_run python3 "${SCRIPTDIR}/utils/compute_scores.py" \
   -o "${tmpoutdir}/${scorefileLR}" \
     "${inputfileLR}"
 
-
 ##### Single-source Personalized PageRank
 ##############################################################################
 outfileSSPPR="${PROJECT}.ssppr.${NORMTITLE}.${MAXLOOP}.${DATE}.txt"
@@ -615,6 +614,13 @@ logfileSSPPR="${OUTPUTDIR}/${PROJECT}.ssppr.${NORMTITLE}.${MAXLOOP}.${DATE}.log"
 wholenetwork_flag=''
 if $wholenetwork; then
   wholenetwork_flag='-w'
+  outfileSSPPR="${PROJECT}.ssppr.${NORMTITLE}.wholenetwork.${DATE}.txt"
+  logfileSSPPR="${OUTPUTDIR}/${PROJECT}.ssppr.${NORMTITLE}.wholenetwork.${DATE}.log"
+fi
+
+declare -a maxloop_flag
+if ! $wholenetwork; then
+  maxloop_flag=('-k' "${MAXLOOP}")
 fi
 
 commandSSPPR=("wrap_run" \
@@ -622,19 +628,12 @@ commandSSPPR=("wrap_run" \
               "-f" "${INPUT_GRAPH}" \
               "-o" "${tmpoutdir}/${outfileSSPPR}" \
               "-s" "${INDEX}" \
-              "-k" "${MAXLOOP}" \
+              ${maxloop_flag[@]:+"${maxloop_flag[@]}"} \
               ${verbosity_flag:+"$verbosity_flag"} \
               ${wholenetwork_flag[@]:+"${wholenetwork_flag[@]}"}
               )
 
 echodebug "Running commandSSPPR"
-# if $debug_flag || $verbose_flag; then set -x; fi
-# if $debug_flag; then
-#   "${commandSSPPR[@]}" | tee "${logfileSSPPR}"
-# else
-#   "${commandSSPPR[@]}" >  "${logfileSSPPR}"
-# fi
-# if $debug_flag || $verbose_flag; then set +x; fi
 if [ "$TIMEOUT" -gt 0 ]; then
   echodebug "Set timeout to: $TIMEOUT"
   set +e
@@ -666,6 +665,74 @@ else
 fi
 touch "${tmpoutdir}/${outfileSSPPR}"
 
+##### CheiRank
+##############################################################################
+outfileCheir="${PROJECT}.cheir.${NORMTITLE}.${MAXLOOP}.${DATE}.txt"
+logfileCheir="${OUTPUTDIR}/${PROJECT}.cheir.${NORMTITLE}.${MAXLOOP}.${DATE}.log"
+
+if $wholenetwork; then
+  outfileCheir="${PROJECT}.cheir.${NORMTITLE}.wholenetwork.${DATE}.txt"
+  logfileCheir="${OUTPUTDIR}/${PROJECT}.cheir.${NORMTITLE}.wholenetwork.${DATE}.log"
+fi
+
+commandCheir=("wrap_run" \
+              "$SCRIPTDIR/ssppr" \
+              "-f" "${INPUT_GRAPH}" \
+              "-o" "${tmpoutdir}/${outfileCheir}" \
+              "-s" "${INDEX}" \
+              "-k" "${MAXLOOP}" \
+              ${verbosity_flag:+"$verbosity_flag"} \
+              ${wholenetwork_flag[@]:+"${wholenetwork_flag[@]}"}
+              )
+
+echodebug "Running commandCheir"
+
+if [ "$TIMEOUT" -gt 0 ]; then
+  echodebug "Set timeout to: $TIMEOUT"
+  set +e
+  timeout_cmd "$TIMEOUT" log_cmd "${logfileCheir}" "${commandCheir[@]}"
+  timeout_retval="$?"
+  set -e
+
+  echodebug "timeout_retval: $timeout_retval"
+  if [[ "$((timeout_retval % 128))" -eq 15 ]]; then
+    echodebug "The command timed out"
+
+    set +e
+    subshell_pid="$(pgrep -f "$SCRIPTDIR/ssppr")"
+    pgrep_retval=$?
+    set -e
+
+    echodebug "pgrep_retval: $pgrep_retval"
+    if [ "$pgrep_retval" -eq 0 ]; then
+      kill "$subshell_pid" 2>/dev/null
+    fi
+  fi
+  unset subshell_pid
+  unset timeout_retval
+  unset pgrep_retval
+
+else
+  echodebug "No timeout"
+  log_cmd "${logfileCheir}" "${commandCheir[@]}"
+fi
+touch "${tmpoutdir}/${outfileCheir}"
+
+##### 2Drank
+##############################################################################
+outfile2Drank="${PROJECT}.2Drank.${NORMTITLE}.${MAXLOOP}.${DATE}.txt"
+if $wholenetwork; then
+  outfile2Drank="${PROJECT}.2Drank.${NORMTITLE}.wholenetwork.${DATE}.txt"
+fi
+
+wrap_run python3 "$SCRIPTDIR/utils/2Drank.py" \
+  -o "${tmpoutdir}" \
+  -c "${tmpoutdir}/${outfileCheir}" \
+  -s "${tmpoutdir}/${outfileSSPPR}"
+
+# {proj}.2Drank.{title}.{maxloop}.{date}.txt
+touch "${tmpoutdir}/${outfile2Drank}"
+
 ##### Compare See Also
 ##############################################################################
 
@@ -688,7 +755,15 @@ cp "${LINKS_DIR}/enwiki.comparison.${NORMTITLE}.seealso.txt" \
 touch "${scratch}/links.txt"
 if $debug_flag || $verbose_flag; then set -x; fi
 
+declare -a compare_maxloop_flag
+if $wholenetwork; then
+  compare_maxloop_flag+=('-k' "$MAXLOOP")
+else
+  compare_maxloop_flag+=('-k' 'wholenetwork')
+fi
+
 wrap_run python3 "$SCRIPTDIR/utils/compare_seealso.py" \
+  -a 'looprank' '2Drank' \
   -i "${scratch}/titles.txt" \
   -l "${scratch}" \
   --links-filename "links.txt" \
@@ -698,23 +773,26 @@ wrap_run python3 "$SCRIPTDIR/utils/compare_seealso.py" \
 
 if $debug_flag || $verbose_flag; then set +x; fi
 
-comparefileSSPPR="${PROJECT}.ssppr.${NORMTITLE}.${MAXLOOP}.${DATE}.compare.txt"
-touch "${OUTPUTDIR}/${comparefileSSPPR}"
+comparefile2Drank="${PROJECT}.2Drank.${NORMTITLE}.${MAXLOOP}.${DATE}.compare.txt"
+if $wholenetwork; then
+  comparefile2Drank="${PROJECT}.2Drank.${NORMTITLE}.wholenetwork.${DATE}.compare.txt"
+fi
+touch "${OUTPUTDIR}/${comparefile2Drank}"
 
-maxrowSSPPR="$(LC_ALL=C \
+maxrow2Drank="$(LC_ALL=C \
   awk 'BEGIN{a=0}{if ($1>0+a) a=$1} END{print a}' \
-    "${OUTPUTDIR}/${comparefileSSPPR}"
+    "${OUTPUTDIR}/${comparefile2Drank}"
   )"
 
-touch "${tmpoutdir}/${outfileSSPPR}"
-touch "${tmpoutdir}/${outfileSSPPR}.sorted"
-LC_ALL=C sort -t$'\t' -k2 -r -n "${tmpoutdir}/${outfileSSPPR}" \
-  > "${tmpoutdir}/${outfileSSPPR}.sorted"
+touch "${tmpoutdir}/${outfile2Drank}"
+touch "${tmpoutdir}/${outfile2Drank}.sorted"
+LC_ALL=C sort -t$'\t' -k2 -r -n "${tmpoutdir}/${outfile2Drank}" \
+  > "${tmpoutdir}/${outfile2Drank}.sorted"
 
 wrap_run cp "${tmpoutdir}/${outfileLR}" "${OUTPUTDIR}/${outfileLR}"
 wrap_run cp "${tmpoutdir}/${scorefileLR}" "${OUTPUTDIR}/${scorefileLR}"
-wrap_run safe_head "$((maxrowSSPPR+1))" "${tmpoutdir}/${outfileSSPPR}.sorted" \
-  > "${OUTPUTDIR}/${outfileSSPPR}"
+wrap_run safe_head "$((maxrow2Drank+1))" "${tmpoutdir}/${outfile2Drank}.sorted" \
+  > "${OUTPUTDIR}/${outfile2Drank}"
 
 echo "Done processing ${NORMTITLE}!"
 (>&2 echo "Done processing ${NORMTITLE}!" )
