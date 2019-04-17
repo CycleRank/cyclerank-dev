@@ -73,6 +73,13 @@ echo "Processing title: $title - idx: $idx";
     > "enwiki.ssppr.$title.4.2018-03-01.results.txt"
 
 ~/work/engineroom/pageloop/code/utils/wikipedia_results.py \
+  -i "enwiki.ssppr.$title.wholenetwork.2018-03-01.txt" \
+  -s ../enwiki.wikigraph.snapshot.2018-03-01.csv \
+  --sort score \
+  -r \
+    > "enwiki.ssppr.$title.wholenetwork.2018-03-01.results.txt"
+
+~/work/engineroom/pageloop/code/utils/wikipedia_results.py \
   -i "enwiki.cheir.$title.wholenetwork.2018-03-01.txt" \
   -s ../enwiki.wikigraph.snapshot.2018-03-01.csv \
   --sort score \
