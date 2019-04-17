@@ -218,7 +218,7 @@ if __name__ == '__main__':
             # print('      * Read score ({}) file'.format(algo),
             #       file=sys.stderr)
 
-            if args.wholenetwork:
+            if algo != 'looprank' and args.wholenetwork:
                 scores_filename = sanitize(SCORES_FILENAMES[algo].format(
                     algo=algo,
                     title=title.replace(' ', '_'),
