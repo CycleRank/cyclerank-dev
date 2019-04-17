@@ -12,13 +12,22 @@ import argparse
 import itertools
 import subprocess
 
+# Name regex
+#
+# example name:
+# enwiki.cheir.1999_Bridge_Creek–Moore_tornado.4.2018-03-01.txt
+#
+REGEX_NAME = (r'([a-z]{2}wiki)\.(cheir|ssppr|cheir|2Drank)' + \
+              r'\.(.+)\.(.+)\.(\d{4}-\d{2}-\d{2})\.txt')
+regex_name = re.compile(REGEX_NAME)
 
-SCORES_FILENAMES = {'looprank': 'enwiki.{algo}.{title}.4.2018-03-01.scores.txt',
-                    'ssppr': 'enwiki.{algo}.{title}.4.2018-03-01.txt',
-                    'cheir': 'enwiki.{algo}.{title}.4.2018-03-01.txt',
+SCORES_FILENAMES = {'looprank': 'enwiki.{algo}.{title}.{maxloop}.2018-03-01.scores.txt',
+                    'ssppr': 'enwiki.{algo}.{title}.{maxloop}.2018-03-01.txt',
+                    'cheir': 'enwiki.{algo}.{title}.{maxloop}.2018-03-01.txt',
+                    '2Drank': 'enwiki.{algo}.{title}.{maxloop}.2018-03-01.txt',
                     }
 ALLOWED_ALGOS = list(SCORES_FILENAMES.keys())
-OUTPUT_FILENAME = 'enwiki.{algo}.{title}.4.2018-03-01.compare.txt'
+OUTPUT_FILENAME = 'enwiki.{algo}.{title}.{maxloop}.2018-03-01.compare.txt'
 
 
 # sanitize regex
@@ -105,6 +114,10 @@ if __name__ == '__main__':
                         help='File with page titles '
                              '[default: read from stdin].'
                         )
+    parser.add_argument('-k', '--maxloop',
+                        default='4',
+                        help='Maxloop prefix in the file [default: 4].'
+                        )
     parser.add_argument('-l', '--links-dir',
                         type=pathlib.Path,
                         default=pathlib.Path('.'),
@@ -113,7 +126,7 @@ if __name__ == '__main__':
     parser.add_argument('--links-filename',
                         help='Links file name (default: derive from title)'
                         )
-    parser.add_argument('--output-dir',
+    parser.add_argument('-o', '--output-dir',
                         type=pathlib.Path,
                         default=pathlib.Path('.'),
                         help='Directory where to put output files [default: .]'
@@ -130,6 +143,7 @@ if __name__ == '__main__':
                         )
 
     args = parser.parse_args()
+    maxloop = args.maxloop
 
     # print('* Read input. ', file=sys.stderr)
     infile = None
@@ -141,6 +155,8 @@ if __name__ == '__main__':
     titles = [_.strip()
               for _ in infile.readlines()
               ]
+    if '\t' in titles[0]:
+        titles = [line.split('\t')[0] for line in titles]
 
     # print('* Read the "snapshot" file: ', file=sys.stderr)
     snapshot_file = args.snapshot
@@ -159,7 +175,6 @@ if __name__ == '__main__':
     for title in titles:
         # print('-'*80)
         # print('    - {}'.format(title), file=sys.stderr)
-
         if args.links_filename is None:
             links_filename = sanitize('enwiki.comparison.{title}.seealso.txt'
                               .format(title=title))
@@ -189,9 +204,8 @@ if __name__ == '__main__':
         for algo in args.algo:
             # print('      * Read score ({}) file'.format(algo),
             #      file=sys.stderr)
-            scores_filename = sanitize(SCORES_FILENAMES[algo].format(algo=algo,
-                                       title=title.replace(' ', '_'))
-                                       )
+            scores_filename = sanitize(SCORES_FILENAMES[algo].format(
+                algo=algo,title=title.replace(' ', '_'),maxloop=maxloop))
 
             for ascorefile in (os.path.basename(x)
                             for x in glob.glob(scores_dir.as_posix() + '/*')):
@@ -201,7 +215,6 @@ if __name__ == '__main__':
 
             all_outlines = []
             scoreslen = count_file_lines(scores_file)
-
 
             with safe_path(scores_file).open('r', encoding='UTF-8') \
                     as scoresfp:
@@ -232,9 +245,8 @@ if __name__ == '__main__':
             #       file=sys.stderr)
 
             output_dir = args.output_dir
-            output_filename = sanitize(OUTPUT_FILENAME.format(algo=algo,
-                                       title=title.replace(' ', '_'))
-                                       )
+            output_filename = sanitize(OUTPUT_FILENAME.format(
+                algo=algo,title=title.replace(' ', '_'),maxloop=maxloop))
             output_file = output_dir/output_filename
 
             with safe_path(output_file).open('w+', encoding='UTF-8') as outfp:
