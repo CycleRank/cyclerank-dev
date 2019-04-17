@@ -677,6 +677,7 @@ fi
 
 commandCheir=("wrap_run" \
               "$SCRIPTDIR/ssppr" \
+              "-t" \
               "-f" "${INPUT_GRAPH}" \
               "-o" "${tmpoutdir}/${outfileCheir}" \
               "-s" "${INDEX}" \
