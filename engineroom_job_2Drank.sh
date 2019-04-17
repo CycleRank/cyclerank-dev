@@ -764,13 +764,13 @@ fi
 wrap_run python3 "$SCRIPTDIR/utils/compare_seealso.py" \
   -a 'looprank' '2Drank' \
   -k "${MAXLOOP}" \
+  ${compare_maxloop_flag:+"$compare_maxloop_flag"} \
   -i "${scratch}/titles.txt" \
   -l "${scratch}" \
   --links-filename "links.txt" \
   --output-dir "$OUTPUTDIR" \
   --scores-dir "${tmpoutdir}" \
   -s "$SNAPSHOT" \
-  ${compare_maxloop_flag:+"$compare_maxloop_flag"}
 
 if $debug_flag || $verbose_flag; then set +x; fi
 
