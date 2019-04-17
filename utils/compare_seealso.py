@@ -280,7 +280,7 @@ if __name__ == '__main__':
             #       file=sys.stderr)
 
             output_dir = args.output_dir
-            if args.wholenetwork:
+            if algo != 'looprank' and args.wholenetwork:
                 output_filename = sanitize(OUTPUT_FILENAME.format(
                     algo=algo,
                     title=title.replace(' ', '_'),
