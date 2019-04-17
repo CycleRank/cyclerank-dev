@@ -137,14 +137,15 @@ if __name__ == '__main__':
                         default=pathlib.Path('.'),
                         help='Directory with the scores files [default: .]'
                         )
+    parser.add_argument('-w', '--wholenetwork',
+                        action='store_true',
+                        help='Calculate SSPPR, Cheir, and 2Drank on the '
+                             'wholenetwork.'
+                        )
     parser.add_argument('-s', '--snapshot',
                         type=pathlib.Path,
                         required=True,
                         help='Wikipedia snapshot with the id-title mapping.'
-                        )
-    parser.add_argument('-w', '--wholenetwork',
-                        help='Calculate SSPPR, Cheir, and 2Drank on the '
-                             'wholenetwork.'
                         )
 
     args = parser.parse_args()
