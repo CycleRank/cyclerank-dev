@@ -521,7 +521,7 @@ if [ -z "$reference_python" ]; then
 fi
 
 
-scratch=$(mktemp -d -t tmp.engineroom_job.XXXXXXXXXX)
+scratch=$(mktemp -d -t tmp.engineroom_job_2Drank.XXXXXXXXXX)
 if ! $keeptmp_flag; then
   function finish {
     rm -rf "$scratch"
