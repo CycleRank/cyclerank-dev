@@ -115,7 +115,8 @@ if __name__ == '__main__':
                              '[default: read from stdin].'
                         )
     parser.add_argument('-k', '--maxloop',
-                        default='4',
+                        type=int,
+                        default=4,
                         help='Maxloop prefix in the file [default: 4].'
                         )
     parser.add_argument('-l', '--links-dir',
@@ -140,6 +141,10 @@ if __name__ == '__main__':
                         type=pathlib.Path,
                         required=True,
                         help='Wikipedia snapshot with the id-title mapping.'
+                        )
+    parser.add_argument('-w', '--wholenetwork',
+                        help='Calculate SSPPR, Cheir, and 2Drank on the '
+                             'wholenetwork.'
                         )
 
     args = parser.parse_args()
@@ -210,8 +215,20 @@ if __name__ == '__main__':
             # print('      * Read score ({}) file'.format(algo),
             #       file=sys.stderr)
 
-            scores_filename = sanitize(SCORES_FILENAMES[algo].format(
-                algo=algo,title=title.replace(' ', '_'),maxloop=maxloop))
+            if args.wholenetwork:
+                scores_filename = sanitize(SCORES_FILENAMES[algo].format(
+                    algo=algo,
+                    title=title.replace(' ', '_'),
+                    maxloop='wholenetwork'
+                    )
+                )
+            else:
+                scores_filename = sanitize(SCORES_FILENAMES[algo].format(
+                    algo=algo,
+                    title=title.replace(' ', '_'),
+                    maxloop=maxloop
+                    )
+                )
 
             for ascorefile in (os.path.basename(x)
                             for x in glob.glob(scores_dir.as_posix() + '/*')):
@@ -257,8 +274,21 @@ if __name__ == '__main__':
             #       file=sys.stderr)
 
             output_dir = args.output_dir
-            output_filename = sanitize(OUTPUT_FILENAME.format(
-                algo=algo,title=title.replace(' ', '_'),maxloop=maxloop))
+            if args.wholenetwork:
+                output_filename = sanitize(OUTPUT_FILENAME.format(
+                    algo=algo,
+                    title=title.replace(' ', '_'),
+                    maxloop='wholenetwork'
+                    )
+                )
+            else:
+                output_filename = sanitize(OUTPUT_FILENAME.format(
+                    algo=algo,
+                    title=title.replace(' ', '_'),
+                    maxloop=maxloop
+                    )
+                )
+
             output_file = output_dir/output_filename
 
             with safe_path(output_file).open('w+', encoding='UTF-8') as outfp:
