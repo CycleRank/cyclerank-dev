@@ -173,6 +173,7 @@ if __name__ == '__main__':
     links_dir = args.links_dir
     scores_dir = args.scores_dir
     for title in titles:
+        links_file = None
         # print('-'*80)
         # print('    - {}'.format(title), file=sys.stderr)
         if args.links_filename is None:
@@ -188,6 +189,9 @@ if __name__ == '__main__':
                 links_file = links_dir/pathlib.Path(alinkfile)
                 break
 
+        if not links_file:
+            raise ValueError('Links file not found.')
+
         with safe_path(links_file).open('r', encoding='utf-8') as linkfp:
             reader = csv.reader(linkfp, delimiter='\t')
             next(reader)
@@ -202,8 +206,10 @@ if __name__ == '__main__':
             # print('        > {}'.format(link_title), file=sys.stderr)
 
         for algo in args.algo:
+            scores_file = None
             # print('      * Read score ({}) file'.format(algo),
-            #      file=sys.stderr)
+            #       file=sys.stderr)
+
             scores_filename = sanitize(SCORES_FILENAMES[algo].format(
                 algo=algo,title=title.replace(' ', '_'),maxloop=maxloop))
 
@@ -212,6 +218,12 @@ if __name__ == '__main__':
                 if sanitize(ascorefile) == scores_filename:
                     scores_file = scores_dir/pathlib.Path(ascorefile)
                     break
+
+            if not scores_file:
+                raise ValueError('Score file not found.')
+
+            # print('        ->  scores_file: {}'.format(scores_file),
+            #       file=sys.stderr)
 
             all_outlines = []
             scoreslen = count_file_lines(scores_file)
