@@ -756,21 +756,21 @@ cp "${LINKS_DIR}/enwiki.comparison.${NORMTITLE}.seealso.txt" \
 touch "${scratch}/links.txt"
 if $debug_flag || $verbose_flag; then set -x; fi
 
-declare -a compare_maxloop_flag
+compare_maxloop_flag=''
 if $wholenetwork; then
-  compare_maxloop_flag+=('-k' "$MAXLOOP")
-else
-  compare_maxloop_flag+=('-k' 'wholenetwork')
+  compare_maxloop_flag='-w'
 fi
 
 wrap_run python3 "$SCRIPTDIR/utils/compare_seealso.py" \
   -a 'looprank' '2Drank' \
+  -k "${MAXLOOP}" \
   -i "${scratch}/titles.txt" \
   -l "${scratch}" \
   --links-filename "links.txt" \
   --output-dir "$OUTPUTDIR" \
   --scores-dir "${tmpoutdir}" \
-  -s "$SNAPSHOT"
+  -s "$SNAPSHOT" \
+  ${compare_maxloop_flag:+"$compare_maxloop_flag"}
 
 if $debug_flag || $verbose_flag; then set +x; fi
 
