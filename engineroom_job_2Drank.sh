@@ -774,6 +774,10 @@ wrap_run python3 "$SCRIPTDIR/utils/compare_seealso.py" \
 
 if $debug_flag || $verbose_flag; then set +x; fi
 
+touch "${tmpoutdir}/${outfile2Drank}.sorted"
+LC_ALL=C sort -k2 -r -g "${tmpoutdir}/${scorefileLR}" \
+  > "${tmpoutdir}/${scorefileLR}.sorted"
+
 comparefile2Drank="${PROJECT}.2Drank.${NORMTITLE}.${MAXLOOP}.${DATE}.compare.txt"
 if $wholenetwork; then
   comparefile2Drank="${PROJECT}.2Drank.${NORMTITLE}.wholenetwork.${DATE}.compare.txt"
@@ -787,11 +791,11 @@ maxrow2Drank="$(LC_ALL=C \
 
 touch "${tmpoutdir}/${outfile2Drank}"
 touch "${tmpoutdir}/${outfile2Drank}.sorted"
-LC_ALL=C sort -t$'\t' -k2 -r -n "${tmpoutdir}/${outfile2Drank}" \
+LC_ALL=C sort -k2 -r -g "${tmpoutdir}/${outfile2Drank}" \
   > "${tmpoutdir}/${outfile2Drank}.sorted"
 
 wrap_run cp "${tmpoutdir}/${outfileLR}" "${OUTPUTDIR}/${outfileLR}"
-wrap_run cp "${tmpoutdir}/${scorefileLR}" "${OUTPUTDIR}/${scorefileLR}"
+wrap_run cp "${tmpoutdir}/${scorefileLR}.sorted" "${OUTPUTDIR}/${scorefileLR}"
 wrap_run safe_head "$((maxrow2Drank+1))" "${tmpoutdir}/${outfile2Drank}.sorted" \
   > "${OUTPUTDIR}/${outfile2Drank}"
 
