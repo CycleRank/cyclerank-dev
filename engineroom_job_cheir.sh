@@ -144,7 +144,7 @@ Options:
   -p PROJECT          Project name [default: infer from input graph].
   -P PYTHON_VERSION   Python version [default: 3.6].
   -t TIMEOUT          Timeout (in seconds) for executing the LoopRank and
-                      CHEIR commands.
+                      Cheir commands.
   -v                  Enable verbose output.
   -V VENV_PATH        Absolute path of the virtualenv directory [default: \$PWD/looprank3].
   -w                  Compute the pagerank on the whole network.
@@ -609,18 +609,18 @@ wrap_run python3 "${SCRIPTDIR}/utils/compute_scores.py" \
 
 ##### Single-source Personalized PageRank
 ##############################################################################
-outfileCHEIR="${PROJECT}.cheir.${NORMTITLE}.${MAXLOOP}.${DATE}.txt"
-logfileCHEIR="${OUTPUTDIR}/${PROJECT}.cheir.${NORMTITLE}.${MAXLOOP}.${DATE}.log"
+outfileCheir="${PROJECT}.cheir.${NORMTITLE}.${MAXLOOP}.${DATE}.txt"
+logfileCheir="${OUTPUTDIR}/${PROJECT}.cheir.${NORMTITLE}.${MAXLOOP}.${DATE}.log"
 
 wholenetwork_flag=''
 if $wholenetwork; then
   wholenetwork_flag='-w'
 fi
 
-commandCHEIR=("wrap_run" \
+commandCheir=("wrap_run" \
               "$SCRIPTDIR/ssppr" \
               "-f" "${INPUT_GRAPH}" \
-              "-o" "${tmpoutdir}/${outfileCHEIR}" \
+              "-o" "${tmpoutdir}/${outfileCheir}" \
               "-s" "${INDEX}" \
               "-k" "${MAXLOOP}" \
               "-t" \
@@ -628,18 +628,18 @@ commandCHEIR=("wrap_run" \
               ${wholenetwork_flag[@]:+"${wholenetwork_flag[@]}"}
               )
 
-echodebug "Running commandCHEIR"
+echodebug "Running commandCheir"
 # if $debug_flag || $verbose_flag; then set -x; fi
 # if $debug_flag; then
-#   "${commandCHEIR[@]}" | tee "${logfileCHEIR}"
+#   "${commandCheir[@]}" | tee "${logfileCheir}"
 # else
-#   "${commandCHEIR[@]}" >  "${logfileCHEIR}"
+#   "${commandCheir[@]}" >  "${logfileCheir}"
 # fi
 # if $debug_flag || $verbose_flag; then set +x; fi
 if [ "$TIMEOUT" -gt 0 ]; then
   echodebug "Set timeout to: $TIMEOUT"
   set +e
-  timeout_cmd "$TIMEOUT" log_cmd "${logfileCHEIR}" "${commandCHEIR[@]}"
+  timeout_cmd "$TIMEOUT" log_cmd "${logfileCheir}" "${commandCheir[@]}"
   timeout_retval="$?"
   set -e
 
@@ -663,9 +663,9 @@ if [ "$TIMEOUT" -gt 0 ]; then
 
 else
   echodebug "No timeout"
-  log_cmd "${logfileCHEIR}" "${commandCHEIR[@]}"
+  log_cmd "${logfileCheir}" "${commandCheir[@]}"
 fi
-touch "${tmpoutdir}/${outfileCHEIR}"
+touch "${tmpoutdir}/${outfileCheir}"
 
 ##### Compare See Also
 ##############################################################################
@@ -700,23 +700,23 @@ wrap_run python3 "$SCRIPTDIR/utils/compare_seealso.py" \
 
 if $debug_flag || $verbose_flag; then set +x; fi
 
-comparefileCHEIR="${PROJECT}.cheir.${NORMTITLE}.${MAXLOOP}.${DATE}.compare.txt"
-touch "${OUTPUTDIR}/${comparefileCHEIR}"
+comparefileCheir="${PROJECT}.cheir.${NORMTITLE}.${MAXLOOP}.${DATE}.compare.txt"
+touch "${OUTPUTDIR}/${comparefileCheir}"
 
-maxrowCHEIR="$(LC_ALL=C \
+maxrowCheir="$(LC_ALL=C \
   awk 'BEGIN{a=0}{if ($1>0+a) a=$1} END{print a}' \
-    "${OUTPUTDIR}/${comparefileCHEIR}"
+    "${OUTPUTDIR}/${comparefileCheir}"
   )"
 
-touch "${tmpoutdir}/${outfileCHEIR}"
-touch "${tmpoutdir}/${outfileCHEIR}.sorted"
-LC_ALL=C sort -t$'\t' -k2 -r -n "${tmpoutdir}/${outfileCHEIR}" \
-  > "${tmpoutdir}/${outfileCHEIR}.sorted"
+touch "${tmpoutdir}/${outfileCheir}"
+touch "${tmpoutdir}/${outfileCheir}.sorted"
+LC_ALL=C sort -t$'\t' -k2 -r -n "${tmpoutdir}/${outfileCheir}" \
+  > "${tmpoutdir}/${outfileCheir}.sorted"
 
 wrap_run cp "${tmpoutdir}/${outfileLR}" "${OUTPUTDIR}/${outfileLR}"
 wrap_run cp "${tmpoutdir}/${scorefileLR}" "${OUTPUTDIR}/${scorefileLR}"
-wrap_run safe_head "$((maxrowCHEIR+1))" "${tmpoutdir}/${outfileCHEIR}.sorted" \
-  > "${OUTPUTDIR}/${outfileCHEIR}"
+wrap_run safe_head "$((maxrowCheir+1))" "${tmpoutdir}/${outfileCheir}.sorted" \
+  > "${OUTPUTDIR}/${outfileCheir}"
 
 echo "Done processing ${NORMTITLE}!"
 (>&2 echo "Done processing ${NORMTITLE}!" )
