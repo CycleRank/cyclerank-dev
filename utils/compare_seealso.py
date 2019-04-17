@@ -179,7 +179,7 @@ if __name__ == '__main__':
     links_dir = args.links_dir
     scores_dir = args.scores_dir
     for title in titles:
-        links_file = None
+        links_filename = None
         # print('-'*80)
         # print('    - {}'.format(title), file=sys.stderr)
         if args.links_filename is None:
@@ -188,6 +188,8 @@ if __name__ == '__main__':
         else:
             links_filename = sanitize(args.links_filename)
 
+        # print('        -> links_filename: {}'.format(links_filename),
+        #       file=sys.stderr)
 
         for alinkfile in (os.path.basename(x)
                           for x in glob.glob(links_dir.as_posix() + '/*')):
@@ -212,7 +214,7 @@ if __name__ == '__main__':
             # print('        > {}'.format(link_title), file=sys.stderr)
 
         for algo in args.algo:
-            scores_file = None
+            scores_filename = None
             # print('      * Read score ({}) file'.format(algo),
             #       file=sys.stderr)
 
@@ -231,6 +233,9 @@ if __name__ == '__main__':
                     )
                 )
 
+            # print('        -> scores_filename: {}'.format(scores_filename),
+            #       file=sys.stderr)
+
             for ascorefile in (os.path.basename(x)
                             for x in glob.glob(scores_dir.as_posix() + '/*')):
                 if sanitize(ascorefile) == scores_filename:
@@ -240,7 +245,7 @@ if __name__ == '__main__':
             if not scores_file:
                 raise ValueError('Score file not found.')
 
-            # print('        ->  scores_file: {}'.format(scores_file),
+            # print('        -> scores_file: {}'.format(scores_file),
             #       file=sys.stderr)
 
             all_outlines = []
