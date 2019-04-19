@@ -6,7 +6,7 @@ import csv
 import pathlib
 import argparse
 
-INPUT_FILENAME = 'enwiki.{algo}.{title}.2018-03-01.compare_lr-pr.txt'
+INPUT_FILENAME = 'enwiki.{algo}.{title}.{maxloop}.2018-03-01.compare.txt'
 COMPARISON_FILE_HEADER = ('pos', 'title', 'page_id', 'score')
 
 
@@ -26,8 +26,8 @@ def sanitize(filename: str) -> str:
     return res
 
 
-def read_comparison_file(algo, title, comparison_dir):
-    input_filename = INPUT_FILENAME.format(algo=algo, title=title)
+def read_comparison_file(algo, title, maxloop, comparison_dir):
+    input_filename = INPUT_FILENAME.format(algo=algo, title=title, maxloop=maxloop)
     input_file = comparison_dir/input_filename
 
 
@@ -107,11 +107,13 @@ if __name__ == '__main__':
 
         links_lr = read_comparison_file('looprank',
                                         title,
+                                        4,
                                         comparison_dir
                                         )
 
-        links_ssppr = read_comparison_file('ssppr',
+        links_ssppr = read_comparison_file('2Drank',
                                            title,
+                                           'wholenetwork',
                                            comparison_dir
                                            )
 
