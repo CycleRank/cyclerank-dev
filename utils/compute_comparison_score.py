@@ -6,8 +6,15 @@ import csv
 import pathlib
 import argparse
 
-INPUT_FILENAME = 'enwiki.{algo}.{title}.{maxloop}.2018-03-01.compare.txt'
+COMPARE_FILENAMES = {'looprank': 'enwiki.{algo}.{title}.{maxloop}.2018-03-01.compare.txt',
+                     'ssppr': 'enwiki.{algo}.{title}.{maxloop}.2018-03-01.compare.txt',
+                     'cheir': 'enwiki.{algo}.{title}.{maxloop}.2018-03-01.compare.txt',
+                     '2Drank': 'enwiki.{algo}.{title}.{maxloop}.2018-03-01.compare.txt',
+                     }
+ALLOWED_ALGOS = list(COMPARE_FILENAMES.keys())
+
 COMPARISON_FILE_HEADER = ('pos', 'title', 'page_id', 'score')
+OUTPUT_FILENAME = 'enwiki.{algo}.{title}.{maxloop}.2018-03-01.compare.txt'
 
 
 # sanitize regex
@@ -26,8 +33,27 @@ def sanitize(filename: str) -> str:
     return res
 
 
-def read_comparison_file(algo, title, maxloop, comparison_dir):
-    input_filename = INPUT_FILENAME.format(algo=algo, title=title, maxloop=maxloop)
+def read_comparison_file(algo,
+                         title,
+                         maxloop,
+                         wholenetwork,
+                         comparison_dir):
+
+    if algo != 'looprank' and wholenetwork:
+        input_filename = (COMPARE_FILENAMES[algo]
+                          .format(algo=algo,
+                                  title=title,
+                                  maxloop='wholenetwork'
+                                  )
+                          )
+    else:
+        input_filename = (COMPARE_FILENAMES[algo]
+                          .format(algo=algo,
+                                  title=title,
+                                  maxloop=maxloop
+                                  )
+                          )
+
     input_file = comparison_dir/input_filename
 
 
@@ -73,10 +99,27 @@ def compute_score(links):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(
         description='Compute comparison score between LR and SSPPR.')
+    parser.add_argument('-a', '--algo',
+                        type=str,
+                        nargs=2,
+                        choices=ALLOWED_ALGOS,
+                        metavar='ALGO',
+                        dest='algos',
+                        default=['looprank', 'ssppr'],
+                        help=('Name of the  algorithms to use. '
+                              'Choices: {{{}}}. '
+                              '[default: [looprank, ssppr]].'
+                              ).format(', '.join(ALLOWED_ALGOS))
+                        )
     parser.add_argument('-i', '--input',
                         type=pathlib.Path,
                         help='File with page titles '
                              '[default: read from stdin].'
+                        )
+    parser.add_argument('-k', '--maxloop',
+                        type=int,
+                        default=4,
+                        help='Max loop length [default: 4].'
                         )
     parser.add_argument('--comparison-dir',
                         type=pathlib.Path,
@@ -84,6 +127,12 @@ if __name__ == '__main__':
                         help='File with page titles '
                              '[default: read from stdin].'
                         )
+    parser.add_argument('-w', '--wholenetwork',
+                        action='store_true',
+                        help='Run PageRank, CheiRank, 2Drank '
+                             'on the whole network.'
+                        )
+
     args = parser.parse_args()
     comparison_dir = args.comparison_dir
 
@@ -99,39 +148,49 @@ if __name__ == '__main__':
     print('* Processing titles: ', file=sys.stderr)
     for title in titles:
         score = 0.0
-        links_lr = {}
-        links_ssppr = {}
+
         scores = dict()
         print('-'*80)
         print('    - {}'.format(title), file=sys.stderr)
 
-        links_lr = read_comparison_file('looprank',
-                                        title,
-                                        4,
-                                        comparison_dir
-                                        )
+        algo1 = args.algos[0]
+        algo2 = args.algos[1]
 
-        links_ssppr = read_comparison_file('2Drank',
-                                           title,
-                                           'wholenetwork',
-                                           comparison_dir
+        links_algo1 = read_comparison_file(algo=algo1,
+                                           title=title,
+                                           maxloop=args.maxloop,
+                                           wholenetwork=args.wholenetwork,
+                                           comparison_dir=comparison_dir
                                            )
 
+        links_algo2 = read_comparison_file(algo=algo2,
+                                           title=title,
+                                           maxloop=args.maxloop,
+                                           wholenetwork=args.wholenetwork,
+                                           comparison_dir=comparison_dir
+                                           )
 
-        links_set = set(links_lr.keys()).union(set(links_ssppr.keys()))
+        links_set = set(links_algo1.keys()).union(set(links_algo2.keys()))
         for lid in links_set:
-            score_lr, title_lr = compute_score(links_lr)
-            score_ssppr, title_ssppr = compute_score(links_ssppr)
+            score_algo1, title_algo1 = compute_score(links_algo1)
+            score_algo2, title_algo2 = compute_score(links_algo2)
 
-            score_link = score_lr - score_ssppr
+            # import ipdb; ipdb.set_trace()
+
+            score_link = score_algo1 - score_algo2
             score += score_link
 
-            title = title_lr if title_lr else title_ssppr
-            scores[title] = score_link
+            title_link = title_algo1 if title_algo1 else title_algo2
+            scores[title_link] = score_link
 
+        outfile = sanitize(
+            'enwiki.compare.{algo1}.{algo2}.{title}.2018-03-01.scores.txt'
+            .format(title=title.replace(' ', '_'),
+                    algo1=algo1,
+                    algo2=algo2
+                    )
+            )
 
-        outfile = sanitize('enwiki.{title}.2018-03-01.compare_lr-pr.scores.txt'
-                           .format(title=title.replace(' ', '_')))
         with open(outfile, 'w+') as outfp:
             writer = csv.writer(outfp, delimiter='\t')
             writer.writerow((score,))
