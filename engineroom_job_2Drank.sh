@@ -148,6 +148,7 @@ Options:
   -v                  Enable verbose output.
   -V VENV_PATH        Absolute path of the virtualenv directory [default: \$PWD/looprank3].
   -w                  Compute the pagerank on the whole network.
+  -X                  Do not use titles, use index.
 
 Example:
   engineroom_job.sh  -i /home/user/pagerank/enwiki/20180301/enwiki.wikigraph.pagerank.2018-03-01.csv \\
@@ -171,6 +172,7 @@ verbose_flag=false
 help_flag=false
 dryrun_flag=false
 keeptmp_flag=false
+notitle_flag=false
 
 VENV_PATH="$PWD/looprank3"
 PYTHON_VERSION='3.6'
@@ -183,7 +185,7 @@ PROJECT=''
 MAXLOOP=4
 TIMEOUT=-1
 
-while getopts ":dD:hi:I:k:Kl:no:p:P:s:t:T:vV:w" opt; do
+while getopts ":dD:hi:I:k:Kl:no:p:P:s:t:T:vV:wX" opt; do
   case $opt in
     d)
       debug_flag=true
@@ -265,6 +267,9 @@ while getopts ":dD:hi:I:k:Kl:no:p:P:s:t:T:vV:w" opt; do
       ;;
     w)
       wholenetwork=true
+      ;;
+    X)
+      notitle_flag=true
       ;;
     \?)
       (>&2 echo "Error. Invalid option: -$OPTARG")
@@ -498,6 +503,7 @@ echodebug "  * dryrun_flag (-n): $dryrun_flag"
 echodebug "  * verbose_flag (-v): $verbose_flag"
 echodebug "  * VENV_PATH (-V): $VENV_PATH"
 echodebug "  * wholenetwork (-w): $wholenetwork"
+echodebug "  * notitle_flag (-X): $notitle_flag"
 echodebug
 
 #################### end: debug info
@@ -547,8 +553,13 @@ elif $verbose_flag; then
 fi
 
 ##### LoopRank
-outfileLR="${PROJECT}.looprank.${NORMTITLE}.${MAXLOOP}.${DATE}.txt"
-logfileLR="${OUTPUTDIR}/${PROJECT}.looprank.${NORMTITLE}.${MAXLOOP}.${DATE}.log"
+if $notitle_flag; then
+  outfileLR="${PROJECT}.looprank.${INDEX}.${MAXLOOP}.${DATE}.txt"
+  logfileLR="${OUTPUTDIR}/${PROJECT}.looprank.${INDEX}.${MAXLOOP}.${DATE}.log"
+else
+  outfileLR="${PROJECT}.looprank.${NORMTITLE}.${MAXLOOP}.${DATE}.txt"
+  logfileLR="${OUTPUTDIR}/${PROJECT}.looprank.${NORMTITLE}.${MAXLOOP}.${DATE}.log"
+fi
 
 commandLR=("wrap_run" \
            "$SCRIPTDIR/pageloop_back_map_noscore" \
@@ -595,7 +606,11 @@ fi
 touch "${tmpoutdir}/${outfileLR}"
 
 # Compute LoopRank scores
-scorefileLR="${PROJECT}.looprank.${NORMTITLE}.${MAXLOOP}.${DATE}.scores.txt"
+if $notitle_flag; then
+  scorefileLR="${PROJECT}.looprank.${INDEX}.${MAXLOOP}.${DATE}.scores.txt"
+else
+  scorefileLR="${PROJECT}.looprank.${NORMTITLE}.${MAXLOOP}.${DATE}.scores.txt"
+fi
 inputfileLR="${tmpoutdir}/${outfileLR}"
 
 touch "${inputfileLR}"
@@ -608,8 +623,23 @@ wrap_run python3 "${SCRIPTDIR}/utils/compute_scores.py" \
 
 ##### Single-source Personalized PageRank
 ##############################################################################
-outfileSSPPR="${PROJECT}.ssppr.${NORMTITLE}.${MAXLOOP}.${DATE}.txt"
-logfileSSPPR="${OUTPUTDIR}/${PROJECT}.ssppr.${NORMTITLE}.${MAXLOOP}.${DATE}.log"
+if $notitle_flag; then
+  if $wholenetwork; then
+    outfileSSPPR="${PROJECT}.ssppr.${INDEX}.wholenetwork.${DATE}.txt"
+    logfileSSPPR="${OUTPUTDIR}/${PROJECT}.ssppr.${INDEX}.wholenetwork.${DATE}.log"
+  else
+    outfileSSPPR="${PROJECT}.ssppr.${INDEX}.${MAXLOOP}.${DATE}.txt"
+    logfileSSPPR="${OUTPUTDIR}/${PROJECT}.ssppr.${INDEX}.${MAXLOOP}.${DATE}.log"
+  fi
+else
+  if $wholenetwork; then
+    outfileSSPPR="${PROJECT}.ssppr.${NORMTITLE}.wholenetwork.${DATE}.txt"
+    logfileSSPPR="${OUTPUTDIR}/${PROJECT}.ssppr.${NORMTITLE}.wholenetwork.${DATE}.log"
+  else
+    outfileSSPPR="${PROJECT}.ssppr.${NORMTITLE}.${MAXLOOP}.${DATE}.txt"
+    logfileSSPPR="${OUTPUTDIR}/${PROJECT}.ssppr.${NORMTITLE}.${MAXLOOP}.${DATE}.log"
+  fi
+fi
 
 wholenetwork_flag=''
 if $wholenetwork; then
@@ -667,8 +697,23 @@ touch "${tmpoutdir}/${outfileSSPPR}"
 
 ##### CheiRank
 ##############################################################################
-outfileCheir="${PROJECT}.cheir.${NORMTITLE}.${MAXLOOP}.${DATE}.txt"
-logfileCheir="${OUTPUTDIR}/${PROJECT}.cheir.${NORMTITLE}.${MAXLOOP}.${DATE}.log"
+if $notitle_flag; then
+  if $wholenetwork; then
+    outfileCheir="${PROJECT}.cheir.${INDEX}.wholenetwork.${DATE}.txt"
+    logfileCheir="${OUTPUTDIR}/${PROJECT}.cheir.${INDEX}.wholenetwork.${DATE}.log"
+  else
+    outfileCheir="${PROJECT}.cheir.${INDEX}.${MAXLOOP}.${DATE}.txt"
+    logfileCheir="${OUTPUTDIR}/${PROJECT}.cheir.${INDEX}.${MAXLOOP}.${DATE}.log"
+  fi
+else
+  if $wholenetwork; then
+    outfileCheir="${PROJECT}.cheir.${NORMTITLE}.wholenetwork.${DATE}.txt"
+    logfileCheir="${OUTPUTDIR}/${PROJECT}.cheir.${NORMTITLE}.wholenetwork.${DATE}.log"
+  else
+    outfileCheir="${PROJECT}.cheir.${NORMTITLE}.${MAXLOOP}.${DATE}.txt"
+    logfileCheir="${OUTPUTDIR}/${PROJECT}.cheir.${NORMTITLE}.${MAXLOOP}.${DATE}.log"
+  fi
+fi
 
 if $wholenetwork; then
   outfileCheir="${PROJECT}.cheir.${NORMTITLE}.wholenetwork.${DATE}.txt"
@@ -721,9 +766,18 @@ touch "${tmpoutdir}/${outfileCheir}"
 
 ##### 2Drank
 ##############################################################################
-outfile2Drank="${PROJECT}.2Drank.${NORMTITLE}.${MAXLOOP}.${DATE}.txt"
-if $wholenetwork; then
-  outfile2Drank="${PROJECT}.2Drank.${NORMTITLE}.wholenetwork.${DATE}.txt"
+if $notitle_flag; then
+  if $wholenetwork; then
+    outfile2Drank="${PROJECT}.2Drank.${INDEX}.wholenetwork.${DATE}.txt"
+  else
+    outfile2Drank="${PROJECT}.2Drank.${INDEX}.${MAXLOOP}.${DATE}.txt"
+  fi
+else
+  if $wholenetwork; then
+    outfile2Drank="${PROJECT}.2Drank.${NORMTITLE}.wholenetwork.${DATE}.txt"
+  else
+    outfile2Drank="${PROJECT}.2Drank.${NORMTITLE}.${MAXLOOP}.${DATE}.txt"
+  fi
 fi
 
 wrap_run python3 "$SCRIPTDIR/utils/2Drank.py" \
@@ -739,7 +793,8 @@ touch "${tmpoutdir}/${outfile2Drank}"
 
 # save page title in scratch/title.txt
 echo "${NORMTITLE}" >> "${scratch}/titles.txt"
-echodebug "NORMTITLE: ${NORMTITLE}"
+echo "${INDEX}" >> "${scratch}/indexes.txt"
+echodebug "NORMTITLE (INDEX): ${NORMTITLE} ($INDEX)"
 
 # cp "${LINKS_DIR}/enwiki.comparison.${NORMTITLE}.seealso.txt" \
 #   "${scratch}/links.txt"
@@ -754,6 +809,12 @@ cp "${LINKS_DIR}/enwiki.comparison.${NORMTITLE}.seealso.txt" \
   )
 
 touch "${scratch}/links.txt"
+
+compare_seealso_input="${scratch}/titles.txt"
+if $notitle_flag; then
+  compare_seealso_input="${scratch}/indexes.txt"
+fi
+
 if $debug_flag || $verbose_flag; then set -x; fi
 
 compare_maxloop_flag=''
@@ -765,7 +826,7 @@ wrap_run python3 "$SCRIPTDIR/utils/compare_seealso.py" \
   -a 'looprank' '2Drank' \
   -k "${MAXLOOP}" \
   ${compare_maxloop_flag:+"$compare_maxloop_flag"} \
-  -i "${scratch}/titles.txt" \
+  -i "$compare_seealso_input" \
   -l "${scratch}" \
   --links-filename "links.txt" \
   --output-dir "$OUTPUTDIR" \
@@ -774,13 +835,22 @@ wrap_run python3 "$SCRIPTDIR/utils/compare_seealso.py" \
 
 if $debug_flag || $verbose_flag; then set +x; fi
 
-touch "${tmpoutdir}/${outfile2Drank}.sorted"
+touch "${tmpoutdir}/${scorefileLR}.sorted"
 LC_ALL=C sort -k2 -r -g "${tmpoutdir}/${scorefileLR}" \
   > "${tmpoutdir}/${scorefileLR}.sorted"
 
-comparefile2Drank="${PROJECT}.2Drank.${NORMTITLE}.${MAXLOOP}.${DATE}.compare.txt"
-if $wholenetwork; then
-  comparefile2Drank="${PROJECT}.2Drank.${NORMTITLE}.wholenetwork.${DATE}.compare.txt"
+if $notitle_flag; then
+  if $wholenetwork; then
+    comparefile2Drank="${PROJECT}.2Drank.${INDEX}.wholenetwork.${DATE}.compare.txt"
+  else
+    comparefile2Drank="${PROJECT}.2Drank.${INDEX}.${MAXLOOP}.${DATE}.compare.txt"
+  fi
+else
+  if $wholenetwork; then
+    comparefile2Drank="${PROJECT}.2Drank.${NORMTITLE}.wholenetwork.${DATE}.compare.txt"
+  else
+    comparefile2Drank="${PROJECT}.2Drank.${NORMTITLE}.${MAXLOOP}.${DATE}.compare.txt"
+  fi
 fi
 touch "${OUTPUTDIR}/${comparefile2Drank}"
 
@@ -799,7 +869,7 @@ wrap_run cp "${tmpoutdir}/${scorefileLR}.sorted" "${OUTPUTDIR}/${scorefileLR}"
 wrap_run safe_head "$((maxrow2Drank+1))" "${tmpoutdir}/${outfile2Drank}.sorted" \
   > "${OUTPUTDIR}/${outfile2Drank}"
 
-echo "Done processing ${NORMTITLE}!"
-(>&2 echo "Done processing ${NORMTITLE}!" )
+echo "Done processing ${NORMTITLE} ($INDEX)!"
+(>&2 echo "Done processing ${NORMTITLE} ($INDEX)!" )
 
 exit 0

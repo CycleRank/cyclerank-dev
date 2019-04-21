@@ -148,6 +148,7 @@ Options:
   -v                  Enable verbose output.
   -V VENV_PATH        Absolute path of the virtualenv directory [default: \$PWD/looprank3].
   -w                  Compute the pagerank on the whole network.
+  -X                  Do not use titles, use index.
 
 Example:
   engineroom_job.sh  -i /home/user/pagerank/enwiki/20180301/enwiki.wikigraph.pagerank.2018-03-01.csv \\
@@ -171,6 +172,7 @@ verbose_flag=false
 help_flag=false
 dryrun_flag=false
 keeptmp_flag=false
+notitle_flag=false
 
 VENV_PATH="$PWD/looprank3"
 PYTHON_VERSION='3.6'
@@ -183,7 +185,7 @@ PROJECT=''
 MAXLOOP=4
 TIMEOUT=-1
 
-while getopts ":dD:hi:I:k:Kl:no:p:P:s:t:T:vV:w" opt; do
+while getopts ":dD:hi:I:k:Kl:no:p:P:s:t:T:vV:wX" opt; do
   case $opt in
     d)
       debug_flag=true
@@ -265,6 +267,9 @@ while getopts ":dD:hi:I:k:Kl:no:p:P:s:t:T:vV:w" opt; do
       ;;
     w)
       wholenetwork=true
+      ;;
+    X)
+      notitle_flag=true
       ;;
     \?)
       (>&2 echo "Error. Invalid option: -$OPTARG")
@@ -498,6 +503,7 @@ echodebug "  * dryrun_flag (-n): $dryrun_flag"
 echodebug "  * verbose_flag (-v): $verbose_flag"
 echodebug "  * VENV_PATH (-V): $VENV_PATH"
 echodebug "  * wholenetwork (-w): $wholenetwork"
+echodebug "  * notitle_flag (-X): $notitle_flag"
 echodebug
 
 #################### end: debug info
@@ -547,8 +553,13 @@ elif $verbose_flag; then
 fi
 
 ##### LoopRank
-outfileLR="${PROJECT}.looprank.${NORMTITLE}.${MAXLOOP}.${DATE}.txt"
-logfileLR="${OUTPUTDIR}/${PROJECT}.looprank.${NORMTITLE}.${MAXLOOP}.${DATE}.log"
+if $notitle_flag; then
+  outfileLR="${PROJECT}.looprank.${INDEX}.${MAXLOOP}.${DATE}.txt"
+  logfileLR="${OUTPUTDIR}/${PROJECT}.looprank.${INDEX}.${MAXLOOP}.${DATE}.log"
+else
+  outfileLR="${PROJECT}.looprank.${NORMTITLE}.${MAXLOOP}.${DATE}.txt"
+  logfileLR="${OUTPUTDIR}/${PROJECT}.looprank.${NORMTITLE}.${MAXLOOP}.${DATE}.log"
+fi
 
 commandLR=("wrap_run" \
            "$SCRIPTDIR/pageloop_back_map_noscore" \
@@ -595,7 +606,11 @@ fi
 touch "${tmpoutdir}/${outfileLR}"
 
 # Compute LoopRank scores
-scorefileLR="${PROJECT}.looprank.${NORMTITLE}.${MAXLOOP}.${DATE}.scores.txt"
+if $notitle_flag; then
+  scorefileLR="${PROJECT}.looprank.${INDEX}.${MAXLOOP}.${DATE}.scores.txt"
+else
+  scorefileLR="${PROJECT}.looprank.${NORMTITLE}.${MAXLOOP}.${DATE}.scores.txt"
+fi
 inputfileLR="${tmpoutdir}/${outfileLR}"
 
 touch "${inputfileLR}"
@@ -609,8 +624,23 @@ wrap_run python3 "${SCRIPTDIR}/utils/compute_scores.py" \
 
 ##### Single-source Personalized PageRank
 ##############################################################################
-outfileSSPPR="${PROJECT}.ssppr.${NORMTITLE}.${MAXLOOP}.${DATE}.txt"
-logfileSSPPR="${OUTPUTDIR}/${PROJECT}.ssppr.${NORMTITLE}.${MAXLOOP}.${DATE}.log"
+if $notitle_flag; then
+  if $wholenetwork; then
+    outfileSSPPR="${PROJECT}.ssppr.${INDEX}.wholenetwork.${DATE}.txt"
+    logfileSSPPR="${OUTPUTDIR}/${PROJECT}.ssppr.${INDEX}.wholenetwork.${DATE}.log"
+  else
+    outfileSSPPR="${PROJECT}.ssppr.${INDEX}.${MAXLOOP}.${DATE}.txt"
+    logfileSSPPR="${OUTPUTDIR}/${PROJECT}.ssppr.${INDEX}.${MAXLOOP}.${DATE}.log"
+  fi
+else
+  if $wholenetwork; then
+    outfileSSPPR="${PROJECT}.ssppr.${NORMTITLE}.wholenetwork.${DATE}.txt"
+    logfileSSPPR="${OUTPUTDIR}/${PROJECT}.ssppr.${NORMTITLE}.wholenetwork.${DATE}.log"
+  else
+    outfileSSPPR="${PROJECT}.ssppr.${NORMTITLE}.${MAXLOOP}.${DATE}.txt"
+    logfileSSPPR="${OUTPUTDIR}/${PROJECT}.ssppr.${NORMTITLE}.${MAXLOOP}.${DATE}.log"
+  fi
+fi
 
 wholenetwork_flag=''
 if $wholenetwork; then
@@ -628,13 +658,6 @@ commandSSPPR=("wrap_run" \
               )
 
 echodebug "Running commandSSPPR"
-# if $debug_flag || $verbose_flag; then set -x; fi
-# if $debug_flag; then
-#   "${commandSSPPR[@]}" | tee "${logfileSSPPR}"
-# else
-#   "${commandSSPPR[@]}" >  "${logfileSSPPR}"
-# fi
-# if $debug_flag || $verbose_flag; then set +x; fi
 if [ "$TIMEOUT" -gt 0 ]; then
   echodebug "Set timeout to: $TIMEOUT"
   set +e
@@ -671,11 +694,9 @@ touch "${tmpoutdir}/${outfileSSPPR}"
 
 # save page title in scratch/title.txt
 echo "${NORMTITLE}" >> "${scratch}/titles.txt"
-echodebug "NORMTITLE: ${NORMTITLE}"
+echo "${INDEX}" >> "${scratch}/indexes.txt"
+echodebug "NORMTITLE (INDEX): ${NORMTITLE} ($INDEX)"
 
-# cp "${LINKS_DIR}/enwiki.comparison.${NORMTITLE}.seealso.txt" \
-#   "${scratch}/links.txt"
-# FIXME
 cp "${LINKS_DIR}/enwiki.comparison.${NORMTITLE}.seealso.txt" \
    "${scratch}/links.txt" 2>/dev/null || \
   cp "${LINKS_DIR}/enwiki.comparison.${TITLE}.seealso.txt" \
@@ -686,10 +707,16 @@ cp "${LINKS_DIR}/enwiki.comparison.${NORMTITLE}.seealso.txt" \
   )
 
 touch "${scratch}/links.txt"
+
+compare_seealso_input="${scratch}/titles.txt"
+if $notitle_flag; then
+  compare_seealso_input="${scratch}/indexes.txt"
+fi
+
 if $debug_flag || $verbose_flag; then set -x; fi
 
 wrap_run python3 "$SCRIPTDIR/utils/compare_seealso.py" \
-  -i "${scratch}/titles.txt" \
+  -i "$compare_seealso_input" \
   -l "${scratch}" \
   --links-filename "links.txt" \
   --output-dir "$OUTPUTDIR" \
@@ -698,8 +725,24 @@ wrap_run python3 "$SCRIPTDIR/utils/compare_seealso.py" \
 
 if $debug_flag || $verbose_flag; then set +x; fi
 
-comparefileSSPPR="${PROJECT}.ssppr.${NORMTITLE}.${MAXLOOP}.${DATE}.compare.txt"
+if $notitle_flag; then
+  if $wholenetwork; then
+    comparefileSSPPR="${PROJECT}.ssppr.${INDEX}.wholenetwork.${DATE}.compare.txt"
+  else
+    comparefileSSPPR="${PROJECT}.ssppr.${INDEX}.${MAXLOOP}.${DATE}.compare.txt"
+  fi
+else
+  if $wholenetwork; then
+    comparefileSSPPR="${PROJECT}.ssppr.${NORMTITLE}.wholenetwork.${DATE}.compare.txt"
+  else
+    comparefileSSPPR="${PROJECT}.ssppr.${NORMTITLE}.${MAXLOOP}.${DATE}.compare.txt"
+  fi
+fi
 touch "${OUTPUTDIR}/${comparefileSSPPR}"
+
+touch "${tmpoutdir}/${scorefileLR}.sorted"
+LC_ALL=C sort -k2 -r -g "${tmpoutdir}/${scorefileLR}" \
+  > "${tmpoutdir}/${scorefileLR}.sorted"
 
 maxrowSSPPR="$(LC_ALL=C \
   awk 'BEGIN{a=0}{if ($1>0+a) a=$1} END{print a}' \
@@ -712,11 +755,11 @@ LC_ALL=C sort -t$'\t' -k2 -r -n "${tmpoutdir}/${outfileSSPPR}" \
   > "${tmpoutdir}/${outfileSSPPR}.sorted"
 
 wrap_run cp "${tmpoutdir}/${outfileLR}" "${OUTPUTDIR}/${outfileLR}"
-wrap_run cp "${tmpoutdir}/${scorefileLR}" "${OUTPUTDIR}/${scorefileLR}"
+wrap_run cp "${tmpoutdir}/${scorefileLR}.sorted" "${OUTPUTDIR}/${scorefileLR}"
 wrap_run safe_head "$((maxrowSSPPR+1))" "${tmpoutdir}/${outfileSSPPR}.sorted" \
   > "${OUTPUTDIR}/${outfileSSPPR}"
 
-echo "Done processing ${NORMTITLE}!"
-(>&2 echo "Done processing ${NORMTITLE}!" )
+echo "Done processing ${NORMTITLE} ($INDEX)!"
+(>&2 echo "Done processing ${NORMTITLE} ($INDEX)!" )
 
 exit 0
