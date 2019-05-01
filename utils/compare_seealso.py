@@ -21,14 +21,19 @@ REGEX_NAME = (r'([a-z]{2}wiki)\.(cheir|ssppr|cheir|2Drank)' + \
               r'\.(.+)\.(.+)\.(\d{4}-\d{2}-\d{2})\.txt')
 regex_name = re.compile(REGEX_NAME)
 
-SCORES_FILENAMES = {'looprank': 'enwiki.{algo}.{title}.{maxloop}.2018-03-01.scores.txt',
-                    'ssppr': 'enwiki.{algo}.{title}.{maxloop}.2018-03-01.txt',
-                    'cheir': 'enwiki.{algo}.{title}.{maxloop}.2018-03-01.txt',
-                    '2Drank': 'enwiki.{algo}.{title}.{maxloop}.2018-03-01.txt',
-                    }
+SCORES_FILENAMES = {
+'looprank': 'enwiki.{algo}.{title}.{maxloop}.2018-03-01.scores.txt',
+'ssppr': 'enwiki.{algo}.a{alpha}.{title}.{maxloop}.2018-03-01.txt',
+'cheir': 'enwiki.{algo}.a{alpha}.{title}.{maxloop}.2018-03-01.txt',
+'2Drank': 'enwiki.{algo}.a{alpha}.{title}.{maxloop}.2018-03-01.txt',
+}
 ALLOWED_ALGOS = list(SCORES_FILENAMES.keys())
-OUTPUT_FILENAME = 'enwiki.{algo}.{title}.{maxloop}.2018-03-01.compare.txt'
-
+OUTPUT_FILENAMES = {
+'looprank': 'enwiki.{algo}.{title}.{maxloop}.2018-03-01.compare.txt',
+'ssppr': 'enwiki.{algo}.a{alpha}.{title}.{maxloop}.2018-03-01.compare.txt',
+'cheir': 'enwiki.{algo}.a{alpha}.{title}.{maxloop}.2018-03-01.compare.txt',
+'2Drank': 'enwiki.{algo}.a{alpha}.{title}.{maxloop}.2018-03-01.compare.txt',
+}
 
 # sanitize regex
 sanre01 = re.compile(r'[\\/:&\*\?"<>\|\x01-\x1F\x7F]')
@@ -109,10 +114,20 @@ if __name__ == '__main__':
                               '[default: [looprank, ssppr]].'
                               ).format(', '.join(ALLOWED_ALGOS))
                         )
+    parser.add_argument('--alpha',
+                        type=float,
+                        default=0.85,
+                        help='Damping factor (alpha) for the PageRank '
+                             'algorithm [default: 0.85].'
+                        )
     parser.add_argument('-i', '--input',
                         type=pathlib.Path,
-                        help='File with page titles '
+                        help='File with page titles or page indexes '
                              '[default: read from stdin].'
+                        )
+    parser.add_argument('--index',
+                        action='store_true',
+                        help='Use page indexes instead of titles.'
                         )
     parser.add_argument('-k', '--maxloop',
                         type=int,
@@ -150,6 +165,7 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
     maxloop = args.maxloop
+    alpha = args.alpha
 
     # print('* Read input. ', file=sys.stderr)
     infile = None
@@ -162,7 +178,10 @@ if __name__ == '__main__':
               for _ in infile.readlines()
               ]
     if '\t' in titles[0]:
-        titles = [line.split('\t')[0] for line in titles]
+        if args.indexes:
+            titles = [line.split('\t')[1] for line in titles]
+        else:
+            titles = [line.split('\t')[0] for line in titles]
 
     # print('* Read the "snapshot" file: ', file=sys.stderr)
     snapshot_file = args.snapshot
@@ -218,13 +237,22 @@ if __name__ == '__main__':
             # print('      * Read score ({}) file'.format(algo),
             #       file=sys.stderr)
 
-            if algo != 'looprank' and args.wholenetwork:
+            if algo != 'looprank':
                 scores_filename = sanitize(SCORES_FILENAMES[algo].format(
+                    alpha=alpha,
                     algo=algo,
                     title=title.replace(' ', '_'),
-                    maxloop='wholenetwork'
+                    maxloop=maxloop
                     )
                 )
+                if args.wholenetwork:
+                    scores_filename = sanitize(SCORES_FILENAMES[algo].format(
+                        alpha=alpha,
+                        algo=algo,
+                        title=title.replace(' ', '_'),
+                        maxloop='wholenetwork'
+                        )
+                    )
             else:
                 scores_filename = sanitize(SCORES_FILENAMES[algo].format(
                     algo=algo,
@@ -233,8 +261,8 @@ if __name__ == '__main__':
                     )
                 )
 
-            # print('        -> scores_filename: {}'.format(scores_filename),
-            #       file=sys.stderr)
+            print('        -> scores_filename: {}'.format(scores_filename),
+                   file=sys.stderr)
 
             for ascorefile in (os.path.basename(x)
                             for x in glob.glob(scores_dir.as_posix() + '/*')):
@@ -280,15 +308,24 @@ if __name__ == '__main__':
             #       file=sys.stderr)
 
             output_dir = args.output_dir
-            if algo != 'looprank' and args.wholenetwork:
-                output_filename = sanitize(OUTPUT_FILENAME.format(
+            if algo != 'looprank':
+                output_filename = sanitize(OUTPUT_FILENAMES[algo].format(
                     algo=algo,
+                    alpha=alpha,
                     title=title.replace(' ', '_'),
-                    maxloop='wholenetwork'
+                    maxloop=maxloop
                     )
                 )
+                if  args.wholenetwork:
+                    output_filename = sanitize(OUTPUT_FILENAMES[algo].format(
+                        algo=algo,
+                        alpha=alpha,
+                        title=title.replace(' ', '_'),
+                        maxloop='wholenetwork'
+                        )
+                    )
             else:
-                output_filename = sanitize(OUTPUT_FILENAME.format(
+                output_filename = sanitize(OUTPUT_FILENAMES[algo].format(
                     algo=algo,
                     title=title.replace(' ', '_'),
                     maxloop=maxloop
