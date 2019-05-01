@@ -101,6 +101,15 @@ function check_posint() {
      exit 1
   fi
 }
+
+function check_posfloat() {
+  local mynum="$1"
+  local option="$2"
+
+  if ! (( $(echo "$mynum > 0" |bc -l) )); then
+    (echo "Error in option '$option': must be positive, got $mynum." >&2)
+  fi
+}
 #################### end: helpers
 
 #################### usage
@@ -135,6 +144,7 @@ Arguments:
 
 
 Options:
+  -a PAGERANK_ALPHA   Damping factor (alpha) for the PageRank [default: 0.85].
   -d                  Enable debug output.
   -D DATE             Date [default: infer from input graph].
   -h                  Show this help and exits.
@@ -184,9 +194,15 @@ DATE=''
 PROJECT=''
 MAXLOOP=4
 TIMEOUT=-1
+PAGERANK_ALPHA=0.85
 
-while getopts ":dD:hi:I:k:Kl:no:p:P:s:t:T:vV:wX" opt; do
+while getopts ":a:dD:hi:I:k:Kl:no:p:P:s:t:T:vV:wX" opt; do
   case $opt in
+    a)
+      check_posfloat "$OPTARG" '-a'
+
+      PAGERANK_ALPHA="$OPTARG"
+      ;;
     d)
       debug_flag=true
       ;;
@@ -493,6 +509,7 @@ echodebug "  * TITLE (-T): $TITLE"
 echodebug
 
 echodebug "Options:"
+echodebug "  * PAGERANK_ALPHA (-a): $PAGERANK_ALPHA"
 echodebug "  * debug_flag (-d): $debug_flag"
 echodebug "  * DATE (-D): $DATE"
 echodebug "  * MAXLOOP (-k): $MAXLOOP"
@@ -626,19 +643,19 @@ wrap_run python3 "${SCRIPTDIR}/utils/compute_scores.py" \
 ##############################################################################
 if $notitle_flag; then
   if $wholenetwork; then
-    outfileSSPPR="${PROJECT}.ssppr.${INDEX}.wholenetwork.${DATE}.txt"
-    logfileSSPPR="${OUTPUTDIR}/${PROJECT}.ssppr.${INDEX}.wholenetwork.${DATE}.log"
+    outfileSSPPR="${PROJECT}.ssppr.a${PAGERANK_ALPHA}.${INDEX}.wholenetwork.${DATE}.txt"
+    logfileSSPPR="${OUTPUTDIR}/${PROJECT}.ssppr.a${PAGERANK_ALPHA}.${INDEX}.wholenetwork.${DATE}.log"
   else
-    outfileSSPPR="${PROJECT}.ssppr.${INDEX}.${MAXLOOP}.${DATE}.txt"
-    logfileSSPPR="${OUTPUTDIR}/${PROJECT}.ssppr.${INDEX}.${MAXLOOP}.${DATE}.log"
+    outfileSSPPR="${PROJECT}.ssppr.a${PAGERANK_ALPHA}.${INDEX}.${MAXLOOP}.${DATE}.txt"
+    logfileSSPPR="${OUTPUTDIR}/${PROJECT}.ssppr.a${PAGERANK_ALPHA}.${INDEX}.${MAXLOOP}.${DATE}.log"
   fi
 else
   if $wholenetwork; then
-    outfileSSPPR="${PROJECT}.ssppr.${NORMTITLE}.wholenetwork.${DATE}.txt"
+    outfileSSPPR="${PROJECT}.ssppr.a${PAGERANK_ALPHA}.${NORMTITLE}.wholenetwork.${DATE}.txt"
     logfileSSPPR="${OUTPUTDIR}/${PROJECT}.ssppr.${NORMTITLE}.wholenetwork.${DATE}.log"
   else
-    outfileSSPPR="${PROJECT}.ssppr.${NORMTITLE}.${MAXLOOP}.${DATE}.txt"
-    logfileSSPPR="${OUTPUTDIR}/${PROJECT}.ssppr.${NORMTITLE}.${MAXLOOP}.${DATE}.log"
+    outfileSSPPR="${PROJECT}.ssppr.a${PAGERANK_ALPHA}.${NORMTITLE}.${MAXLOOP}.${DATE}.txt"
+    logfileSSPPR="${OUTPUTDIR}/${PROJECT}.ssppr.a${PAGERANK_ALPHA}.${NORMTITLE}.${MAXLOOP}.${DATE}.log"
   fi
 fi
 
@@ -649,6 +666,7 @@ fi
 
 commandSSPPR=("wrap_run" \
               "$SCRIPTDIR/ssppr" \
+              "-a" "${PAGERANK_ALPHA}" \
               "-f" "${INPUT_GRAPH}" \
               "-o" "${tmpoutdir}/${outfileSSPPR}" \
               "-s" "${INDEX}" \
@@ -727,15 +745,15 @@ if $debug_flag || $verbose_flag; then set +x; fi
 
 if $notitle_flag; then
   if $wholenetwork; then
-    comparefileSSPPR="${PROJECT}.ssppr.${INDEX}.wholenetwork.${DATE}.compare.txt"
+    comparefileSSPPR="${PROJECT}.ssppr.a${PAGERANK_ALPHA}.${INDEX}.wholenetwork.${DATE}.compare.txt"
   else
-    comparefileSSPPR="${PROJECT}.ssppr.${INDEX}.${MAXLOOP}.${DATE}.compare.txt"
+    comparefileSSPPR="${PROJECT}.ssppr.a${PAGERANK_ALPHA}.${INDEX}.${MAXLOOP}.${DATE}.compare.txt"
   fi
 else
   if $wholenetwork; then
-    comparefileSSPPR="${PROJECT}.ssppr.${NORMTITLE}.wholenetwork.${DATE}.compare.txt"
+    comparefileSSPPR="${PROJECT}.ssppr.a${PAGERANK_ALPHA}.${NORMTITLE}.wholenetwork.${DATE}.compare.txt"
   else
-    comparefileSSPPR="${PROJECT}.ssppr.${NORMTITLE}.${MAXLOOP}.${DATE}.compare.txt"
+    comparefileSSPPR="${PROJECT}.ssppr.a${PAGERANK_ALPHA}.${NORMTITLE}.${MAXLOOP}.${DATE}.compare.txt"
   fi
 fi
 touch "${OUTPUTDIR}/${comparefileSSPPR}"
