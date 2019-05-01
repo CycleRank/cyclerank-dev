@@ -132,6 +132,7 @@ Options:
   -v                      Enable verbose output.
   -V VENV_PATH            Absolute path of the virtualenv directory [default: \$PWD/wikidump].
   -x PYTHON_VERSION       Python version [default: 3.6].
+  -X                      Do not use titles, use indexes.
   -w PBS_WALLTIME         Max walltime for the job, a time period formatted as hh:mm:ss.
   -W                      Compute the pagerank on the whole network.
 
@@ -153,6 +154,7 @@ verbose_flag=false
 help_flag=false
 dryrun_flag=false
 wholenetwork=false
+notitle_flag=false
 
 INPUT_GRAPH=''
 OUTPUTDIR=''
@@ -180,7 +182,7 @@ PBS_HOST=''
 MAX_JOBS_PER_BATCH=30
 SLEEP_PER_BATCH=1800
 
-while getopts ":a:cdD:hH:i:I:k:l:M:nN:o:p:P:q:s:S:t:vV:x:w:W" opt; do
+while getopts ":a:cdD:hH:i:I:k:l:M:nN:o:p:P:q:s:S:t:vV:x:Xw:W" opt; do
   case $opt in
     a)
       check_posfloat "$OPTARG" '-a'
@@ -289,6 +291,9 @@ while getopts ":a:cdD:hH:i:I:k:l:M:nN:o:p:P:q:s:S:t:vV:x:w:W" opt; do
       ;;
     x)
       PYTHON_VERSION="$OPTARG"
+      ;;
+    X)
+      notitle_flag=true
       ;;
     w)
       PBS_WALLTIME="$OPTARG"
@@ -432,6 +437,7 @@ echodebug "  * VENV_PATH (-V): $VENV_PATH"
 echodebug "  * PYTHON_VERSION (-x): $PYTHON_VERSION"
 echodebug "  * PBS_WALLTIME (-w): $PBS_WALLTIME"
 echodebug "  * wholenetwork (-W): $wholenetwork"
+echodebug "  * notitle_flag (-X): $notitle_flag"
 echodebug
 #################### end: debug info
 
@@ -477,6 +483,13 @@ if $wholenetwork; then
   wholenetwork_flag='-w'
 fi
 
+# no title, use indexes
+notitle_cmd_flag=''
+if $notitle_flag; then
+  notitle_cmd_flag='-X'
+fi
+
+
 # verbosity flag
 verbosity_flag=''
 if $debug_flag; then
@@ -496,7 +509,7 @@ for title in "${!pages[@]}"; do
   idx="${pages[$title]}"
   normtitle="${title/ /_}"
 
-  pbsjobname="lrssppr_${MAXLOOP}_${PAGERANK_ALPHA}${wholenetwork_flag:+"_${wholenetwork_flag}"}_${idx}"
+  pbsjobname="lrssppr_${MAXLOOP}_${PAGERANK_ALPHA}${wholenetwork_flag:+"${wholenetwork_flag}"}_${idx}"
 
   logfile="${OUTPUTDIR}/${PROJECT}.looprank.${normtitle}.${MAXLOOP}.${DATE}.log"
   echo "Logging to ${logfile}"
@@ -554,7 +567,8 @@ for title in "${!pages[@]}"; do
            "-I" "${idx}" \
            "-T" "${normtitle}" \
            ${verbosity_flag:+"${verbosity_flag}"} \
-           ${wholenetwork_flag:+"${wholenetwork_flag}"}
+           ${wholenetwork_flag:+"${wholenetwork_flag}"} \
+           ${notitle_cmd_flag:+"${notitle_cmd_flag}"}
            )
 
   # qsub -N <pbsjobname> -q cpuq [psb_options] -- \

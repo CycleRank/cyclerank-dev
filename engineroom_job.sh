@@ -158,7 +158,7 @@ Options:
   -v                  Enable verbose output.
   -V VENV_PATH        Absolute path of the virtualenv directory [default: \$PWD/looprank3].
   -w                  Compute the pagerank on the whole network.
-  -X                  Do not use titles, use index.
+  -X                  Do not use titles, use indexes.
 
 Example:
   engineroom_job.sh  -i /home/user/pagerank/enwiki/20180301/enwiki.wikigraph.pagerank.2018-03-01.csv \\
