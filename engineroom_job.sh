@@ -652,7 +652,7 @@ if $notitle_flag; then
 else
   if $wholenetwork; then
     outfileSSPPR="${PROJECT}.ssppr.a${PAGERANK_ALPHA}.${NORMTITLE}.wholenetwork.${DATE}.txt"
-    logfileSSPPR="${OUTPUTDIR}/${PROJECT}.ssppr.${NORMTITLE}.wholenetwork.${DATE}.log"
+    logfileSSPPR="${OUTPUTDIR}/${PROJECT}.ssppr.a${PAGERANK_ALPHA}.${NORMTITLE}.wholenetwork.${DATE}.log"
   else
     outfileSSPPR="${PROJECT}.ssppr.a${PAGERANK_ALPHA}.${NORMTITLE}.${MAXLOOP}.${DATE}.txt"
     logfileSSPPR="${OUTPUTDIR}/${PROJECT}.ssppr.a${PAGERANK_ALPHA}.${NORMTITLE}.${MAXLOOP}.${DATE}.log"
@@ -734,12 +734,15 @@ fi
 if $debug_flag || $verbose_flag; then set -x; fi
 
 wrap_run python3 "$SCRIPTDIR/utils/compare_seealso.py" \
+  -a "looprank" "ssppr" \
+  --alpha "${PAGERANK_ALPHA}" \
   -i "$compare_seealso_input" \
   -l "${scratch}" \
   --links-filename "links.txt" \
-  --output-dir "$OUTPUTDIR" \
+  --output-dir "${OUTPUTDIR}" \
   --scores-dir "${tmpoutdir}" \
-  -s "$SNAPSHOT"
+  -s "$SNAPSHOT" \
+  ${wholenetwork_flag[@]:+"${wholenetwork_flag[@]}"}
 
 if $debug_flag || $verbose_flag; then set +x; fi
 
