@@ -2,9 +2,10 @@
 # -*- coding: utf-8 -*-
 
 import os
+import re
 import sys
 import csv
-import re
+import math
 import argparse
 import pathlib
 from collections import defaultdict
@@ -23,9 +24,43 @@ def square_score(scores, cycle):
         scores[node] += 1.0/(csize*csize)
 
 
+def cube_score(scores, cycle):
+    csize = len(cycle)
+    for node in cycle:
+        scores[node] += 1.0/(csize*csize*csize)
+
+
+def cube_score(scores, cycle):
+    csize = len(cycle)
+    for node in cycle:
+        scores[node] += 1.0/(csize*math.log(csize))
+
+
+def nlogn_score(scores, cycle):
+    csize = len(cycle)
+    for node in cycle:
+        scores[node] += 1.0/(csize*math.log(csize))
+
+
+def expe_score(scores, cycle):
+    csize = len(cycle)
+    for node in cycle:
+        scores[node] += math.exp(-csize)
+
+
+def exp10_score(scores, cycle):
+    csize = len(cycle)
+    for node in cycle:
+        scores[node] += math.pow(10, -csize)
+
+
 SCORING_FUNCTIONS = {
-'linear': linear_score,
-'square': square_score,
+'linear': linear_score,		# 1/10^n
+'square': square_score,		# 1/n^2
+'cube': cube_score,			# 1/n^3
+'nlogn': nlogn_score,		# 1/n*log(n)
+'expe': expe_score,			# 1/(e^n)
+'exp10': exp10_score 		# 1(10^n)
 }
 
 
