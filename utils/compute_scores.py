@@ -27,13 +27,7 @@ def square_score(scores, cycle):
 def cube_score(scores, cycle):
     csize = len(cycle)
     for node in cycle:
-        scores[node] += 1.0/(csize*csize*csize)
-
-
-def cube_score(scores, cycle):
-    csize = len(cycle)
-    for node in cycle:
-        scores[node] += 1.0/(csize*math.log(csize))
+        scores[node] += math.pow(csize, -3)
 
 
 def nlogn_score(scores, cycle):
