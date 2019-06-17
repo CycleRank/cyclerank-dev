@@ -79,11 +79,11 @@ function check_posint() {
 function short_usage() {
   (>&2 echo \
 "Usage:
-  engineroom_qsub.sh [options] -i INPUT_GRAPH
-                               -o OUTPUTDIR
-                               -s SNAPSHOT
-                               -l LINKS_DIR
-                               -I PAGES_LIST
+  engineroom_qsub_2Drank.sh [options] -i INPUT_GRAPH
+                                      -o OUTPUTDIR
+                                      -s SNAPSHOT
+                                      -l LINKS_DIR
+                                      -I PAGES_LIST
   "
   )
 }
@@ -105,9 +105,11 @@ Arguments:
 
 
 Options:
+  -a PAGERANK_ALPHA   Damping factor (alpha) for the PageRank [default: 0.85].
   -c PBS_NCPUS            Number of PBS cpus to request (needs also -n and -P to be specified).
   -d                      Enable debug output.
   -D DATE                 Date [default: infer from input graph].
+  -f SCORING_FUNCTION LoopRank scoring function {linear,square,cube,nlogn,expe,exp10} [default: linear].
   -h                      Show this help and exits.
   -H PBS_HOST             PBS host to run on.
   -k MAXLOOP              Max loop length (K) [default: 4].
@@ -150,7 +152,16 @@ PAGES_LIST=''
 PROJECT=''
 MAXLOOP=4
 TIMEOUT=''
+PAGERANK_ALPHA=0.85
+SCORING_FUNCTION='linear'
 
+declare -a SCORING_FUNCTION_CHOICES=( 'linear'
+                                      'square'
+                                      'cube'
+                                      'nlogn'
+                                      'expe'
+                                      'exp10'
+                                     )
 VENV_PATH="$PWD/looprank3"
 PYTHON_VERSION='3.6'
 
@@ -169,8 +180,13 @@ PBS_HOST=''
 MAX_JOBS_PER_BATCH=30
 SLEEP_PER_BATCH=1800
 
-while getopts ":cdD:hH:i:I:k:l:M:nN:o:p:P:q:s:S:t:vV:x:w:W" opt; do
+while getopts ":cdD:f:hH:i:I:k:l:M:nN:o:p:P:q:s:S:t:vV:x:w:W" opt; do
   case $opt in
+    a)
+      check_posfloat "$OPTARG" '-a'
+
+      PAGERANK_ALPHA="$OPTARG"
+      ;;
     c)
       check_posint "$OPTARG" '-c'
 
@@ -184,6 +200,11 @@ while getopts ":cdD:hH:i:I:k:l:M:nN:o:p:P:q:s:S:t:vV:x:w:W" opt; do
       date_set=true
 
       DATE="$OPTARG"
+      ;;
+    f)
+      check_choices "$OPTARG" "${SCORING_FUNCTION_CHOICES[*]}"
+
+      SCORING_FUNCTION="$OPTARG"
       ;;
     h)
       help_flag=true
@@ -390,10 +411,12 @@ echodebug "  * PAGES_LIST (-I): $PAGES_LIST"
 echodebug
 
 echodebug "Options:"
+echodebug "  * PAGERANK_ALPHA (-a): $PAGERANK_ALPHA"
 echodebug "  * PBS_NCPUS (-c): $PBS_NCPUS"
 echodebug "  * debug_flag (-d): $debug_flag"
 echodebug "  * PBS_HOST (-H): $PBS_HOST"
 echodebug "  * DATE (-D): $DATE"
+echodebug "  * SCORING_FUNCTION (-f): $SCORING_FUNCTION"
 echodebug "  * MAXLOOP (-k): $MAXLOOP"
 echodebug "  * PROJECT (-l): $PROJECT"
 echodebug "  * MAX_JOBS_PER_BATCH (-M): $MAX_JOBS_PER_BATCH"
@@ -525,6 +548,8 @@ for title in "${!pages[@]}"; do
   #                      -p enwiki.pages.txt
   ############################################################################
   command=("${SCRIPTDIR}/engineroom_job_2Drank.sh" \
+           "-a" "$PAGERANK_ALPHA" \
+           "-f" "$SCORING_FUNCTION" \
            "-k" "$MAXLOOP" \
            "-P" "$PYTHON_VERSION" \
            "-V" "$VENV_PATH" \
