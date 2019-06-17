@@ -101,6 +101,42 @@ function check_posint() {
      exit 1
   fi
 }
+
+function check_posfloat() {
+  local mynum="$1"
+  local option="$2"
+
+  if ! (( $(echo "$mynum > 0" |bc -l) )); then
+    (echo "Error in option '$option': must be positive, got $mynum." >&2)
+  fi
+}
+
+function array_contains () {
+  local seeking=$1; shift
+  local in=1
+  for element; do
+      if [[ "$element" == "$seeking" ]]; then
+          in=0
+          break
+      fi
+  done
+  return $in
+}
+
+function check_choices() {
+  local mychoice="$1"
+  declare -a choices="($2)"
+
+  set +u
+  if ! array_contains "$mychoice" "${choices[@]}"; then
+    (>&2 echo -n "$mychoice is not within acceptable choices: {")
+    (echo -n "${choices[@]}" | sed -re 's# #, #g' >&2)
+    (>&2 echo '}' )
+    exit 1
+  fi
+  set -u
+
+}
 #################### end: helpers
 
 #################### usage
@@ -135,8 +171,10 @@ Arguments:
 
 
 Options:
+  -a PAGERANK_ALPHA   Damping factor (alpha) for the PageRank [default: 0.85].
   -d                  Enable debug output.
   -D DATE             Date [default: infer from input graph].
+  -f SCORING_FUNCTION LoopRank scoring function {linear,square,cube,nlogn,expe,exp10} [default: linear].
   -h                  Show this help and exits.
   -k MAXLOOP          Max loop length (K) [default: 4].
   -K                  Keep temporary files.
@@ -184,9 +222,24 @@ DATE=''
 PROJECT=''
 MAXLOOP=4
 TIMEOUT=-1
+PAGERANK_ALPHA=0.85
+SCORING_FUNCTION='linear'
 
-while getopts ":dD:hi:I:k:Kl:no:p:P:s:t:T:vV:wX" opt; do
+declare -a SCORING_FUNCTION_CHOICES=( 'linear'
+                                      'square'
+                                      'cube'
+                                      'nlogn'
+                                      'expe'
+                                      'exp10'
+                                     )
+
+while getopts ":a:dD:f:hi:I:k:Kl:no:p:P:s:t:T:vV:wX" opt; do
   case $opt in
+    a)
+      check_posfloat "$OPTARG" '-a'
+
+      PAGERANK_ALPHA="$OPTARG"
+      ;;
     d)
       debug_flag=true
       ;;
@@ -194,6 +247,11 @@ while getopts ":dD:hi:I:k:Kl:no:p:P:s:t:T:vV:wX" opt; do
       date_set=true
 
       DATE="$OPTARG"
+      ;;
+    f)
+      check_choices "$OPTARG" "${SCORING_FUNCTION_CHOICES[*]}"
+
+      SCORING_FUNCTION="$OPTARG"
       ;;
     h)
       help_flag=true
@@ -493,10 +551,12 @@ echodebug "  * TITLE (-T): $TITLE"
 echodebug
 
 echodebug "Options:"
+echodebug "  * PAGERANK_ALPHA (-a): $PAGERANK_ALPHA"
 echodebug "  * debug_flag (-d): $debug_flag"
 echodebug "  * DATE (-D): $DATE"
 echodebug "  * MAXLOOP (-k): $MAXLOOP"
 echodebug "  * keeptmp_flag (-K): $keeptmp_flag"
+echodebug "  * SCORING_FUNCTION (-f): $SCORING_FUNCTION"
 echodebug "  * PROJECT (-p): $PROJECT"
 echodebug "  * PYTHON_VERSION (-P): $PYTHON_VERSION"
 echodebug "  * dryrun_flag (-n): $dryrun_flag"
@@ -607,9 +667,9 @@ touch "${tmpoutdir}/${outfileLR}"
 
 # Compute LoopRank scores
 if $notitle_flag; then
-  scorefileLR="${PROJECT}.looprank.${INDEX}.${MAXLOOP}.${DATE}.scores.txt"
+  scorefileLR="${PROJECT}.looprank.f${SCORING_FUNCTION}.${INDEX}.${MAXLOOP}.${DATE}.scores.txt"
 else
-  scorefileLR="${PROJECT}.looprank.${NORMTITLE}.${MAXLOOP}.${DATE}.scores.txt"
+  scorefileLR="${PROJECT}.looprank.f${SCORING_FUNCTION}.${NORMTITLE}.${MAXLOOP}.${DATE}.scores.txt"
 fi
 inputfileLR="${tmpoutdir}/${outfileLR}"
 
@@ -618,6 +678,7 @@ touch "${inputfileLR}"
 echodebug "encoding: $(python3 -c 'import locale; print(locale.getpreferredencoding(False))')"
 
 wrap_run python3 "${SCRIPTDIR}/utils/compute_scores.py" \
+  -f "${SCORING_FUNCTION}" \
   -o "${tmpoutdir}/${scorefileLR}" \
     "${inputfileLR}"
 
@@ -625,27 +686,25 @@ wrap_run python3 "${SCRIPTDIR}/utils/compute_scores.py" \
 ##############################################################################
 if $notitle_flag; then
   if $wholenetwork; then
-    outfileSSPPR="${PROJECT}.ssppr.${INDEX}.wholenetwork.${DATE}.txt"
-    logfileSSPPR="${OUTPUTDIR}/${PROJECT}.ssppr.${INDEX}.wholenetwork.${DATE}.log"
+    outfileSSPPR="${PROJECT}.ssppr.a${PAGERANK_ALPHA}.${INDEX}.wholenetwork.${DATE}.txt"
+    logfileSSPPR="${OUTPUTDIR}/${PROJECT}.ssppr.a${PAGERANK_ALPHA}.${INDEX}.wholenetwork.${DATE}.log"
   else
-    outfileSSPPR="${PROJECT}.ssppr.${INDEX}.${MAXLOOP}.${DATE}.txt"
-    logfileSSPPR="${OUTPUTDIR}/${PROJECT}.ssppr.${INDEX}.${MAXLOOP}.${DATE}.log"
+    outfileSSPPR="${PROJECT}.ssppr.a${PAGERANK_ALPHA}.${INDEX}.${MAXLOOP}.${DATE}.txt"
+    logfileSSPPR="${OUTPUTDIR}/${PROJECT}.ssppr.a${PAGERANK_ALPHA}.${INDEX}.${MAXLOOP}.${DATE}.log"
   fi
 else
   if $wholenetwork; then
-    outfileSSPPR="${PROJECT}.ssppr.${NORMTITLE}.wholenetwork.${DATE}.txt"
-    logfileSSPPR="${OUTPUTDIR}/${PROJECT}.ssppr.${NORMTITLE}.wholenetwork.${DATE}.log"
+    outfileSSPPR="${PROJECT}.ssppr.a${PAGERANK_ALPHA}.${NORMTITLE}.wholenetwork.${DATE}.txt"
+    logfileSSPPR="${OUTPUTDIR}/${PROJECT}.ssppr.a${PAGERANK_ALPHA}.${NORMTITLE}.wholenetwork.${DATE}.log"
   else
-    outfileSSPPR="${PROJECT}.ssppr.${NORMTITLE}.${MAXLOOP}.${DATE}.txt"
-    logfileSSPPR="${OUTPUTDIR}/${PROJECT}.ssppr.${NORMTITLE}.${MAXLOOP}.${DATE}.log"
+    outfileSSPPR="${PROJECT}.ssppr.a${PAGERANK_ALPHA}.${NORMTITLE}.${MAXLOOP}.${DATE}.txt"
+    logfileSSPPR="${OUTPUTDIR}/${PROJECT}.ssppr.a${PAGERANK_ALPHA}.${NORMTITLE}.${MAXLOOP}.${DATE}.log"
   fi
 fi
 
 wholenetwork_flag=''
 if $wholenetwork; then
   wholenetwork_flag='-w'
-  outfileSSPPR="${PROJECT}.ssppr.${NORMTITLE}.wholenetwork.${DATE}.txt"
-  logfileSSPPR="${OUTPUTDIR}/${PROJECT}.ssppr.${NORMTITLE}.wholenetwork.${DATE}.log"
 fi
 
 declare -a maxloop_flag
@@ -655,6 +714,7 @@ fi
 
 commandSSPPR=("wrap_run" \
               "$SCRIPTDIR/ssppr" \
+              "-a" "${PAGERANK_ALPHA}" \
               "-f" "${INPUT_GRAPH}" \
               "-o" "${tmpoutdir}/${outfileSSPPR}" \
               "-s" "${INDEX}" \
@@ -699,29 +759,25 @@ touch "${tmpoutdir}/${outfileSSPPR}"
 ##############################################################################
 if $notitle_flag; then
   if $wholenetwork; then
-    outfileCheir="${PROJECT}.cheir.${INDEX}.wholenetwork.${DATE}.txt"
-    logfileCheir="${OUTPUTDIR}/${PROJECT}.cheir.${INDEX}.wholenetwork.${DATE}.log"
+    outfileCheir="${PROJECT}.cheir.a${PAGERANK_ALPHA}.${INDEX}.wholenetwork.${DATE}.txt"
+    logfileCheir="${OUTPUTDIR}/${PROJECT}.cheir.a${PAGERANK_ALPHA}.${INDEX}.wholenetwork.${DATE}.log"
   else
-    outfileCheir="${PROJECT}.cheir.${INDEX}.${MAXLOOP}.${DATE}.txt"
-    logfileCheir="${OUTPUTDIR}/${PROJECT}.cheir.${INDEX}.${MAXLOOP}.${DATE}.log"
+    outfileCheir="${PROJECT}.cheir.a${PAGERANK_ALPHA}.${INDEX}.${MAXLOOP}.${DATE}.txt"
+    logfileCheir="${OUTPUTDIR}/${PROJECT}.cheir.a${PAGERANK_ALPHA}.${INDEX}.${MAXLOOP}.${DATE}.log"
   fi
 else
   if $wholenetwork; then
-    outfileCheir="${PROJECT}.cheir.${NORMTITLE}.wholenetwork.${DATE}.txt"
-    logfileCheir="${OUTPUTDIR}/${PROJECT}.cheir.${NORMTITLE}.wholenetwork.${DATE}.log"
+    outfileCheir="${PROJECT}.cheir.a${PAGERANK_ALPHA}.${NORMTITLE}.wholenetwork.${DATE}.txt"
+    logfileCheir="${OUTPUTDIR}/${PROJECT}.cheir.a${PAGERANK_ALPHA}.${NORMTITLE}.wholenetwork.${DATE}.log"
   else
-    outfileCheir="${PROJECT}.cheir.${NORMTITLE}.${MAXLOOP}.${DATE}.txt"
-    logfileCheir="${OUTPUTDIR}/${PROJECT}.cheir.${NORMTITLE}.${MAXLOOP}.${DATE}.log"
+    outfileCheir="${PROJECT}.cheir.a${PAGERANK_ALPHA}.${NORMTITLE}.${MAXLOOP}.${DATE}.txt"
+    logfileCheir="${OUTPUTDIR}/${PROJECT}.cheir.a${PAGERANK_ALPHA}.${NORMTITLE}.${MAXLOOP}.${DATE}.log"
   fi
-fi
-
-if $wholenetwork; then
-  outfileCheir="${PROJECT}.cheir.${NORMTITLE}.wholenetwork.${DATE}.txt"
-  logfileCheir="${OUTPUTDIR}/${PROJECT}.cheir.${NORMTITLE}.wholenetwork.${DATE}.log"
 fi
 
 commandCheir=("wrap_run" \
               "$SCRIPTDIR/ssppr" \
+              "-a" "${PAGERANK_ALPHA}" \
               "-t" \
               "-f" "${INPUT_GRAPH}" \
               "-o" "${tmpoutdir}/${outfileCheir}" \
@@ -768,15 +824,15 @@ touch "${tmpoutdir}/${outfileCheir}"
 ##############################################################################
 if $notitle_flag; then
   if $wholenetwork; then
-    outfile2Drank="${PROJECT}.2Drank.${INDEX}.wholenetwork.${DATE}.txt"
+    outfile2Drank="${PROJECT}.2Drank.a${PAGERANK_ALPHA}.${INDEX}.wholenetwork.${DATE}.txt"
   else
-    outfile2Drank="${PROJECT}.2Drank.${INDEX}.${MAXLOOP}.${DATE}.txt"
+    outfile2Drank="${PROJECT}.2Drank.a${PAGERANK_ALPHA}.${INDEX}.${MAXLOOP}.${DATE}.txt"
   fi
 else
   if $wholenetwork; then
-    outfile2Drank="${PROJECT}.2Drank.${NORMTITLE}.wholenetwork.${DATE}.txt"
+    outfile2Drank="${PROJECT}.2Drank.a${PAGERANK_ALPHA}.${NORMTITLE}.wholenetwork.${DATE}.txt"
   else
-    outfile2Drank="${PROJECT}.2Drank.${NORMTITLE}.${MAXLOOP}.${DATE}.txt"
+    outfile2Drank="${PROJECT}.2Drank.a${PAGERANK_ALPHA}.${NORMTITLE}.${MAXLOOP}.${DATE}.txt"
   fi
 fi
 
@@ -824,6 +880,7 @@ fi
 
 wrap_run python3 "$SCRIPTDIR/utils/compare_seealso.py" \
   -a 'looprank' '2Drank' \
+  -f "${SCORING_FUNCTION}" \
   -k "${MAXLOOP}" \
   ${compare_maxloop_flag:+"$compare_maxloop_flag"} \
   -i "$compare_seealso_input" \
@@ -841,15 +898,15 @@ LC_ALL=C sort -k2 -r -g "${tmpoutdir}/${scorefileLR}" \
 
 if $notitle_flag; then
   if $wholenetwork; then
-    comparefile2Drank="${PROJECT}.2Drank.${INDEX}.wholenetwork.${DATE}.compare.txt"
+    comparefile2Drank="${PROJECT}.2Drank.a${PAGERANK_ALPHA}.${INDEX}.wholenetwork.${DATE}.compare.txt"
   else
-    comparefile2Drank="${PROJECT}.2Drank.${INDEX}.${MAXLOOP}.${DATE}.compare.txt"
+    comparefile2Drank="${PROJECT}.2Drank.a${PAGERANK_ALPHA}.${INDEX}.${MAXLOOP}.${DATE}.compare.txt"
   fi
 else
   if $wholenetwork; then
-    comparefile2Drank="${PROJECT}.2Drank.${NORMTITLE}.wholenetwork.${DATE}.compare.txt"
+    comparefile2Drank="${PROJECT}.2Drank.a${PAGERANK_ALPHA}.${NORMTITLE}.wholenetwork.${DATE}.compare.txt"
   else
-    comparefile2Drank="${PROJECT}.2Drank.${NORMTITLE}.${MAXLOOP}.${DATE}.compare.txt"
+    comparefile2Drank="${PROJECT}.2Drank.a${PAGERANK_ALPHA}.${NORMTITLE}.${MAXLOOP}.${DATE}.compare.txt"
   fi
 fi
 touch "${OUTPUTDIR}/${comparefile2Drank}"

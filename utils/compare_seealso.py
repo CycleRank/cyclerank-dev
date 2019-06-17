@@ -22,14 +22,14 @@ REGEX_NAME = (r'([a-z]{2}wiki)\.(cheir|ssppr|cheir|2Drank)' + \
 regex_name = re.compile(REGEX_NAME)
 
 SCORES_FILENAMES = {
-'looprank': 'enwiki.{algo}.{title}.{maxloop}.2018-03-01.scores.txt',
+'looprank': 'enwiki.{algo}.f{scoring_function}.{title}.{maxloop}.2018-03-01.scores.txt',
 'ssppr': 'enwiki.{algo}.a{alpha}.{title}.{maxloop}.2018-03-01.txt',
 'cheir': 'enwiki.{algo}.a{alpha}.{title}.{maxloop}.2018-03-01.txt',
 '2Drank': 'enwiki.{algo}.a{alpha}.{title}.{maxloop}.2018-03-01.txt',
 }
 ALLOWED_ALGOS = list(SCORES_FILENAMES.keys())
 OUTPUT_FILENAMES = {
-'looprank': 'enwiki.{algo}.{title}.{maxloop}.2018-03-01.compare.txt',
+'looprank': 'enwiki.{algo}.f{scoring_function}.{title}.{maxloop}.2018-03-01.compare.txt',
 'ssppr': 'enwiki.{algo}.a{alpha}.{title}.{maxloop}.2018-03-01.compare.txt',
 'cheir': 'enwiki.{algo}.a{alpha}.{title}.{maxloop}.2018-03-01.compare.txt',
 '2Drank': 'enwiki.{algo}.a{alpha}.{title}.{maxloop}.2018-03-01.compare.txt',
@@ -120,6 +120,12 @@ if __name__ == '__main__':
                         help='Damping factor (alpha) for the PageRank '
                              'algorithm [default: 0.85].'
                         )
+    parser.add_argument('-f', '--scoring-function'
+                        type=str,
+                        default='linear',
+                        help='Scoring function used for LoopRank '
+                             'algorithm [default: "linear"].'
+                        )
     parser.add_argument('-i', '--input',
                         type=pathlib.Path,
                         help='File with page titles or page indexes '
@@ -166,6 +172,7 @@ if __name__ == '__main__':
     args = parser.parse_args()
     maxloop = args.maxloop
     alpha = args.alpha
+    scoring_function = args.scoring_function
 
     # print('* Read input. ', file=sys.stderr)
     infile = None
@@ -257,7 +264,8 @@ if __name__ == '__main__':
                 scores_filename = sanitize(SCORES_FILENAMES[algo].format(
                     algo=algo,
                     title=title.replace(' ', '_'),
-                    maxloop=maxloop
+                    maxloop=maxloop,
+                    scoring_function=scoring_function
                     )
                 )
 
@@ -328,7 +336,8 @@ if __name__ == '__main__':
                 output_filename = sanitize(OUTPUT_FILENAMES[algo].format(
                     algo=algo,
                     title=title.replace(' ', '_'),
-                    maxloop=maxloop
+                    maxloop=maxloop,
+                    scoring_function=scoring_function
                     )
                 )
 
