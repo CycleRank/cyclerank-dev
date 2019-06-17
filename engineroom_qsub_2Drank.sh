@@ -72,6 +72,33 @@ function check_posint() {
      exit 1
   fi
 }
+
+function array_contains () {
+  local seeking=$1; shift
+  local in=1
+  for element; do
+      if [[ "$element" == "$seeking" ]]; then
+          in=0
+          break
+      fi
+  done
+  return $in
+}
+
+function check_choices() {
+  local mychoice="$1"
+  declare -a choices="($2)"
+
+  set +u
+  if ! array_contains "$mychoice" "${choices[@]}"; then
+    (>&2 echo -n "$mychoice is not within acceptable choices: {")
+    (echo -n "${choices[@]}" | sed -re 's# #, #g' >&2)
+    (>&2 echo '}' )
+    exit 1
+  fi
+  set -u
+
+}
 #################### end: helpers
 
 
