@@ -120,7 +120,7 @@ if __name__ == '__main__':
                         help='Damping factor (alpha) for the PageRank '
                              'algorithm [default: 0.85].'
                         )
-    parser.add_argument('-f', '--scoring-function'
+    parser.add_argument('-f', '--scoring-function',
                         type=str,
                         default='linear',
                         help='Scoring function used for LoopRank '
