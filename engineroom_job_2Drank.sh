@@ -407,7 +407,7 @@ function sanitize() {
   filename="$1"
 
   filename_clean=$(echo "$filename" | \
-    sed -e 's/[\\/:&\*\?"<>\|\x01-\x1F\x7F]//g' \
+    sed -e 's/[\\/:&\*\?"<>\|\x01-\x1F\x7F\(\)]//g' \
         -e 's/^\(nul\|prn\|con\|lpt[0-9]\|com[0-9]\|aux\)\(\.\|$\)//i' \
         -e 's/^\.*$//' \
         -e 's/^$/NONAME/'\
