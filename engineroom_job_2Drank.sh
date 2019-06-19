@@ -889,6 +889,7 @@ wrap_run python3 "$SCRIPTDIR/utils/compare_seealso.py" \
   --output-dir "$OUTPUTDIR" \
   --scores-dir "${tmpoutdir}" \
   -s "$SNAPSHOT" \
+  ${wholenetwork_flag[@]:+"${wholenetwork_flag[@]}"}
 
 if $debug_flag || $verbose_flag; then set +x; fi
 
