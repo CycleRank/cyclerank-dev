@@ -155,6 +155,12 @@ if __name__ == '__main__':
                         default=pathlib.Path('.'),
                         help='Directory with the scores files [default: .]'
                         )
+    parser.add_argument('-t', '--top-pagerank',
+                        type=pathlib.Path,
+                        required=True,
+                        help='File with page titles in the top PageRank '
+                             'positions.'
+                        )
     parser.add_argument('-w', '--wholenetwork',
                         action='store_true',
                         help='Calculate SSPPR, Cheir, and 2Drank on the '
@@ -182,7 +188,7 @@ if __name__ == '__main__':
               for _ in infile.readlines()
               ]
     if '\t' in titles[0]:
-        if args.indexes:
+        if args.index:
             titles = [line.split('\t')[1] for line in titles]
         else:
             titles = [line.split('\t')[0] for line in titles]
@@ -198,49 +204,25 @@ if __name__ == '__main__':
                 snapshot[int(l[0])] = l[1]
                 pbar.update(1)
 
+    # print('* Read the "top pagerank" file: ', file=sys.stderr)
+    toppagerank_file = args.top_pagerank
+    topprlen = count_file_lines(toppagerank_file)
+    toppr = set()
+    with tqdm.tqdm(total=topprlen) as pbar:
+        with safe_path(toppagerank_file).open('r', encoding='utf-8') as topprfp:
+            reader = csv.reader(topprfp, delimiter='\t')
+            for l in reader:
+                toppr.add(int(l[1]))
+                pbar.update(1)
+
     # print('* Processing titles: ', file=sys.stderr)
     links_dir = args.links_dir
     scores_dir = args.scores_dir
 
-    import ipdb; ipdb.set_trace()
-
     for title in titles:
-        links_filename = None
-        # print('-'*80)
-        # print('    - {}'.format(title), file=sys.stderr)
-        if args.links_filename is None:
-            links_filename = sanitize('enwiki.comparison.{title}.seealso.txt'
-                              .format(title=title))
-        else:
-            links_filename = sanitize(args.links_filename)
-
-        # print('        -> links_filename: {}'.format(links_filename),
-        #       file=sys.stderr)
-
-        for alinkfile in (os.path.basename(x)
-                          for x in glob.glob(links_dir.as_posix() + '/*')):
-            if sanitize(alinkfile) == links_filename:
-                links_file = links_dir/pathlib.Path(alinkfile)
-                break
-
-        if not links_file:
-            raise ValueError('Links file not found.')
-
-        with safe_path(links_file).open('r', encoding='utf-8') as linkfp:
-            reader = csv.reader(linkfp, delimiter='\t')
-            next(reader)
-
-            links_ids = set()
-            for line in reader:
-                lid = int(line[1])
-                links_ids.add(lid)
-
-        for  lid in links_ids:
-            link_title = snapshot[lid]
-            # print('        > {}'.format(link_title), file=sys.stderr)
-
         for algo in args.algo:
             scores_filename = None
+            scores_file = None
             # print('      * Read score ({}) file'.format(algo),
             #       file=sys.stderr)
 
@@ -279,7 +261,9 @@ if __name__ == '__main__':
                     break
 
             if not scores_file:
-                raise ValueError('Score file not found.')
+                raise ValueError('Score file "{}" not found.'
+                                 .format(scores_filename)
+                                 )
 
             # print('        -> scores_file: {}'.format(scores_file),
             #       file=sys.stderr)
@@ -304,13 +288,6 @@ if __name__ == '__main__':
                                   reverse=True
                                   )
             scores = dict(sorted_lines)
-
-            link_positions = dict()
-            for lid in links_ids:
-                for pos, item in enumerate(sorted_lines):
-                    if lid == item[0]:
-                        link_positions[lid] = pos + 1
-                        break
 
             # print('      * Print results for algo {}'.format(algo),
             #       file=sys.stderr)
@@ -345,16 +322,23 @@ if __name__ == '__main__':
 
             with safe_path(output_file).open('w+', encoding='UTF-8') as outfp:
                 outwriter = csv.writer(outfp, delimiter='\t')
-                for lid in link_positions:
-                    link_title = snapshot[lid]
-                    link_pos = link_positions[lid]
-                    link_score = scores[lid]
+                for pageid in toppr:
+                    page_title = snapshot[pageid]
+
+                    page_score = None
+                    if pageid in scores:
+                        page_score = scores[pageid]
+                        page_pos = 1 + [idx for idx, score
+                                        in sorted_lines].index(pageid)
+
+                    if page_score is None:
+                        continue
 
                     # 'pos title lid score'
-                    outwriter.writerow((link_pos,
-                                        link_title,
-                                        lid,
-                                        repr(link_score)
+                    outwriter.writerow((page_pos,
+                                        page_title,
+                                        pageid,
+                                        repr(page_score)
                                         )
                                        )
 
