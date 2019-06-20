@@ -3,13 +3,14 @@
 import re
 import sys
 import csv
+import math
 import pathlib
 import argparse
 
-COMPARE_FILENAMES = {'looprank': 'enwiki.{algo}.{title}.{maxloop}.2018-03-01.compare.txt',
-                     'ssppr': 'enwiki.{algo}.{title}.{maxloop}.2018-03-01.compare.txt',
-                     'cheir': 'enwiki.{algo}.{title}.{maxloop}.2018-03-01.compare.txt',
-                     '2Drank': 'enwiki.{algo}.{title}.{maxloop}.2018-03-01.compare.txt',
+COMPARE_FILENAMES = {'looprank': 'enwiki.{algo}.f{scoring_function}.{title}.{maxloop}.2018-03-01.compare.txt',
+                     'ssppr': 'enwiki.{algo}.a{alpha}.{title}.{maxloop}.2018-03-01.compare.txt',
+                     'cheir': 'enwiki.{algo}.a{alpha}.{title}.{maxloop}.2018-03-01.compare.txt',
+                     '2Drank': 'enwiki.{algo}.a{alpha}.{title}.{maxloop}.2018-03-01.compare.txt',
                      }
 ALLOWED_ALGOS = list(COMPARE_FILENAMES.keys())
 
@@ -34,6 +35,8 @@ def sanitize(filename: str) -> str:
 
 
 def read_comparison_file(algo,
+                         alpha,
+                         scoring_function,
                          title,
                          maxloop,
                          wholenetwork,
@@ -42,6 +45,7 @@ def read_comparison_file(algo,
     if algo != 'looprank' and wholenetwork:
         input_filename = (COMPARE_FILENAMES[algo]
                           .format(algo=algo,
+                                  alpha=alpha,
                                   title=title,
                                   maxloop='wholenetwork'
                                   )
@@ -50,7 +54,8 @@ def read_comparison_file(algo,
         input_filename = (COMPARE_FILENAMES[algo]
                           .format(algo=algo,
                                   title=title,
-                                  maxloop=maxloop
+                                  maxloop=maxloop,
+                                  scoring_function=scoring_function
                                   )
                           )
 
@@ -78,7 +83,7 @@ def read_comparison_file(algo,
     return links
 
 
-def compute_score(links):
+def compute_score(links, use_log=False):
     pos = 0
     score = 0.0
     title = ''
@@ -88,10 +93,19 @@ def compute_score(links):
     except KeyError:
         pass
 
-    try:
-        score = 1.0/pos
-    except ZeroDivisionError:
+    if use_log:
+
+      try:
+        score = 1.0/(1+math.log(pos))
+      except ValueError:
         score = 0.0
+
+    else:
+
+      try:
+          score = 1.0/pos
+      except ZeroDivisionError:
+          score = 0.0
 
     return score, title
 
@@ -111,6 +125,19 @@ if __name__ == '__main__':
                               '[default: [looprank, ssppr]].'
                               ).format(', '.join(ALLOWED_ALGOS))
                         )
+    parser.add_argument('--alpha',
+                        type=float,
+                        default=0.85,
+                        help='Alpha PageRank damping factor '
+                             '[default: 0.85].'
+                        )
+    parser.add_argument('-f', '--scoring-function',
+                        type=str,
+                        default='linear',
+                        choices=['linear', 'square'],
+                        help='LoopRank scoring function '
+                             '[default: linear].'
+                        )
     parser.add_argument('-i', '--input',
                         type=pathlib.Path,
                         help='File with page titles '
@@ -120,6 +147,10 @@ if __name__ == '__main__':
                         type=int,
                         default=4,
                         help='Max loop length [default: 4].'
+                        )
+    parser.add_argument('--log',
+                        action='store_true',
+                        help='Use 1/log(n) to compute the comparison score instead of 1/n.'
                         )
     parser.add_argument('--comparison-dir',
                         type=pathlib.Path,
@@ -157,6 +188,8 @@ if __name__ == '__main__':
         algo2 = args.algos[1]
 
         links_algo1 = read_comparison_file(algo=algo1,
+                                           alpha=args.alpha,
+                                           scoring_function=args.scoring_function,
                                            title=title,
                                            maxloop=args.maxloop,
                                            wholenetwork=args.wholenetwork,
@@ -164,6 +197,8 @@ if __name__ == '__main__':
                                            )
 
         links_algo2 = read_comparison_file(algo=algo2,
+                                           alpha=args.alpha,
+                                           scoring_function=args.scoring_function,
                                            title=title,
                                            maxloop=args.maxloop,
                                            wholenetwork=args.wholenetwork,
@@ -172,8 +207,8 @@ if __name__ == '__main__':
 
         links_set = set(links_algo1.keys()).union(set(links_algo2.keys()))
         for lid in links_set:
-            score_algo1, title_algo1 = compute_score(links_algo1)
-            score_algo2, title_algo2 = compute_score(links_algo2)
+            score_algo1, title_algo1 = compute_score(links_algo1, use_log=args.log)
+            score_algo2, title_algo2 = compute_score(links_algo2, use_log=args.log)
 
             # import ipdb; ipdb.set_trace()
 
@@ -183,11 +218,16 @@ if __name__ == '__main__':
             title_link = title_algo1 if title_algo1 else title_algo2
             scores[title_link] = score_link
 
+        function='linear'
+        if args.log:
+          function='log'
+
         outfile = sanitize(
-            'enwiki.compare.{algo1}.{algo2}.{title}.2018-03-01.scores.txt'
+            'enwiki.compare.{algo1}.{algo2}.{title}.2018-03-01.scores.{function}.txt'
             .format(title=title.replace(' ', '_'),
                     algo1=algo1,
-                    algo2=algo2
+                    algo2=algo2,
+                    function=function
                     )
             )
 
