@@ -143,7 +143,7 @@ function check_choices() {
 function short_usage() {
   (>&2 echo \
 "Usage:
-  engineroom_job_2Drank_toppr.sh [options] -c COMPARE_TOP_PR
+  engineroom_job_2Drank_toppr.sh [options] -C COMPARE_TOP_PR
                                            -i INPUT_GRAPH
                                            -o OUTPUTDIR
                                            -s SNAPSHOT
@@ -162,7 +162,7 @@ Run pageloop_back_map on the graph INPUT_GRAPH for the pages listed in
 PAGES_LIST and output results in OUTPUTDIR.
 
 Arguments:
-  -c COMPARE_TOP_PR   Top PageRank results to compare.
+  -C COMPARE_TOP_PR   Top PageRank results to compare.
   -i INPUT_GRAPH      Absolute path of the input file.
   -o OUTPUTDIR        Absolute path of the output directory.
   -s SNAPSHOT         Absolute path of the file with the list of pages.
@@ -235,16 +235,16 @@ declare -a SCORING_FUNCTION_CHOICES=( 'linear'
                                       'exp10'
                                      )
 
-while getopts ":a:dD:f:hi:I:k:Kl:no:p:P:s:t:T:vV:wX" opt; do
+while getopts ":a:C:dD:f:hi:I:k:Kl:no:p:P:s:t:T:vV:wX" opt; do
   case $opt in
     a)
       check_posfloat "$OPTARG" '-a'
 
       PAGERANK_ALPHA="$OPTARG"
       ;;
-    c)
+    C)
       comparefile_unset=false
-      check_file "$OPTARG" '-c'
+      check_file "$OPTARG" '-C'
 
       COMPARE_TOP_PR="$OPTARG"
       ;;
@@ -354,7 +354,7 @@ if $help_flag; then
 fi
 
 if $comparefile_unset; then
-  (>&2 echo "Error. Option -c is required.")
+  (>&2 echo "Error. Option -C is required.")
   short_usage
   exit 1
 fi
@@ -556,6 +556,7 @@ function timeout_cmd {
 
 #################### debug info
 echodebug "Arguments:"
+echodebug "  * COMPARE_TOP_PR (-c): $COMPARE_TOP_PR"
 echodebug "  * INPUT_GRAPH (-i): $INPUT_GRAPH"
 echodebug "  * OUTPUTDIR (-o): $OUTPUTDIR"
 echodebug "  * SNAPSHOT (-s): $SNAPSHOT"
@@ -566,7 +567,6 @@ echodebug
 
 echodebug "Options:"
 echodebug "  * PAGERANK_ALPHA (-a): $PAGERANK_ALPHA"
-echodebug "  * COMPARE_TOP_PR (-c): $COMPARE_TOP_PR"
 echodebug "  * debug_flag (-d): $debug_flag"
 echodebug "  * DATE (-D): $DATE"
 echodebug "  * MAXLOOP (-k): $MAXLOOP"

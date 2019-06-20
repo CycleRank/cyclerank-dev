@@ -124,6 +124,7 @@ Run pageloop_back_map on the graph INPUT_GRAPH for the pages listed in
 PAGES_LIST and output results in OUTPUTDIR.
 
 Arguments:
+  -C COMPARE_TOP_PR   Top PageRank results to compare.
   -i INPUT_GRAPH          Absolute path of the input file.
   -o OUTPUTDIR            Absolute path of the output directory.
   -s SNAPSHOT             Absolute path of the file with the graph snapshot.
@@ -132,11 +133,11 @@ Arguments:
 
 
 Options:
-  -a PAGERANK_ALPHA   Damping factor (alpha) for the PageRank [default: 0.85].
+  -a PAGERANK_ALPHA       Damping factor (alpha) for the PageRank [default: 0.85].
   -c PBS_NCPUS            Number of PBS cpus to request (needs also -n and -P to be specified).
   -d                      Enable debug output.
   -D DATE                 Date [default: infer from input graph].
-  -f SCORING_FUNCTION LoopRank scoring function {linear,square,cube,nlogn,expe,exp10} [default: linear].
+  -f SCORING_FUNCTION     LoopRank scoring function {linear,square,cube,nlogn,expe,exp10} [default: linear].
   -h                      Show this help and exits.
   -H PBS_HOST             PBS host to run on.
   -k MAXLOOP              Max loop length (K) [default: 4].
@@ -158,6 +159,7 @@ Example:
   engineroom_qsub.sh")
 }
 
+comparefile_unset=true
 inputgraph_unset=true
 outputdir_unset=true
 snapshot_unset=true
@@ -173,6 +175,7 @@ help_flag=false
 dryrun_flag=false
 wholenetwork=false
 
+COMPARE_TOP_PR=''
 INPUT_GRAPH=''
 OUTPUTDIR=''
 PAGES_LIST=''
@@ -207,7 +210,7 @@ PBS_HOST=''
 MAX_JOBS_PER_BATCH=30
 SLEEP_PER_BATCH=1800
 
-while getopts ":cdD:f:hH:i:I:k:l:M:nN:o:p:P:q:s:S:t:vV:x:w:W" opt; do
+while getopts ":a:C:c:dD:f:hH:i:I:k:l:M:nN:o:p:P:q:s:S:t:vV:x:w:W" opt; do
   case $opt in
     a)
       check_posfloat "$OPTARG" '-a'
@@ -219,6 +222,12 @@ while getopts ":cdD:f:hH:i:I:k:l:M:nN:o:p:P:q:s:S:t:vV:x:w:W" opt; do
 
       pbs_ncpus_set=true
       PBS_NCPUS="$OPTARG"
+      ;;
+    C)
+      comparefile_unset=false
+      check_file "$OPTARG" '-C'
+
+      COMPARE_TOP_PR="$OPTARG"
       ;;
     d)
       debug_flag=true
@@ -344,6 +353,12 @@ if $help_flag; then
   exit 0
 fi
 
+if $comparefile_unset; then
+  (>&2 echo "Error. Option -C is required.")
+  short_usage
+  exit 1
+fi
+
 if $inputgraph_unset; then
   (>&2 echo "Error. Option -i is required.")
   short_usage
@@ -430,6 +445,7 @@ fi
 
 #################### debug info
 echodebug "Arguments:"
+echodebug "  * COMPARE_TOP_PR (-c): $COMPARE_TOP_PR"
 echodebug "  * INPUT_GRAPH (-i): $INPUT_GRAPH"
 echodebug "  * OUTPUTDIR (-o): $OUTPUTDIR"
 echodebug "  * SNAPSHOT (-s): $SNAPSHOT"
@@ -576,6 +592,7 @@ for title in "${!pages[@]}"; do
   ############################################################################
   command=("${SCRIPTDIR}/engineroom_qsub_2Drank.sh" \
            "-a" "$PAGERANK_ALPHA" \
+           "-C" "$COMPARE_TOP_PR" \
            "-f" "$SCORING_FUNCTION" \
            "-k" "$MAXLOOP" \
            "-P" "$PYTHON_VERSION" \
