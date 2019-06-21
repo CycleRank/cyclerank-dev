@@ -29,10 +29,10 @@ SCORES_FILENAMES = {
 }
 ALLOWED_ALGOS = list(SCORES_FILENAMES.keys())
 OUTPUT_FILENAMES = {
-'looprank': 'enwiki.{algo}.f{scoring_function}.{title}.{maxloop}.2018-03-01.compare.txt',
-'ssppr': 'enwiki.{algo}.a{alpha}.{title}.{maxloop}.2018-03-01.compare.txt',
-'cheir': 'enwiki.{algo}.a{alpha}.{title}.{maxloop}.2018-03-01.compare.txt',
-'2Drank': 'enwiki.{algo}.a{alpha}.{title}.{maxloop}.2018-03-01.compare.txt',
+'looprank': 'enwiki.{algo}.f{scoring_function}.{title}.{maxloop}.2018-03-01.compare.{method}.txt',
+'ssppr': 'enwiki.{algo}.a{alpha}.{title}.{maxloop}.2018-03-01.compare.{method}.txt',
+'cheir': 'enwiki.{algo}.a{alpha}.{title}.{maxloop}.2018-03-01.compare.{method}.txt',
+'2Drank': 'enwiki.{algo}.a{alpha}.{title}.{maxloop}.2018-03-01.compare.{method}.txt',
 }
 
 # sanitize regex
@@ -119,6 +119,10 @@ if __name__ == '__main__':
                         default=0.85,
                         help='Damping factor (alpha) for the PageRank '
                              'algorithm [default: 0.85].'
+                        )
+    parser.add_argument('--clickstream',
+                        action='store_true',
+                        help='Use clickstream data instead of see also.'
                         )
     parser.add_argument('-f', '--scoring-function',
                         type=str,
@@ -209,8 +213,12 @@ if __name__ == '__main__':
         # print('-'*80)
         # print('    - {}'.format(title), file=sys.stderr)
         if args.links_filename is None:
-            links_filename = sanitize('enwiki.comparison.{title}.seealso.txt'
-                              .format(title=title))
+            if args.clickstream:
+                links_filename = sanitize('enwiki.comparison.{title}.clickstream.txt'
+                                          .format(title=title))
+            else:
+                links_filename = sanitize('enwiki.comparison.{title}.seealso.txt'
+                                          .format(title=title))
         else:
             links_filename = sanitize(args.links_filename)
 
@@ -228,6 +236,8 @@ if __name__ == '__main__':
 
         with safe_path(links_file).open('r', encoding='utf-8') as linkfp:
             reader = csv.reader(linkfp, delimiter='\t')
+
+            # skip header
             next(reader)
 
             links_ids = set()
@@ -316,12 +326,16 @@ if __name__ == '__main__':
             #       file=sys.stderr)
 
             output_dir = args.output_dir
+            method = 'seealso'
+            if args.clickstream:
+                method = 'clickstream'
             if algo != 'looprank':
                 output_filename = sanitize(OUTPUT_FILENAMES[algo].format(
                     algo=algo,
                     alpha=alpha,
                     title=title.replace(' ', '_'),
-                    maxloop=maxloop
+                    maxloop=maxloop,
+                    method=method
                     )
                 )
                 if  args.wholenetwork:
@@ -329,7 +343,8 @@ if __name__ == '__main__':
                         algo=algo,
                         alpha=alpha,
                         title=title.replace(' ', '_'),
-                        maxloop='wholenetwork'
+                        maxloop='wholenetwork',
+                        method=method
                         )
                     )
             else:
@@ -337,7 +352,8 @@ if __name__ == '__main__':
                     algo=algo,
                     title=title.replace(' ', '_'),
                     maxloop=maxloop,
-                    scoring_function=scoring_function
+                    scoring_function=scoring_function,
+                    method=method
                     )
                 )
 
