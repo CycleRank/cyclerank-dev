@@ -106,11 +106,12 @@ function check_choices() {
 function short_usage() {
   (>&2 echo \
 "Usage:
-  engineroom_qsub_2Drank.sh [options] -i INPUT_GRAPH
-                                      -o OUTPUTDIR
-                                      -s SNAPSHOT
-                                      -l LINKS_DIR
-                                      -I PAGES_LIST
+  engineroom_qsub_2Drank_toppr.sh [options] -C COMPARE_TOP_PR
+                                            -i INPUT_GRAPH
+                                            -o OUTPUTDIR
+                                            -s SNAPSHOT
+                                            -l LINKS_DIR
+                                            -I PAGES_LIST
   "
   )
 }
@@ -124,7 +125,7 @@ Run pageloop_back_map on the graph INPUT_GRAPH for the pages listed in
 PAGES_LIST and output results in OUTPUTDIR.
 
 Arguments:
-  -C COMPARE_TOP_PR   Top PageRank results to compare.
+  -C COMPARE_TOP_PR       Top PageRank results to compare.
   -i INPUT_GRAPH          Absolute path of the input file.
   -o OUTPUTDIR            Absolute path of the output directory.
   -s SNAPSHOT             Absolute path of the file with the graph snapshot.
