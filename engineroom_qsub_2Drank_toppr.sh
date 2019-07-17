@@ -591,7 +591,7 @@ for title in "${!pages[@]}"; do
   #                      -o /home/user/pagerank/enwiki/20180301/ \
   #                      -p enwiki.pages.txt
   ############################################################################
-  command=("${SCRIPTDIR}/engineroom_qsub_2Drank.sh" \
+  command=("${SCRIPTDIR}/engineroom_job_2Drank_toppr.sh" \
            "-a" "$PAGERANK_ALPHA" \
            "-C" "$COMPARE_TOP_PR" \
            "-f" "$SCORING_FUNCTION" \

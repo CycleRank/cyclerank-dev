@@ -556,7 +556,7 @@ function timeout_cmd {
 
 #################### debug info
 echodebug "Arguments:"
-echodebug "  * COMPARE_TOP_PR (-c): $COMPARE_TOP_PR"
+echodebug "  * COMPARE_TOP_PR (-C): $COMPARE_TOP_PR"
 echodebug "  * INPUT_GRAPH (-i): $INPUT_GRAPH"
 echodebug "  * OUTPUTDIR (-o): $OUTPUTDIR"
 echodebug "  * SNAPSHOT (-s): $SNAPSHOT"
