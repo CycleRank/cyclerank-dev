@@ -874,11 +874,6 @@ fi
 
 if $debug_flag || $verbose_flag; then set -x; fi
 
-compare_maxloop_flag=''
-if $wholenetwork; then
-  compare_maxloop_flag='-w'
-fi
-
 # ./utils/compare_top-pagerank.py
 #   -a looprank ssppr 
 #   -i data/data_ext/engineroom/2018-03-01/seealso/enwiki.seealso.keywords.2018-03-01.sample-1000.3.txt 
@@ -892,7 +887,6 @@ wrap_run python3 "$SCRIPTDIR/utils/compare_top-pagerank.py" \
   -a 'looprank' '2Drank' \
   -f "${SCORING_FUNCTION}" \
   -k "${MAXLOOP}" \
-  ${compare_maxloop_flag:+"$compare_maxloop_flag"} \
   -i "$compare_seealso_input" \
   -t "${COMPARE_TOP_PR}" \
   --output-dir "$OUTPUTDIR" \
