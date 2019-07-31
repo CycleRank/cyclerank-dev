@@ -187,7 +187,7 @@ MAXLOOP=4
 TIMEOUT=-1
 PAGERANK_ALPHA=0.85
 
-while getopts ":dD:hi:I:k:Kl:no:p:P:s:t:T:vV:wX" opt; do
+while getopts ":a:dD:hi:I:k:Kl:no:p:P:s:t:T:vV:wX" opt; do
   case $opt in
     a)
       check_posfloat "$OPTARG" '-a'
