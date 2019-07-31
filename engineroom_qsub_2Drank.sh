@@ -132,11 +132,11 @@ Arguments:
 
 
 Options:
-  -a PAGERANK_ALPHA   Damping factor (alpha) for the PageRank [default: 0.85].
+  -a PAGERANK_ALPHA       Damping factor (alpha) for the PageRank [default: 0.85].
   -c PBS_NCPUS            Number of PBS cpus to request (needs also -n and -P to be specified).
   -d                      Enable debug output.
   -D DATE                 Date [default: infer from input graph].
-  -f SCORING_FUNCTION LoopRank scoring function {linear,square,cube,nlogn,expe,exp10} [default: linear].
+  -f SCORING_FUNCTION     LoopRank scoring function {linear,square,cube,nlogn,expe,exp10} [default: linear].
   -h                      Show this help and exits.
   -H PBS_HOST             PBS host to run on.
   -k MAXLOOP              Max loop length (K) [default: 4].

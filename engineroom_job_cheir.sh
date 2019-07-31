@@ -110,6 +110,33 @@ function check_posfloat() {
     (echo "Error in option '$option': must be positive, got $mynum." >&2)
   fi
 }
+
+function array_contains () {
+  local seeking=$1; shift
+  local in=1
+  for element; do
+      if [[ "$element" == "$seeking" ]]; then
+          in=0
+          break
+      fi
+  done
+  return $in
+}
+
+function check_choices() {
+  local mychoice="$1"
+  declare -a choices="($2)"
+
+  set +u
+  if ! array_contains "$mychoice" "${choices[@]}"; then
+    (>&2 echo -n "$mychoice is not within acceptable choices: {")
+    (echo -n "${choices[@]}" | sed -re 's# #, #g' >&2)
+    (>&2 echo '}' )
+    exit 1
+  fi
+  set -u
+
+}
 #################### end: helpers
 
 #################### usage
@@ -147,6 +174,7 @@ Options:
   -a PAGERANK_ALPHA   Damping factor (alpha) for the PageRank [default: 0.85].
   -d                  Enable debug output.
   -D DATE             Date [default: infer from input graph].
+  -f SCORING_FUNCTION LoopRank scoring function {linear,square,cube,nlogn,expe,exp10} [default: linear].
   -h                  Show this help and exits.
   -k MAXLOOP          Max loop length (K) [default: 4].
   -K                  Keep temporary files.
@@ -195,8 +223,17 @@ PROJECT=''
 MAXLOOP=4
 TIMEOUT=-1
 PAGERANK_ALPHA=0.85
+SCORING_FUNCTION='linear'
 
-while getopts ":a:dD:hi:I:k:Kl:no:p:P:s:t:T:vV:wX" opt; do
+declare -a SCORING_FUNCTION_CHOICES=( 'linear'
+                                      'square'
+                                      'cube'
+                                      'nlogn'
+                                      'expe'
+                                      'exp10'
+                                     )
+
+while getopts ":a:dD:f:hi:I:k:Kl:no:p:P:s:t:T:vV:wX" opt; do
   case $opt in
     a)
       check_posfloat "$OPTARG" '-a'
@@ -210,6 +247,11 @@ while getopts ":a:dD:hi:I:k:Kl:no:p:P:s:t:T:vV:wX" opt; do
       date_set=true
 
       DATE="$OPTARG"
+      ;;
+    f)
+      check_choices "$OPTARG" "${SCORING_FUNCTION_CHOICES[*]}"
+
+      SCORING_FUNCTION="$OPTARG"
       ;;
     h)
        help_flag=true
@@ -624,9 +666,9 @@ touch "${tmpoutdir}/${outfileLR}"
 
 # Compute LoopRank scores
 if $notitle_flag; then
-  scorefileLR="${PROJECT}.looprank.${INDEX}.${MAXLOOP}.${DATE}.scores.txt"
+  scorefileLR="${PROJECT}.looprank.f${SCORING_FUNCTION}.${INDEX}.${MAXLOOP}.${DATE}.scores.txt"
 else
-  scorefileLR="${PROJECT}.looprank.${NORMTITLE}.${MAXLOOP}.${DATE}.scores.txt"
+  scorefileLR="${PROJECT}.looprank.f${SCORING_FUNCTION}.${NORMTITLE}.${MAXLOOP}.${DATE}.scores.txt"
 fi
 inputfileLR="${tmpoutdir}/${outfileLR}"
 
@@ -635,6 +677,7 @@ touch "${inputfileLR}"
 echodebug "encoding: $(python3 -c 'import locale; print(locale.getpreferredencoding(False))')"
 
 wrap_run python3 "${SCRIPTDIR}/utils/compute_scores.py" \
+  -f "${SCORING_FUNCTION}" \
   -o "${tmpoutdir}/${scorefileLR}" \
     "${inputfileLR}"
 
@@ -739,6 +782,7 @@ if $debug_flag || $verbose_flag; then set -x; fi
 
 wrap_run python3 "$SCRIPTDIR/utils/compare_seealso.py" \
   -a 'looprank' 'cheir' \
+  -f "${SCORING_FUNCTION}" \
   --alpha "${PAGERANK_ALPHA}" \
   -i "$compare_seealso_input" \
   -l "${scratch}" \
