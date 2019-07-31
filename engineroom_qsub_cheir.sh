@@ -105,6 +105,7 @@ Arguments:
 
 
 Options:
+  -a PAGERANK_ALPHA       Damping factor (alpha) for the PageRank [default: 0.85].
   -c PBS_NCPUS            Number of PBS cpus to request (needs also -n and -P to be specified).
   -d                      Enable debug output.
   -D DATE                 Date [default: infer from input graph].
@@ -150,6 +151,7 @@ PAGES_LIST=''
 PROJECT=''
 MAXLOOP=4
 TIMEOUT=''
+PAGERANK_ALPHA=0.85
 
 VENV_PATH="$PWD/looprank3"
 PYTHON_VERSION='3.6'
@@ -169,8 +171,13 @@ PBS_HOST=''
 MAX_JOBS_PER_BATCH=30
 SLEEP_PER_BATCH=1800
 
-while getopts ":cdD:hH:i:I:k:l:M:nN:o:p:P:q:s:S:t:vV:x:w:W" opt; do
+while getopts ":a:c:dD:hH:i:I:k:l:M:nN:o:p:P:q:s:S:t:vV:x:w:W" opt; do
   case $opt in
+    a)
+      check_posfloat "$OPTARG" '-a'
+
+      PAGERANK_ALPHA="$OPTARG"
+      ;;
     c)
       check_posint "$OPTARG" '-c'
 
@@ -390,6 +397,7 @@ echodebug "  * PAGES_LIST (-I): $PAGES_LIST"
 echodebug
 
 echodebug "Options:"
+echodebug "  * PAGERANK_ALPHA (-a): $PAGERANK_ALPHA"
 echodebug "  * PBS_NCPUS (-c): $PBS_NCPUS"
 echodebug "  * debug_flag (-d): $debug_flag"
 echodebug "  * PBS_HOST (-H): $PBS_HOST"
@@ -525,6 +533,7 @@ for title in "${!pages[@]}"; do
   #                      -p enwiki.pages.txt
   ############################################################################
   command=("${SCRIPTDIR}/engineroom_job_cheir.sh" \
+           "-a" "$PAGERANK_ALPHA" \
            "-k" "$MAXLOOP" \
            "-P" "$PYTHON_VERSION" \
            "-V" "$VENV_PATH" \
@@ -536,7 +545,8 @@ for title in "${!pages[@]}"; do
            "-I" "${idx}" \
            "-T" "${normtitle}" \
            ${verbosity_flag:+"${verbosity_flag}"} \
-           ${wholenetwork_flag:+"${wholenetwork_flag}"}
+           ${wholenetwork_flag:+"${wholenetwork_flag}"} \
+           ${notitle_cmd_flag:+"${notitle_cmd_flag}"}
            )
 
   # qsub -N <pbsjobname> -q cpuq [psb_options] -- \

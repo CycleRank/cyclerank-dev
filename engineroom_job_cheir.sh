@@ -135,6 +135,7 @@ Arguments:
 
 
 Options:
+  -a PAGERANK_ALPHA   Damping factor (alpha) for the PageRank [default: 0.85].
   -d                  Enable debug output.
   -D DATE             Date [default: infer from input graph].
   -h                  Show this help and exits.
@@ -184,9 +185,15 @@ DATE=''
 PROJECT=''
 MAXLOOP=4
 TIMEOUT=-1
+PAGERANK_ALPHA=0.85
 
 while getopts ":dD:hi:I:k:Kl:no:p:P:s:t:T:vV:wX" opt; do
   case $opt in
+    a)
+      check_posfloat "$OPTARG" '-a'
+
+      PAGERANK_ALPHA="$OPTARG"
+      ;;
     d)
       debug_flag=true
       ;;
@@ -493,6 +500,7 @@ echodebug "  * TITLE (-T): $TITLE"
 echodebug
 
 echodebug "Options:"
+echodebug "  * PAGERANK_ALPHA (-a): $PAGERANK_ALPHA"
 echodebug "  * debug_flag (-d): $debug_flag"
 echodebug "  * DATE (-D): $DATE"
 echodebug "  * MAXLOOP (-k): $MAXLOOP"
@@ -622,23 +630,23 @@ wrap_run python3 "${SCRIPTDIR}/utils/compute_scores.py" \
     "${inputfileLR}"
 
 
-##### Single-source Personalized PageRank
+##### Cheirank
 ##############################################################################
 if $notitle_flag; then
   if $wholenetwork; then
-    outfileCheir="${PROJECT}.cheir.${INDEX}.wholenetwork.${DATE}.txt"
-    logfileCheir="${OUTPUTDIR}/${PROJECT}.cheir.${INDEX}.wholenetwork.${DATE}.log"
+    outfileCheir="${PROJECT}.cheir.a${PAGERANK_ALPHA}.${INDEX}.wholenetwork.${DATE}.txt"
+    logfileCheir="${OUTPUTDIR}/${PROJECT}.cheir.a${PAGERANK_ALPHA}.${INDEX}.wholenetwork.${DATE}.log"
   else
-    outfileCheir="${PROJECT}.cheir.${INDEX}.${MAXLOOP}.${DATE}.txt"
-    logfileCheir="${OUTPUTDIR}/${PROJECT}.cheir.${INDEX}.${MAXLOOP}.${DATE}.log"
+    outfileCheir="${PROJECT}.cheir.a${PAGERANK_ALPHA}.${INDEX}.${MAXLOOP}.${DATE}.txt"
+    logfileCheir="${OUTPUTDIR}/${PROJECT}.cheir.a${PAGERANK_ALPHA}.${INDEX}.${MAXLOOP}.${DATE}.log"
   fi
 else
   if $wholenetwork; then
-    outfileCheir="${PROJECT}.cheir.${NORMTITLE}.wholenetwork.${DATE}.txt"
-    logfileCheir="${OUTPUTDIR}/${PROJECT}.cheir.${NORMTITLE}.wholenetwork.${DATE}.log"
+    outfileCheir="${PROJECT}.cheir.a${PAGERANK_ALPHA}.${NORMTITLE}.wholenetwork.${DATE}.txt"
+    logfileCheir="${OUTPUTDIR}/${PROJECT}.cheir.a${PAGERANK_ALPHA}.${NORMTITLE}.wholenetwork.${DATE}.log"
   else
-    outfileCheir="${PROJECT}.cheir.${NORMTITLE}.${MAXLOOP}.${DATE}.txt"
-    logfileCheir="${OUTPUTDIR}/${PROJECT}.cheir.${NORMTITLE}.${MAXLOOP}.${DATE}.log"
+    outfileCheir="${PROJECT}.cheir.a${PAGERANK_ALPHA}.${NORMTITLE}.${MAXLOOP}.${DATE}.txt"
+    logfileCheir="${OUTPUTDIR}/${PROJECT}.cheir.a${PAGERANK_ALPHA}.${NORMTITLE}.${MAXLOOP}.${DATE}.log"
   fi
 fi
 
@@ -649,6 +657,7 @@ fi
 
 commandCheir=("wrap_run" \
               "$SCRIPTDIR/ssppr" \
+              "-a" "${PAGERANK_ALPHA}" \
               "-f" "${INPUT_GRAPH}" \
               "-o" "${tmpoutdir}/${outfileCheir}" \
               "-s" "${INDEX}" \
@@ -721,26 +730,28 @@ if $debug_flag || $verbose_flag; then set -x; fi
 
 wrap_run python3 "$SCRIPTDIR/utils/compare_seealso.py" \
   -a 'looprank' 'cheir' \
+  --alpha "${PAGERANK_ALPHA}" \
   -i "$compare_seealso_input" \
   -l "${scratch}" \
   --links-filename "links.txt" \
   --output-dir "$OUTPUTDIR" \
   --scores-dir "${tmpoutdir}" \
-  -s "$SNAPSHOT"
+  -s "$SNAPSHOT" \
+  ${wholenetwork_flag[@]:+"${wholenetwork_flag[@]}"}
 
 if $debug_flag || $verbose_flag; then set +x; fi
 
 if $notitle_flag; then
   if $wholenetwork; then
-    comparefileCheir="${PROJECT}.cheir.${INDEX}.wholenetwork.${DATE}.compare.txt"
+    comparefileCheir="${PROJECT}.cheir.a${PAGERANK_ALPHA}.${INDEX}.wholenetwork.${DATE}.compare.txt"
   else
-    comparefileCheir="${PROJECT}.cheir.${INDEX}.${MAXLOOP}.${DATE}.compare.txt"
+    comparefileCheir="${PROJECT}.cheir.a${PAGERANK_ALPHA}.${INDEX}.${MAXLOOP}.${DATE}.compare.txt"
   fi
 else
   if $wholenetwork; then
-    comparefileCheir="${PROJECT}.cheir.${NORMTITLE}.wholenetwork.${DATE}.compare.txt"
+    comparefileCheir="${PROJECT}.cheir.a${PAGERANK_ALPHA}.${NORMTITLE}.wholenetwork.${DATE}.compare.txt"
   else
-    comparefileCheir="${PROJECT}.cheir.${NORMTITLE}.${MAXLOOP}.${DATE}.compare.txt"
+    comparefileCheir="${PROJECT}.cheir.a${PAGERANK_ALPHA}.${NORMTITLE}.${MAXLOOP}.${DATE}.compare.txt"
   fi
 fi
 touch "${OUTPUTDIR}/${comparefileCheir}"
