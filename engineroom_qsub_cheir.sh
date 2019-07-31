@@ -72,6 +72,15 @@ function check_posint() {
      exit 1
   fi
 }
+
+function check_posfloat() {
+  local mynum="$1"
+  local option="$2"
+
+  if ! (( $(echo "$mynum > 0" |bc -l) )); then
+    (echo "Error in option '$option': must be positive, got $mynum." >&2)
+  fi
+}
 #################### end: helpers
 
 
