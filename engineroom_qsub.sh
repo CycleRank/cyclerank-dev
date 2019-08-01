@@ -81,6 +81,33 @@ function check_posfloat() {
     (echo "Error in option '$option': must be positive, got $mynum." >&2)
   fi
 }
+
+function array_contains () {
+  local seeking=$1; shift
+  local in=1
+  for element; do
+      if [[ "$element" == "$seeking" ]]; then
+          in=0
+          break
+      fi
+  done
+  return $in
+}
+
+function check_choices() {
+  local mychoice="$1"
+  declare -a choices="($2)"
+
+  set +u
+  if ! array_contains "$mychoice" "${choices[@]}"; then
+    (>&2 echo -n "$mychoice is not within acceptable choices: {")
+    (echo -n "${choices[@]}" | sed -re 's# #, #g' >&2)
+    (>&2 echo '}' )
+    exit 1
+  fi
+  set -u
+
+}
 #################### end: helpers
 
 
@@ -118,6 +145,7 @@ Options:
   -c PBS_NCPUS            Number of PBS cpus to request (needs also -n and -P to be specified).
   -d                      Enable debug output.
   -D DATE                 Date [default: infer from input graph].
+  -f SCORING_FUNCTION     LoopRank scoring function {linear,square,cube,nlogn,expe,exp10} [default: linear].
   -h                      Show this help and exits.
   -H PBS_HOST             PBS host to run on.
   -k MAXLOOP              Max loop length (K) [default: 4].
@@ -163,7 +191,15 @@ PROJECT=''
 MAXLOOP=4
 TIMEOUT=''
 PAGERANK_ALPHA=0.85
+SCORING_FUNCTION='linear'
 
+declare -a SCORING_FUNCTION_CHOICES=( 'linear'
+                                      'square'
+                                      'cube'
+                                      'nlogn'
+                                      'expe'
+                                      'exp10'
+                                     )
 VENV_PATH="$PWD/looprank3"
 PYTHON_VERSION='3.6'
 
@@ -182,7 +218,7 @@ PBS_HOST=''
 MAX_JOBS_PER_BATCH=30
 SLEEP_PER_BATCH=1800
 
-while getopts ":a:cdD:hH:i:I:k:l:M:nN:o:p:P:q:s:S:t:vV:x:Xw:W" opt; do
+while getopts ":a:cdD:f:hH:i:I:k:l:M:nN:o:p:P:q:s:S:t:vV:x:Xw:W" opt; do
   case $opt in
     a)
       check_posfloat "$OPTARG" '-a'
@@ -202,6 +238,11 @@ while getopts ":a:cdD:hH:i:I:k:l:M:nN:o:p:P:q:s:S:t:vV:x:Xw:W" opt; do
       date_set=true
 
       DATE="$OPTARG"
+      ;;
+    f)
+      check_choices "$OPTARG" "${SCORING_FUNCTION_CHOICES[*]}"
+
+      SCORING_FUNCTION="$OPTARG"
       ;;
     h)
       help_flag=true
@@ -416,6 +457,7 @@ echodebug "  * PBS_NCPUS (-c): $PBS_NCPUS"
 echodebug "  * debug_flag (-d): $debug_flag"
 echodebug "  * PBS_HOST (-H): $PBS_HOST"
 echodebug "  * DATE (-D): $DATE"
+echodebug "  * SCORING_FUNCTION (-f): $SCORING_FUNCTION"
 echodebug "  * MAXLOOP (-k): $MAXLOOP"
 echodebug "  * PROJECT (-l): $PROJECT"
 echodebug "  * MAX_JOBS_PER_BATCH (-M): $MAX_JOBS_PER_BATCH"
@@ -509,7 +551,7 @@ for title in "${!pages[@]}"; do
   idx="${pages[$title]}"
   normtitle="${title/ /_}"
 
-  pbsjobname="lrssppr_${MAXLOOP}_${PAGERANK_ALPHA}${wholenetwork_flag:+"${wholenetwork_flag}"}_${idx}"
+  pbsjobname="lrssppr_${MAXLOOP}_${PAGERANK_ALPHA}${wholenetwork_flag:+"${wholenetwork_flag}"}_${SCORING_FUNCTION}_${idx}"
 
   logfile="${OUTPUTDIR}/${PROJECT}.looprank.${normtitle}.${MAXLOOP}.${DATE}.log"
   echo "Logging to ${logfile}"
@@ -556,6 +598,7 @@ for title in "${!pages[@]}"; do
   ############################################################################
   command=("${SCRIPTDIR}/engineroom_job.sh" \
            "-a" "$PAGERANK_ALPHA" \
+           "-f" "$SCORING_FUNCTION" \
            "-k" "$MAXLOOP" \
            "-P" "$PYTHON_VERSION" \
            "-V" "$VENV_PATH" \
