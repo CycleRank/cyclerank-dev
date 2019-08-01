@@ -616,8 +616,8 @@ if $notitle_flag; then
   outfileLR="${PROJECT}.looprank.${INDEX}.${MAXLOOP}.${DATE}.txt"
   logfileLR="${OUTPUTDIR}/${PROJECT}.looprank.${INDEX}.${MAXLOOP}.${DATE}.log"
 else
-  outfileLR="${PROJECT}.looprank.${NORMTITLE}.${MAXLOOP}.${DATE}.txt"
-  logfileLR="${OUTPUTDIR}/${PROJECT}.looprank.${NORMTITLE}.${MAXLOOP}.${DATE}.log"
+  outfileLR="${PROJECT}.looprank.${TITLE}.${MAXLOOP}.${DATE}.txt"
+  logfileLR="${OUTPUTDIR}/${PROJECT}.looprank.${TITLE}.${MAXLOOP}.${DATE}.log"
 fi
 
 commandLR=("wrap_run" \
@@ -668,7 +668,7 @@ touch "${tmpoutdir}/${outfileLR}"
 if $notitle_flag; then
   scorefileLR="${PROJECT}.looprank.f${SCORING_FUNCTION}.${INDEX}.${MAXLOOP}.${DATE}.scores.txt"
 else
-  scorefileLR="${PROJECT}.looprank.f${SCORING_FUNCTION}.${NORMTITLE}.${MAXLOOP}.${DATE}.scores.txt"
+  scorefileLR="${PROJECT}.looprank.f${SCORING_FUNCTION}.${TITLE}.${MAXLOOP}.${DATE}.scores.txt"
 fi
 inputfileLR="${tmpoutdir}/${outfileLR}"
 
@@ -694,11 +694,11 @@ if $notitle_flag; then
   fi
 else
   if $wholenetwork; then
-    outfileSSPPR="${PROJECT}.ssppr.a${PAGERANK_ALPHA}.${NORMTITLE}.wholenetwork.${DATE}.txt"
-    logfileSSPPR="${OUTPUTDIR}/${PROJECT}.ssppr.a${PAGERANK_ALPHA}.${NORMTITLE}.wholenetwork.${DATE}.log"
+    outfileSSPPR="${PROJECT}.ssppr.a${PAGERANK_ALPHA}.${TITLE}.wholenetwork.${DATE}.txt"
+    logfileSSPPR="${OUTPUTDIR}/${PROJECT}.ssppr.a${PAGERANK_ALPHA}.${TITLE}.wholenetwork.${DATE}.log"
   else
-    outfileSSPPR="${PROJECT}.ssppr.a${PAGERANK_ALPHA}.${NORMTITLE}.${MAXLOOP}.${DATE}.txt"
-    logfileSSPPR="${OUTPUTDIR}/${PROJECT}.ssppr.a${PAGERANK_ALPHA}.${NORMTITLE}.${MAXLOOP}.${DATE}.log"
+    outfileSSPPR="${PROJECT}.ssppr.a${PAGERANK_ALPHA}.${TITLE}.${MAXLOOP}.${DATE}.txt"
+    logfileSSPPR="${OUTPUTDIR}/${PROJECT}.ssppr.a${PAGERANK_ALPHA}.${TITLE}.${MAXLOOP}.${DATE}.log"
   fi
 fi
 
@@ -754,16 +754,16 @@ touch "${tmpoutdir}/${outfileSSPPR}"
 ##############################################################################
 
 # save page title in scratch/title.txt
-echo "${NORMTITLE}" >> "${scratch}/titles.txt"
+echo "${TITLE}" >> "${scratch}/titles.txt"
 echo "${INDEX}" >> "${scratch}/indexes.txt"
-echodebug "NORMTITLE (INDEX): ${NORMTITLE} ($INDEX)"
+echodebug "TITLE (INDEX): ${TITLE} ($INDEX)"
 
-cp "${LINKS_DIR}/enwiki.comparison.${NORMTITLE}.seealso.txt" \
+cp "${LINKS_DIR}/enwiki.comparison.${TITLE}.seealso.txt" \
    "${scratch}/links.txt" 2>/dev/null || \
   cp "${LINKS_DIR}/enwiki.comparison.${TITLE}.seealso.txt" \
      "${scratch}/links.txt" 2>/dev/null || \
   (
-   sanitized_file=$(find_sanitized "$NORMTITLE" "$LINKS_DIR")
+   sanitized_file=$(find_sanitized "$TITLE" "$LINKS_DIR")
    cp "${sanitized_file}" "${scratch}/links.txt"
   )
 
@@ -798,9 +798,9 @@ if $notitle_flag; then
   fi
 else
   if $wholenetwork; then
-    comparefileSSPPR="${PROJECT}.ssppr.a${PAGERANK_ALPHA}.${NORMTITLE}.wholenetwork.${DATE}.compare.txt"
+    comparefileSSPPR="${PROJECT}.ssppr.a${PAGERANK_ALPHA}.${TITLE}.wholenetwork.${DATE}.compare.txt"
   else
-    comparefileSSPPR="${PROJECT}.ssppr.a${PAGERANK_ALPHA}.${NORMTITLE}.${MAXLOOP}.${DATE}.compare.txt"
+    comparefileSSPPR="${PROJECT}.ssppr.a${PAGERANK_ALPHA}.${TITLE}.${MAXLOOP}.${DATE}.compare.txt"
   fi
 fi
 touch "${OUTPUTDIR}/${comparefileSSPPR}"
@@ -824,7 +824,7 @@ wrap_run cp "${tmpoutdir}/${scorefileLR}.sorted" "${OUTPUTDIR}/${scorefileLR}"
 wrap_run safe_head "$((maxrowSSPPR+1))" "${tmpoutdir}/${outfileSSPPR}.sorted" \
   > "${OUTPUTDIR}/${outfileSSPPR}"
 
-echo "Done processing ${NORMTITLE} ($INDEX)!"
-(>&2 echo "Done processing ${NORMTITLE} ($INDEX)!" )
+echo "Done processing ${TITLE} ($INDEX)!"
+(>&2 echo "Done processing ${TITLE} ($INDEX)!" )
 
 exit 0
