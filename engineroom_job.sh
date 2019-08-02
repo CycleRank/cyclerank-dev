@@ -533,7 +533,7 @@ function timeout_cmd {
     #
     # Much better would be to use printf %q, which the shell guarantees will
     # generate eval-safe output.
-    eval "$(token_quote "${cmd[@]}")" &
+    eval "${cmd[@]}" &
     child="$!"
 
     echodebug "child: $child"
