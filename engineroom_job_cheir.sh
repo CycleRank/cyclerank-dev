@@ -807,15 +807,15 @@ if $debug_flag || $verbose_flag; then set +x; fi
 
 if $notitle_flag; then
   if $wholenetwork; then
-    comparefileCheir="${PROJECT}.cheir.a${PAGERANK_ALPHA}.${INDEX}.wholenetwork.${DATE}.compare.txt"
+    comparefileCheir="${PROJECT}.cheir.a${PAGERANK_ALPHA}.${INDEX}.wholenetwork.${DATE}.compare.seealso.txt"
   else
-    comparefileCheir="${PROJECT}.cheir.a${PAGERANK_ALPHA}.${INDEX}.${MAXLOOP}.${DATE}.compare.txt"
+    comparefileCheir="${PROJECT}.cheir.a${PAGERANK_ALPHA}.${INDEX}.${MAXLOOP}.${DATE}.compare.seealso.txt"
   fi
 else
   if $wholenetwork; then
-    comparefileCheir="${PROJECT}.cheir.a${PAGERANK_ALPHA}.${TITLE}.wholenetwork.${DATE}.compare.txt"
+    comparefileCheir="${PROJECT}.cheir.a${PAGERANK_ALPHA}.${TITLE}.wholenetwork.${DATE}.compare.seealso.txt"
   else
-    comparefileCheir="${PROJECT}.cheir.a${PAGERANK_ALPHA}.${TITLE}.${MAXLOOP}.${DATE}.compare.txt"
+    comparefileCheir="${PROJECT}.cheir.a${PAGERANK_ALPHA}.${TITLE}.${MAXLOOP}.${DATE}.compare.seealso.txt"
   fi
 fi
 touch "${OUTPUTDIR}/${comparefileCheir}"

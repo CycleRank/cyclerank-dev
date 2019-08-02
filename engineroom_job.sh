@@ -803,9 +803,9 @@ if $debug_flag || $verbose_flag; then set +x; fi
 
 if $notitle_flag; then
   if $wholenetwork; then
-    comparefileSSPPR="${PROJECT}.ssppr.a${PAGERANK_ALPHA}.${INDEX}.wholenetwork.${DATE}.compare.txt"
+    comparefileSSPPR="${PROJECT}.ssppr.a${PAGERANK_ALPHA}.${INDEX}.wholenetwork.${DATE}.compare.seealso.txt"
   else
-    comparefileSSPPR="${PROJECT}.ssppr.a${PAGERANK_ALPHA}.${INDEX}.${MAXLOOP}.${DATE}.compare.txt"
+    comparefileSSPPR="${PROJECT}.ssppr.a${PAGERANK_ALPHA}.${INDEX}.${MAXLOOP}.${DATE}.compare.seealso.txt"
   fi
 else
   if $wholenetwork; then

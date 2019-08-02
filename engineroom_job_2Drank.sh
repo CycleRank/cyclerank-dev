@@ -910,15 +910,15 @@ LC_ALL=C sort -k2 -r -g "${tmpoutdir}/${scorefileLR}" \
 
 if $notitle_flag; then
   if $wholenetwork; then
-    comparefile2Drank="${PROJECT}.2Drank.a${PAGERANK_ALPHA}.${INDEX}.wholenetwork.${DATE}.compare.txt"
+    comparefile2Drank="${PROJECT}.2Drank.a${PAGERANK_ALPHA}.${INDEX}.wholenetwork.${DATE}.compare.seealso.txt"
   else
-    comparefile2Drank="${PROJECT}.2Drank.a${PAGERANK_ALPHA}.${INDEX}.${MAXLOOP}.${DATE}.compare.txt"
+    comparefile2Drank="${PROJECT}.2Drank.a${PAGERANK_ALPHA}.${INDEX}.${MAXLOOP}.${DATE}.compare.seealso.txt"
   fi
 else
   if $wholenetwork; then
-    comparefile2Drank="${PROJECT}.2Drank.a${PAGERANK_ALPHA}.${TITLE}.wholenetwork.${DATE}.compare.txt"
+    comparefile2Drank="${PROJECT}.2Drank.a${PAGERANK_ALPHA}.${TITLE}.wholenetwork.${DATE}.compare.seealso.txt"
   else
-    comparefile2Drank="${PROJECT}.2Drank.a${PAGERANK_ALPHA}.${TITLE}.${MAXLOOP}.${DATE}.compare.txt"
+    comparefile2Drank="${PROJECT}.2Drank.a${PAGERANK_ALPHA}.${TITLE}.${MAXLOOP}.${DATE}.compare.seealso.txt"
   fi
 fi
 touch "${OUTPUTDIR}/${comparefile2Drank}"
