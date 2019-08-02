@@ -417,6 +417,14 @@ function sanitize() {
 
 }
 
+function token_quote {
+  local quoted=()
+  for token; do
+    quoted+=( "$(printf '%q' "$token")" )
+  done
+  printf '%s\n' "${quoted[*]}"
+}
+
 function find_sanitized() {
   local target="$1"
   local adir="$2"
@@ -491,11 +499,11 @@ function log_cmd() {
   if $debug_flag || $verbose_flag; then set -x; fi
 
   if $debug_flag; then
-    IFS=' ' eval "${cmd[@]}" | tee "${logfile}"
+    eval "$(token_quote "${cmd[@]}")" | tee "${logfile}"
   elif $verbose_flag; then
-    IFS=' ' eval "${cmd[@]}" >  "${logfile}"
+    eval "$(token_quote "${cmd[@]}")" >  "${logfile}"
   else
-    IFS=' ' eval "${cmd[@]}"
+    eval "$(token_quote "${cmd[@]}")"
   fi
 
   if $debug_flag || $verbose_flag; then set +x; fi
@@ -525,7 +533,7 @@ function timeout_cmd {
     #
     # Much better would be to use printf %q, which the shell guarantees will
     # generate eval-safe output.
-    IFS=' ' eval "${cmd[@]}" &
+    eval "$(token_quote "${cmd[@]}")" &
     child="$!"
 
     echodebug "child: $child"
