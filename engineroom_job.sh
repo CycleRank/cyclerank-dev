@@ -488,12 +488,12 @@ function log_cmd() {
   # shellcheck disable=SC2116
   echodebug "cmd to log: $(echo "${cmd[@] | tr '\n' ' '}")"
 
-  if $debug_flag || $verbose_flag; then set -x; fi
-
   local qcmd
   for token in "${cmd[@]}"; do
     qcmd+=( "$(printf '%q' "$token")" )
   done
+
+  if $debug_flag || $verbose_flag; then set -x; fi
 
   if $debug_flag; then
     eval "${qcmd[@]}" | tee "${logfile}"
@@ -611,7 +611,7 @@ mkdir -p "${tmpoutdir}"
 echodebug "Created ${tmpoutdir}"
 
 # convert spaces to underscores and sanitize title
-NORMTITLE="$(printf "%q" "$(sanitize "${TITLE/ /_}")")"
+NORMTITLE="$(sanitize "${TITLE/ /_}")"
 echodebug "TITLE: $TITLE - NORMTITLE: $NORMTITLE"
 
 # verbosity flag
