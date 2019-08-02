@@ -417,14 +417,6 @@ function sanitize() {
 
 }
 
-function token_quote {
-  local quoted=()
-  for token; do
-    quoted+=( "$(printf '%q' "$token")" )
-  done
-  printf '%s\n' "${quoted[*]}"
-}
-
 function find_sanitized() {
   local target="$1"
   local adir="$2"
@@ -498,12 +490,17 @@ function log_cmd() {
 
   if $debug_flag || $verbose_flag; then set -x; fi
 
+  local qcmd
+  for token in "${cmd[@]}"; do
+    qcmd+=( "$(printf '%q' "$token")" )
+  done
+
   if $debug_flag; then
-    eval "$(printf "%q" "${cmd[*]}")" | tee "${logfile}"
+    eval "${qcmd[@]}" | tee "${logfile}"
   elif $verbose_flag; then
-    eval "$(printf "%q" "${cmd[*]}")" >  "${logfile}"
+    eval "${qcmd[@]}" >  "${logfile}"
   else
-    eval "$(printf "%q" "${cmd[*]}")"
+    eval "${qcmd[@]}"
   fi
 
   if $debug_flag || $verbose_flag; then set +x; fi
@@ -533,7 +530,13 @@ function timeout_cmd {
     #
     # Much better would be to use printf %q, which the shell guarantees will
     # generate eval-safe output.
-    eval "$(printf "%q" "${cmd[*]}")" &
+
+    local qcmd
+    for token in "${cmd[@]}"; do
+      qcmd+=( "$(printf '%q' "$token")" )
+    done
+
+    eval "${qcmd[@]}" &
     child="$!"
 
     echodebug "child: $child"
