@@ -624,8 +624,8 @@ if $notitle_flag; then
   outfileLR="${PROJECT}.looprank.${INDEX}.${MAXLOOP}.${DATE}.txt"
   logfileLR="${OUTPUTDIR}/${PROJECT}.looprank.${INDEX}.${MAXLOOP}.${DATE}.log"
 else
-  outfileLR="${PROJECT}.looprank.${TITLE}.${MAXLOOP}.${DATE}.txt"
-  logfileLR="${OUTPUTDIR}/${PROJECT}.looprank.${TITLE}.${MAXLOOP}.${DATE}.log"
+  outfileLR="${PROJECT}.looprank.${NORMTITLE}.${MAXLOOP}.${DATE}.txt"
+  logfileLR="${OUTPUTDIR}/${PROJECT}.looprank.${NORMTITLE}.${MAXLOOP}.${DATE}.log"
 fi
 
 commandLR=("wrap_run" \
@@ -676,7 +676,7 @@ touch "${tmpoutdir}/${outfileLR}"
 if $notitle_flag; then
   scorefileLR="${PROJECT}.looprank.f${SCORING_FUNCTION}.${INDEX}.${MAXLOOP}.${DATE}.scores.txt"
 else
-  scorefileLR="${PROJECT}.looprank.f${SCORING_FUNCTION}.${TITLE}.${MAXLOOP}.${DATE}.scores.txt"
+  scorefileLR="${PROJECT}.looprank.f${SCORING_FUNCTION}.${NORMTITLE}.${MAXLOOP}.${DATE}.scores.txt"
 fi
 inputfileLR="${tmpoutdir}/${outfileLR}"
 
@@ -702,11 +702,11 @@ if $notitle_flag; then
   fi
 else
   if $wholenetwork; then
-    outfileSSPPR="${PROJECT}.ssppr.a${PAGERANK_ALPHA}.${TITLE}.wholenetwork.${DATE}.txt"
-    logfileSSPPR="${OUTPUTDIR}/${PROJECT}.ssppr.a${PAGERANK_ALPHA}.${TITLE}.wholenetwork.${DATE}.log"
+    outfileSSPPR="${PROJECT}.ssppr.a${PAGERANK_ALPHA}.${NORMTITLE}.wholenetwork.${DATE}.txt"
+    logfileSSPPR="${OUTPUTDIR}/${PROJECT}.ssppr.a${PAGERANK_ALPHA}.${NORMTITLE}.wholenetwork.${DATE}.log"
   else
-    outfileSSPPR="${PROJECT}.ssppr.a${PAGERANK_ALPHA}.${TITLE}.${MAXLOOP}.${DATE}.txt"
-    logfileSSPPR="${OUTPUTDIR}/${PROJECT}.ssppr.a${PAGERANK_ALPHA}.${TITLE}.${MAXLOOP}.${DATE}.log"
+    outfileSSPPR="${PROJECT}.ssppr.a${PAGERANK_ALPHA}.${NORMTITLE}.${MAXLOOP}.${DATE}.txt"
+    logfileSSPPR="${OUTPUTDIR}/${PROJECT}.ssppr.a${PAGERANK_ALPHA}.${NORMTITLE}.${MAXLOOP}.${DATE}.log"
   fi
 fi
 
@@ -762,7 +762,7 @@ touch "${tmpoutdir}/${outfileSSPPR}"
 ##############################################################################
 
 # save page title in scratch/title.txt
-echo "${TITLE}" >> "${scratch}/titles.txt"
+echo "${NORMTITLE}" >> "${scratch}/titles.txt"
 echo "${INDEX}" >> "${scratch}/indexes.txt"
 echodebug "TITLE (INDEX): ${TITLE} ($INDEX)"
 
