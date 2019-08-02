@@ -525,7 +525,7 @@ function timeout_cmd {
     #
     # Much better would be to use printf %q, which the shell guarantees will
     # generate eval-safe output.
-    eval "${cmd[@]}" &
+    IFS='' eval "$(printf "%q" "${cmd[@]}")" &
     child="$!"
 
     echodebug "child: $child"
