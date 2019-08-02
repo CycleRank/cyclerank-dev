@@ -488,14 +488,19 @@ function log_cmd() {
   # shellcheck disable=SC2116
   echodebug "cmd to log: $(echo "${cmd[@] | tr '\n' ' '}")"
 
+  local qcmd
+  for token in "${cmd[@]}"; do
+    qcmd+=( "$(printf '%q' "$token")" )
+  done
+
   if $debug_flag || $verbose_flag; then set -x; fi
 
   if $debug_flag; then
-    eval "${cmd[@]}" | tee "${logfile}"
+    eval "${qcmd[@]}" | tee "${logfile}"
   elif $verbose_flag; then
-    eval "${cmd[@]}" >  "${logfile}"
+    eval "${qcmd[@]}" >  "${logfile}"
   else
-    eval "${cmd[@]}"
+    eval "${qcmd[@]}"
   fi
 
   if $debug_flag || $verbose_flag; then set +x; fi
@@ -525,7 +530,13 @@ function timeout_cmd {
     #
     # Much better would be to use printf %q, which the shell guarantees will
     # generate eval-safe output.
-    eval "${cmd[@]}" &
+
+    local qcmd
+    for token in "${cmd[@]}"; do
+      qcmd+=( "$(printf '%q' "$token")" )
+    done
+
+    eval "${qcmd[@]}" &
     child="$!"
 
     echodebug "child: $child"
@@ -600,7 +611,7 @@ mkdir -p "${tmpoutdir}"
 echodebug "Created ${tmpoutdir}"
 
 # convert spaces to underscores and sanitize title
-NORMTITLE="$(printf "%q" "$(sanitize "${TITLE/ /_}")")"
+NORMTITLE="$(sanitize "${TITLE/ /_}")"
 echodebug "TITLE: $TITLE - NORMTITLE: $NORMTITLE"
 
 # verbosity flag
@@ -616,8 +627,8 @@ if $notitle_flag; then
   outfileLR="${PROJECT}.looprank.${INDEX}.${MAXLOOP}.${DATE}.txt"
   logfileLR="${OUTPUTDIR}/${PROJECT}.looprank.${INDEX}.${MAXLOOP}.${DATE}.log"
 else
-  outfileLR="${PROJECT}.looprank.${TITLE}.${MAXLOOP}.${DATE}.txt"
-  logfileLR="${OUTPUTDIR}/${PROJECT}.looprank.${TITLE}.${MAXLOOP}.${DATE}.log"
+  outfileLR="${PROJECT}.looprank.${NORMTITLE}.${MAXLOOP}.${DATE}.txt"
+  logfileLR="${OUTPUTDIR}/${PROJECT}.looprank.${NORMTITLE}.${MAXLOOP}.${DATE}.log"
 fi
 
 commandLR=("wrap_run" \
@@ -668,7 +679,7 @@ touch "${tmpoutdir}/${outfileLR}"
 if $notitle_flag; then
   scorefileLR="${PROJECT}.looprank.f${SCORING_FUNCTION}.${INDEX}.${MAXLOOP}.${DATE}.scores.txt"
 else
-  scorefileLR="${PROJECT}.looprank.f${SCORING_FUNCTION}.${TITLE}.${MAXLOOP}.${DATE}.scores.txt"
+  scorefileLR="${PROJECT}.looprank.f${SCORING_FUNCTION}.${NORMTITLE}.${MAXLOOP}.${DATE}.scores.txt"
 fi
 inputfileLR="${tmpoutdir}/${outfileLR}"
 

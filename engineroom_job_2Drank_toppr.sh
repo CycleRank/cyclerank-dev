@@ -502,14 +502,19 @@ function log_cmd() {
   # shellcheck disable=SC2116
   echodebug "cmd to log: $(echo "${cmd[@] | tr '\n' ' '}")"
 
+  local qcmd
+  for token in "${cmd[@]}"; do
+    qcmd+=( "$(printf '%q' "$token")" )
+  done
+
   if $debug_flag || $verbose_flag; then set -x; fi
 
   if $debug_flag; then
-    eval "${cmd[@]}" | tee "${logfile}"
+    eval "${qcmd[@]}" | tee "${logfile}"
   elif $verbose_flag; then
-    eval "${cmd[@]}" >  "${logfile}"
+    eval "${qcmd[@]}" >  "${logfile}"
   else
-    eval "${cmd[@]}"
+    eval "${qcmd[@]}"
   fi
 
   if $debug_flag || $verbose_flag; then set +x; fi
@@ -539,6 +544,12 @@ function timeout_cmd {
     #
     # Much better would be to use printf %q, which the shell guarantees will
     # generate eval-safe output.
+
+    local qcmd
+    for token in "${cmd[@]}"; do
+      qcmd+=( "$(printf '%q' "$token")" )
+    done
+
     eval "${cmd[@]}" &
     child="$!"
 
