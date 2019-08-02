@@ -499,11 +499,11 @@ function log_cmd() {
   if $debug_flag || $verbose_flag; then set -x; fi
 
   if $debug_flag; then
-    eval "$(token_quote "${cmd[@]}")" | tee "${logfile}"
+    eval "${cmd[@]}" | tee "${logfile}"
   elif $verbose_flag; then
-    eval "$(token_quote "${cmd[@]}")" >  "${logfile}"
+    eval "${cmd[@]}" >  "${logfile}"
   else
-    eval "$(token_quote "${cmd[@]}")"
+    eval "${cmd[@]}"
   fi
 
   if $debug_flag || $verbose_flag; then set +x; fi
