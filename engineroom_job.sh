@@ -499,11 +499,11 @@ function log_cmd() {
   if $debug_flag || $verbose_flag; then set -x; fi
 
   if $debug_flag; then
-    eval "${cmd[@]}" | tee "${logfile}"
+    eval "$(printf "%q" "${cmd[*]}")" | tee "${logfile}"
   elif $verbose_flag; then
-    eval "${cmd[@]}" >  "${logfile}"
+    eval "$(printf "%q" "${cmd[*]}")" >  "${logfile}"
   else
-    eval "${cmd[@]}"
+    eval "$(printf "%q" "${cmd[*]}")"
   fi
 
   if $debug_flag || $verbose_flag; then set +x; fi
@@ -533,7 +533,7 @@ function timeout_cmd {
     #
     # Much better would be to use printf %q, which the shell guarantees will
     # generate eval-safe output.
-    eval "${cmd[@]}" &
+    eval "$(printf "%q" "${cmd[*]}")" &
     child="$!"
 
     echodebug "child: $child"
