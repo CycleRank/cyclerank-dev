@@ -491,11 +491,11 @@ function log_cmd() {
   if $debug_flag || $verbose_flag; then set -x; fi
 
   if $debug_flag; then
-    eval "${cmd[@]}" | tee "${logfile}"
+    IFS='' eval "${cmd[@]}" | tee "${logfile}"
   elif $verbose_flag; then
-    eval "${cmd[@]}" >  "${logfile}"
+    IFS='' eval "${cmd[@]}" >  "${logfile}"
   else
-    eval "${cmd[@]}"
+    IFS='' eval "${cmd[@]}"
   fi
 
   if $debug_flag || $verbose_flag; then set +x; fi
