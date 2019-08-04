@@ -73,6 +73,15 @@ function check_posint() {
   fi
 }
 
+function check_posfloat() {
+  local mynum="$1"
+  local option="$2"
+
+  if ! (( $(echo "$mynum > 0" |bc -l) )); then
+    (echo "Error in option '$option': must be positive, got $mynum." >&2)
+  fi
+}
+
 function array_contains () {
   local seeking=$1; shift
   local in=1
