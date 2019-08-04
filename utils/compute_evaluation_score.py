@@ -132,7 +132,8 @@ if __name__ == '__main__':
     parser.add_argument('-f', '--scoring-function',
                         type=str,
                         default='linear',
-                        choices=['linear', 'square'],
+                        choices=['linear', 'square', 'cube', 'nlogn',
+                                 'expe', 'exp10'],
                         help='LoopRank scoring function '
                              '[default: linear].'
                         )
