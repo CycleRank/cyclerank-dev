@@ -206,6 +206,7 @@ int main(int argc, const char* argv[]) {
   opts::Options* options;
   string input_file="input.txt";
   string output_file="output.txt";
+  double alpha=0.85;
   bool verbose = false;
   bool debug = false;
   bool help = false;
@@ -218,6 +219,10 @@ int main(int argc, const char* argv[]) {
     options = new cxxopts::Options(argv[0]);
 
     options->add_options()
+      ("a,alpha", "Damping factor (alpha).",
+       cxxopts::value<double>(alpha),
+       "ALPHA"
+       )
       ("f,file", "Input file.",
        cxxopts::value<string>(input_file),
        "FILE"
@@ -260,6 +265,12 @@ int main(int argc, const char* argv[]) {
     exit (EXIT_FAILURE);
   }
 
+  if(alpha <= 0) {
+    cerr << "Error: the damping factor specified with -a (alpha) must be" \
+         << "positive." << endl;
+    exit (EXIT_FAILURE);
+  }
+
   // use a variable called directed to indicate if the graph is directed
   directed = !undirected;
   // ********** end: parse command-line options
@@ -279,6 +290,7 @@ int main(int argc, const char* argv[]) {
   console->debug("input_file: {}", input_file);
   console->debug("verbose: {}", verbose);
   console->debug("debug: {}", debug);
+  console->debug("alpha: {}", alpha);
   console->debug("transposed: {}", transposed);
   console->debug("undirected: {}", undirected);
   console->debug("directed: {}", directed);
@@ -366,12 +378,13 @@ int main(int argc, const char* argv[]) {
   *   const igraph_vector_t *weights, void *options
   *   );
   * *************************************************************************/
-  console->info("Pagerank");
+  console->info("Pagerank (alpha={})", alpha);
 
   igraph_t igrafo;
   igraph_vector_t iedges;
   vector<nodo> grafoT;
   vector<nodo> grafoU;
+  igraph_real_t pr_alpha(alpha);
 
   console->debug("Calculating the Pagerank on the graph: ");
   if(!transposed) {
@@ -466,7 +479,7 @@ int main(int argc, const char* argv[]) {
      0,                               // igraph_real_t *value
      igraph_vss_all(),                // const igraph_vs_t vids
      directed,                        // igraph_bool_t directed
-     0.85,                            // igraph_real_t damping
+     pr_alpha,                        // igraph_real_t damping
      0,                               // const igraph_vector_t *weights,
      0                                // void *options
      );
