@@ -102,7 +102,9 @@ if __name__ == '__main__':
         with safe_path(snapshot_file).open('r', encoding='utf-8') as snapfp:
             reader = csv.reader(snapfp, delimiter='\t')
             for l in reader:
-                title2id[l[1]] = int(l[0])
+                page_title = l[1].replace(' ', '_')
+                page_id = int(l[0])
+                title2id[page_title] = page_id
                 pbar.update(1)
 
     print('* Read the "clickstream" file: ', file=sys.stderr)
@@ -122,21 +124,29 @@ if __name__ == '__main__':
                     click_count = int(line[3])
 
                     if link_type == 'link' and \
-                            target_title in titles and \
-                            source_title in title2id:
+                            source_title in titles:
 
-                        source_id = title2id[source_title]
+                        if title2id.get(target_title, None) is None:
+                            # import ipdb; ipdb.set_trace()
+                            print('Error: "{}" not found'.format(target_title))
+                            continue
+                        else:
+                            target_id = title2id[target_title]
+
                         outfile = pathlib.Path(
-                            'enwiki.comparison.{}.clickstream.txt'.format(sanitize(target_title)))
-                        with safe_path(outfile).open('a+', encoding='utf-8') as outfp:
+                            'enwiki.comparison.{}.clickstream.txt'
+                            .format(sanitize(source_title))
+                            )
+                        with safe_path(outfile).open('a+', encoding='utf-8') \
+                                as outfp:
                             writer = csv.writer(outfp, delimiter='\t')
 
                             # new file, write header
                             if outfp.tell() == 0:
                                 writer.writerow(OUTPUT_HEADER)
 
-                            writer.writerow((source_title,
-                                             source_id,
+                            writer.writerow((target_title,
+                                             target_id,
                                              click_count
                                              )
                                             )
