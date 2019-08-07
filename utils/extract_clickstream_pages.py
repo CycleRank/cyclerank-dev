@@ -14,6 +14,7 @@ SPECIAL_SOURCES = [
 'other-search',
 'other-internal',
 'other-external'
+'other-other'
 ]
 
 OUTPUT_HEADER = [
@@ -145,7 +146,8 @@ if __name__ == '__main__':
                             if outfp.tell() == 0:
                                 writer.writerow(OUTPUT_HEADER)
 
-                            writer.writerow((target_title,
+
+                            writer.writerow((target_title.replace('_', ' '),
                                              target_id,
                                              click_count
                                              )
