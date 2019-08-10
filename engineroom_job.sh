@@ -809,9 +809,9 @@ if $notitle_flag; then
   fi
 else
   if $wholenetwork; then
-    comparefileSSPPR="${PROJECT}.ssppr.a${PAGERANK_ALPHA}.${TITLE}.wholenetwork.${DATE}.compare.txt"
+    comparefileSSPPR="${PROJECT}.ssppr.a${PAGERANK_ALPHA}.${TITLE}.wholenetwork.${DATE}.compare.seealso.txt"
   else
-    comparefileSSPPR="${PROJECT}.ssppr.a${PAGERANK_ALPHA}.${TITLE}.${MAXLOOP}.${DATE}.compare.txt"
+    comparefileSSPPR="${PROJECT}.ssppr.a${PAGERANK_ALPHA}.${TITLE}.${MAXLOOP}.${DATE}.compare.seealso.txt"
   fi
 fi
 touch "${OUTPUTDIR}/${comparefileSSPPR}"
@@ -832,7 +832,9 @@ LC_ALL=C sort -t$'\t' -k2 -r -n "${tmpoutdir}/${outfileSSPPR}" \
 
 wrap_run cp "${tmpoutdir}/${outfileLR}" "${OUTPUTDIR}/${outfileLR}"
 wrap_run cp "${tmpoutdir}/${scorefileLR}.sorted" "${OUTPUTDIR}/${scorefileLR}"
-wrap_run safe_head "$((maxrowSSPPR+1))" "${tmpoutdir}/${outfileSSPPR}.sorted" \
+
+HEAD_OFFSET=10000
+wrap_run safe_head "$((maxrowSSPPR+HEAD_OFFSET))" "${tmpoutdir}/${outfileSSPPR}.sorted" \
   > "${OUTPUTDIR}/${outfileSSPPR}"
 
 echo "Done processing ${TITLE} ($INDEX)!"

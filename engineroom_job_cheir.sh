@@ -836,7 +836,9 @@ LC_ALL=C sort -t$'\t' -k2 -r -n "${tmpoutdir}/${outfileCheir}" \
 
 wrap_run cp "${tmpoutdir}/${outfileLR}" "${OUTPUTDIR}/${outfileLR}"
 wrap_run cp "${tmpoutdir}/${scorefileLR}.sorted" "${OUTPUTDIR}/${scorefileLR}"
-wrap_run safe_head "$((maxrowCheir+1))" "${tmpoutdir}/${outfileCheir}.sorted" \
+
+HEAD_OFFSET=10000
+wrap_run safe_head "$((maxrowCheir+HEAD_OFFSET))" "${tmpoutdir}/${outfileCheir}.sorted" \
   > "${OUTPUTDIR}/${outfileCheir}"
 
 echo "Done processing ${TITLE} ($INDEX)!"
