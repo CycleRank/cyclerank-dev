@@ -98,12 +98,13 @@ Arguments:
 
 Options:
   -d                  Enable debug output.
-  -v                  Enable verbose output.
-  -k MAXLOOP          Max loop length (K) [default: 4].
-  -w                  Compute the pagerank on the whole network.
-  -l PROJECT          Project name [default: infer from pages list].
   -D DATE             Date [default: infer from input graph].
   -h                  Show this help and exits.
+  -k MAXLOOP          Max loop length (K) [default: 4].
+  -l PROJECT          Project name [default: infer from pages list].
+  -t                  Compute PageRank on the transposed network (CheiRank).
+  -v                  Enable verbose output.
+  -w                  Compute PageRank on the whole network.
 
 Example:
   engineroom.sh  -i /home/user/pagerank/enwiki/20180301/enwiki.wikigraph.pagerank.2018-03-01.csv \\
@@ -120,6 +121,7 @@ debug_flag=false
 verbose_flag=false
 help_flag=false
 wholenetwork=false
+transposed=false
 
 INPUT_GRAPH=''
 OUTPUTDIR=''
@@ -127,7 +129,7 @@ PAGES_LIST=''
 PROJECT=''
 MAXLOOP=4
 
-while getopts ":dD:hi:k:l:o:p:vw" opt; do
+while getopts ":dD:hi:k:l:o:p:tvw" opt; do
   case $opt in
     d)
       debug_flag=true
@@ -167,6 +169,9 @@ while getopts ":dD:hi:k:l:o:p:vw" opt; do
       check_file "$OPTARG" '-p'
 
       PAGES_LIST="$OPTARG"
+      ;;
+    t)
+      transposed=true
       ;;
     v)
       verbose_flag=true
@@ -259,6 +264,7 @@ echodebug "  * verbose_flag (-v): $verbose_flag"
 echodebug "  * DATE (-D): $DATE"
 echodebug "  * PROJECT (-l): $PROJECT"
 echodebug "  * MAXLOOP (-k): $MAXLOOP"
+echodebug "  * transposed (-t): $transposed"
 echodebug "  * wholenetwork (-w): $wholenetwork"
 echodebug
 
@@ -282,12 +288,22 @@ for title in "${!pages[@]}"; do
     wholenetwork_flag='-w'
   fi
 
+  transposed_flag=''
+  if $transposed; then
+    outfile="${PROJECT}.cheir.${normtitle}.${MAXLOOP}.${DATE}.txt"
+    transposed_flag='-t'
+  else
+    outfile="${PROJECT}.ssppr.${normtitle}.${MAXLOOP}.${DATE}.txt"
+  fi
+
+
   command=("./ssppr" \
            "-d" \
            "-f" "$INPUT_GRAPH" \
-           "-o" "${OUTPUTDIR}/${PROJECT}.ssppr.${normtitle}.${MAXLOOP}.${DATE}.txt" \
+           "-o" "${OUTPUTDIR}/${outfile}" \
            "-s" "${idx}" \
            "-k" "$MAXLOOP" \
+           ${transposed_flag[@]:+"${transposed_flag[@]}"} \
            ${wholenetwork_flag[@]:+"${wholenetwork_flag[@]}"}
            )
 
