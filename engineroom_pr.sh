@@ -70,6 +70,15 @@ function check_posint() {
      exit 1
   fi
 }
+
+function check_posfloat() {
+  local mynum="$1"
+  local option="$2"
+
+  if ! (( $(echo "$mynum > 0" |bc -l) )); then
+    (echo "Error in option '$option': must be positive, got $mynum." >&2)
+  fi
+}
 #################### end: helpers
 
 
@@ -97,6 +106,7 @@ Arguments:
   -p PAGES_LIST       Absolute path of the file with the list of pages.
 
 Options:
+  -a PAGERANK_ALPHA   Damping factor (alpha) for the PageRank [default: 0.85].
   -d                  Enable debug output.
   -D DATE             Date [default: infer from input graph].
   -h                  Show this help and exits.
@@ -128,9 +138,15 @@ OUTPUTDIR=''
 PAGES_LIST=''
 PROJECT=''
 MAXLOOP=4
+PAGERANK_ALPHA=0.85
 
-while getopts ":dD:hi:k:l:o:p:tvw" opt; do
+while getopts ":a:dD:hi:k:l:o:p:tvw" opt; do
   case $opt in
+    a)
+      check_posfloat "$OPTARG" '-a'
+
+      PAGERANK_ALPHA="$OPTARG"
+      ;;
     d)
       debug_flag=true
       ;;
@@ -259,12 +275,13 @@ echodebug "  * PAGES_LIST  (-p): $PAGES_LIST"
 echodebug
 
 echodebug "Options:"
+echodebug "  * PAGERANK_ALPHA (-a): $PAGERANK_ALPHA"
 echodebug "  * debug_flag (-d): $debug_flag"
-echodebug "  * verbose_flag (-v): $verbose_flag"
 echodebug "  * DATE (-D): $DATE"
-echodebug "  * PROJECT (-l): $PROJECT"
 echodebug "  * MAXLOOP (-k): $MAXLOOP"
+echodebug "  * PROJECT (-l): $PROJECT"
 echodebug "  * transposed (-t): $transposed"
+echodebug "  * verbose_flag (-v): $verbose_flag"
 echodebug "  * wholenetwork (-w): $wholenetwork"
 echodebug
 
@@ -280,7 +297,12 @@ for title in "${!pages[@]}"; do
   idx="${pages[$title]}"
   normtitle="${title/ /_}"
 
-  logfile="${OUTPUTDIR}/${PROJECT}.ssppr.${normtitle}.${MAXLOOP}.${DATE}.log"
+  if $transposed; then
+    logfile="${OUTPUTDIR}/${PROJECT}.cheir.${normtitle}.${MAXLOOP}.${DATE}.log"
+  else
+    logfile="${OUTPUTDIR}/${PROJECT}.ssppr.${normtitle}.${MAXLOOP}.${DATE}.log"
+  fi
+
   echo "Logging to ${logfile}"
 
   wholenetwork_flag=''
@@ -298,6 +320,7 @@ for title in "${!pages[@]}"; do
 
 
   command=("./ssppr" \
+           "-a" "$PAGERANK_ALPHA" \
            "-d" \
            "-f" "$INPUT_GRAPH" \
            "-o" "${OUTPUTDIR}/${outfile}" \
