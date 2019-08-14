@@ -298,9 +298,9 @@ for title in "${!pages[@]}"; do
   normtitle="${title/ /_}"
 
   if $transposed; then
-    logfile="${OUTPUTDIR}/${PROJECT}.cheir.${PAGERANK_ALPHA}.${normtitle}.${MAXLOOP}.${DATE}.log"
+    logfile="${OUTPUTDIR}/${PROJECT}.cheir.a${PAGERANK_ALPHA}.${normtitle}.${MAXLOOP}.${DATE}.log"
   else
-    logfile="${OUTPUTDIR}/${PROJECT}.ssppr.${PAGERANK_ALPHA}.${normtitle}.${MAXLOOP}.${DATE}.log"
+    logfile="${OUTPUTDIR}/${PROJECT}.ssppr.a${PAGERANK_ALPHA}.${normtitle}.${MAXLOOP}.${DATE}.log"
   fi
 
   echo "Logging to ${logfile}"
@@ -312,10 +312,10 @@ for title in "${!pages[@]}"; do
 
   transposed_flag=''
   if $transposed; then
-    outfile="${PROJECT}.cheir.${PAGERANK_ALPHA}.${normtitle}.${MAXLOOP}.${DATE}.txt"
+    outfile="${PROJECT}.cheir.a${PAGERANK_ALPHA}.${normtitle}.${MAXLOOP}.${DATE}.txt"
     transposed_flag='-t'
   else
-    outfile="${PROJECT}.ssppr.${PAGERANK_ALPHA}.${normtitle}.${MAXLOOP}.${DATE}.txt"
+    outfile="${PROJECT}.ssppr.a${PAGERANK_ALPHA}.${normtitle}.${MAXLOOP}.${DATE}.txt"
   fi
 
 
