@@ -115,11 +115,11 @@ function check_choices() {
 function short_usage() {
   (>&2 echo \
 "Usage:
-  engineroom_qsub_2Drank_toppr.sh [options] -C COMPARE_TOP_PR
-                                            -i INPUT_GRAPH
-                                            -o OUTPUTDIR
-                                            -s SNAPSHOT
-                                            -I PAGES_LIST
+  engineroom_qsub_toppr.sh [options] -C COMPARE_TOP_PR
+                                     -i INPUT_GRAPH
+                                     -o OUTPUTDIR
+                                     -s SNAPSHOT
+                                     -I PAGES_LIST
   "
   )
 }
@@ -219,7 +219,7 @@ PBS_HOST=''
 MAX_JOBS_PER_BATCH=30
 SLEEP_PER_BATCH=1800
 
-while getopts ":a:c:C:dD:f:hH:i:I:k:M:nN:o:p:P:q:s:S:t:vV:x:w:W" opt; do
+while getopts ":a:c:C:dD:f:hH:i:I:k:M:nN:o:p:P:q:s:S:t:vV:x:Xw:W" opt; do
   case $opt in
     a)
       check_posfloat "$OPTARG" '-a'
@@ -462,8 +462,8 @@ echodebug "  * SCORING_FUNCTION (-f): $SCORING_FUNCTION"
 echodebug "  * MAXLOOP (-k): $MAXLOOP"
 echodebug "  * PROJECT (-l): $PROJECT"
 echodebug "  * MAX_JOBS_PER_BATCH (-M): $MAX_JOBS_PER_BATCH"
-echodebug "  * PBS_NODES (-n): $PBS_NODES"
-echodebug "  * dryrun_flag (-N): $dryrun_flag"
+echodebug "  * PBS_NODES (-N): $PBS_NODES"
+echodebug "  * dryrun_flag (-n): $dryrun_flag"
 echodebug "  * PBS_PPN (-P): $PBS_PPN"
 echodebug "  * PBS_QUEUE (-q): $PBS_QUEUE"
 echodebug "  * SLEEP_PER_BATCH (-S): $SLEEP_PER_BATCH"
@@ -532,6 +532,7 @@ if $notitle_flag; then
   notitle_cmd_flag='-X'
 fi
 
+
 # verbosity flag
 verbosity_flag=''
 if $debug_flag; then
@@ -551,7 +552,7 @@ for title in "${!pages[@]}"; do
   idx="${pages[$title]}"
   normtitle="${title/ /_}"
 
-  pbsjobname="lr2d-toppr_${MAXLOOP}_${PAGERANK_ALPHA}${wholenetwork_flag:+"${wholenetwork_flag}"}_${SCORING_FUNCTION}_${idx}"
+  pbsjobname="lrssppr-toppr_${MAXLOOP}_${PAGERANK_ALPHA}${wholenetwork_flag:+"${wholenetwork_flag}"}_${SCORING_FUNCTION}_${idx}"
 
   logfile="${OUTPUTDIR}/${PROJECT}.looprank.${normtitle}.${MAXLOOP}.${DATE}.log"
   echo "Logging to ${logfile}"
@@ -596,7 +597,7 @@ for title in "${!pages[@]}"; do
   #                      -o /home/user/pagerank/enwiki/20180301/ \
   #                      -p enwiki.pages.txt
   ############################################################################
-  command=("${SCRIPTDIR}/engineroom_job_2Drank_toppr.sh" \
+  command=("${SCRIPTDIR}/engineroom_job_toppr.sh" \
            "-a" "$PAGERANK_ALPHA" \
            "-C" "$COMPARE_TOP_PR" \
            "-f" "$SCORING_FUNCTION" \

@@ -73,15 +73,6 @@ function check_posint() {
   fi
 }
 
-function check_posfloat() {
-  local mynum="$1"
-  local option="$2"
-
-  if ! (( $(echo "$mynum > 0" |bc -l) )); then
-    (echo "Error in option '$option': must be positive, got $mynum." >&2)
-  fi
-}
-
 function array_contains () {
   local seeking=$1; shift
   local in=1
@@ -119,6 +110,7 @@ function short_usage() {
                                             -i INPUT_GRAPH
                                             -o OUTPUTDIR
                                             -s SNAPSHOT
+                                            -l LINKS_DIR
                                             -I PAGES_LIST
   "
   )
@@ -137,6 +129,7 @@ Arguments:
   -i INPUT_GRAPH          Absolute path of the input file.
   -o OUTPUTDIR            Absolute path of the output directory.
   -s SNAPSHOT             Absolute path of the file with the graph snapshot.
+  -l LINKS_DIR            Absolute path of the directory with the link files .
   -I PAGES_LIST           Absolute path of the file with the list of pages.
 
 
@@ -160,7 +153,6 @@ Options:
   -v                      Enable verbose output.
   -V VENV_PATH            Absolute path of the virtualenv directory [default: \$PWD/wikidump].
   -x PYTHON_VERSION       Python version [default: 3.6].
-  -X                      Do not use titles, use indexes.
   -w PBS_WALLTIME         Max walltime for the job, a time period formatted as hh:mm:ss.
   -W                      Compute the pagerank on the whole network.
 
@@ -172,6 +164,7 @@ comparefile_unset=true
 inputgraph_unset=true
 outputdir_unset=true
 snapshot_unset=true
+linksdir_unset=true
 pageslist_unset=true
 
 project_set=false
@@ -182,7 +175,6 @@ verbose_flag=false
 help_flag=false
 dryrun_flag=false
 wholenetwork=false
-notitle_flag=false
 
 COMPARE_TOP_PR=''
 INPUT_GRAPH=''
@@ -219,7 +211,7 @@ PBS_HOST=''
 MAX_JOBS_PER_BATCH=30
 SLEEP_PER_BATCH=1800
 
-while getopts ":a:c:C:dD:f:hH:i:I:k:M:nN:o:p:P:q:s:S:t:vV:x:w:W" opt; do
+while getopts ":a:C:c:dD:f:hH:i:I:k:l:M:nN:o:p:P:q:s:S:t:vV:x:w:W" opt; do
   case $opt in
     a)
       check_posfloat "$OPTARG" '-a'
@@ -273,6 +265,12 @@ while getopts ":a:c:C:dD:f:hH:i:I:k:M:nN:o:p:P:q:s:S:t:vV:x:w:W" opt; do
       check_posint "$OPTARG" '-k'
 
       MAXLOOP="$OPTARG"
+      ;;
+    l)
+      linksdir_unset=false
+      check_dir "$OPTARG" '-l'
+
+      LINKS_DIR="$OPTARG"
       ;;
     M)
       check_posint "$OPTARG" '-M'
@@ -334,9 +332,6 @@ while getopts ":a:c:C:dD:f:hH:i:I:k:M:nN:o:p:P:q:s:S:t:vV:x:w:W" opt; do
     x)
       PYTHON_VERSION="$OPTARG"
       ;;
-    X)
-      notitle_flag=true
-      ;;
     w)
       PBS_WALLTIME="$OPTARG"
       ;;
@@ -379,6 +374,12 @@ fi
 
 if $snapshot_unset; then
   (>&2 echo "Error. Option -s is required.")
+  short_usage
+  exit 1
+fi
+
+if $linksdir_unset; then
+  (>&2 echo "Error. Option -l is required.")
   short_usage
   exit 1
 fi
@@ -449,6 +450,7 @@ echodebug "  * COMPARE_TOP_PR (-c): $COMPARE_TOP_PR"
 echodebug "  * INPUT_GRAPH (-i): $INPUT_GRAPH"
 echodebug "  * OUTPUTDIR (-o): $OUTPUTDIR"
 echodebug "  * SNAPSHOT (-s): $SNAPSHOT"
+echodebug "  * LINKS_DIR (-l): $LINKS_DIR"
 echodebug "  * PAGES_LIST (-I): $PAGES_LIST"
 echodebug
 
@@ -480,7 +482,6 @@ echodebug "  * VENV_PATH (-V): $VENV_PATH"
 echodebug "  * PYTHON_VERSION (-x): $PYTHON_VERSION"
 echodebug "  * PBS_WALLTIME (-w): $PBS_WALLTIME"
 echodebug "  * wholenetwork (-W): $wholenetwork"
-echodebug "  * notitle_flag (-X): $notitle_flag"
 echodebug
 #################### end: debug info
 
@@ -526,12 +527,6 @@ if $wholenetwork; then
   wholenetwork_flag='-w'
 fi
 
-# no title, use indexes
-notitle_cmd_flag=''
-if $notitle_flag; then
-  notitle_cmd_flag='-X'
-fi
-
 # verbosity flag
 verbosity_flag=''
 if $debug_flag; then
@@ -551,7 +546,7 @@ for title in "${!pages[@]}"; do
   idx="${pages[$title]}"
   normtitle="${title/ /_}"
 
-  pbsjobname="lr2d-toppr_${MAXLOOP}_${PAGERANK_ALPHA}${wholenetwork_flag:+"${wholenetwork_flag}"}_${SCORING_FUNCTION}_${idx}"
+  pbsjobname="lr2d-toppr_${MAXLOOP}_${PAGERANK_ALPHA}${wholenetwork_flag:+"${wholenetwork_flag}"}_${idx}"
 
   logfile="${OUTPUTDIR}/${PROJECT}.looprank.${normtitle}.${MAXLOOP}.${DATE}.log"
   echo "Logging to ${logfile}"
@@ -607,11 +602,11 @@ for title in "${!pages[@]}"; do
            "-o" "${OUTPUTDIR}" \
            "-s" "${SNAPSHOT}" \
            ${timeout_flag[@]:+"${timeout_flag[@]}"} \
+           "-l" "${LINKS_DIR}" \
            "-I" "${idx}" \
            "-T" "${normtitle}" \
            ${verbosity_flag:+"${verbosity_flag}"} \
-           ${wholenetwork_flag:+"${wholenetwork_flag}"} \
-           ${notitle_cmd_flag:+"${notitle_cmd_flag}"}
+           ${wholenetwork_flag:+"${wholenetwork_flag}"}
            )
 
   # qsub -N <pbsjobname> -q cpuq [psb_options] -- \

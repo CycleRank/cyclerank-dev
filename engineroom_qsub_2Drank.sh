@@ -538,7 +538,7 @@ for title in "${!pages[@]}"; do
   idx="${pages[$title]}"
   normtitle="${title/ /_}"
 
-  pbsjobname="lr-2Drank_${MAXLOOP}_${PAGERANK_ALPHA}_${SCORING_FUNCTION}_${idx}"
+  pbsjobname="lr2d_${MAXLOOP}_${PAGERANK_ALPHA}${wholenetwork_flag:+"${wholenetwork_flag}"}_${SCORING_FUNCTION}_${idx}"
 
   logfile="${OUTPUTDIR}/${PROJECT}.looprank.${normtitle}.${MAXLOOP}.${DATE}.log"
   echo "Logging to ${logfile}"
