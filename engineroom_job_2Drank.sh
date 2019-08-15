@@ -238,7 +238,7 @@ while getopts ":a:dD:f:hi:I:k:Kl:no:p:P:s:t:T:vV:wX" opt; do
     a)
       check_posfloat "$OPTARG" '-a'
 
-      PAGERANK_ALPHA="$OPTARG"
+      PAGERANK_ALPHA="$(LC_ALL=C printf "%.2f" "$OPTARG")"
       ;;
     d)
       debug_flag=true
