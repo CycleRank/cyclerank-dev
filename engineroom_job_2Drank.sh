@@ -891,6 +891,7 @@ fi
 
 wrap_run python3 "$SCRIPTDIR/utils/compare_seealso.py" \
   -a 'looprank' '2Drank' \
+  --alpha "${PAGERANK_ALPHA}" \
   -f "${SCORING_FUNCTION}" \
   -k "${MAXLOOP}" \
   ${compare_maxloop_flag:+"$compare_maxloop_flag"} \
