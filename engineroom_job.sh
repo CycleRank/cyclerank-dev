@@ -791,6 +791,7 @@ wrap_run python3 "$SCRIPTDIR/utils/compare_seealso.py" \
   -a "looprank" "ssppr" \
   --alpha "${PAGERANK_ALPHA}" \
   -f "${SCORING_FUNCTION}" \
+  -k "${MAXLOOP}" \
   -i "$compare_seealso_input" \
   -l "${scratch}" \
   --links-filename "links.txt" \
