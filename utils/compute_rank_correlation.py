@@ -10,9 +10,9 @@ from operator import itemgetter
 from scipy.stats import rankdata, kendalltau
 
 COMPARE_FILENAMES = {'looprank': 'enwiki.{algo}.f{scoring_function}.{title}.{maxloop}.2018-03-01.compare.clickstream.txt',
-                     'ssppr': 'enwiki.{algo}.a{alpha}.{title}.{maxloop}.2018-03-01.compare.clickstream.txt',
-                     'cheir': 'enwiki.{algo}.a{alpha}.{title}.{maxloop}.2018-03-01.compare.clickstream.txt',
-                     '2Drank': 'enwiki.{algo}.a{alpha}.{title}.{maxloop}.2018-03-01.compare.clickstream.txt',
+                     'ssppr': 'enwiki.{algo}.a{alpha:.2f}.{title}.{maxloop}.2018-03-01.compare.clickstream.txt',
+                     'cheir': 'enwiki.{algo}.a{alpha:.2f}.{title}.{maxloop}.2018-03-01.compare.clickstream.txt',
+                     '2Drank': 'enwiki.{algo}.a{alpha:.2f}.{title}.{maxloop}.2018-03-01.compare.clickstream.txt',
                      }
 ALLOWED_ALGOS = list(COMPARE_FILENAMES.keys())
 
