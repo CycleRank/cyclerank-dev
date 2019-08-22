@@ -143,7 +143,7 @@ function check_choices() {
 function short_usage() {
   (>&2 echo \
 "Usage:
-  engineroom_job_2Drank_toppr.sh [options] -C COMPARE_TOP_PR
+  engineroom_job_toppr.sh [options] -C COMPARE_TOP_PR
                                            -i INPUT_GRAPH
                                            -o OUTPUTDIR
                                            -s SNAPSHOT
@@ -188,7 +188,7 @@ Options:
   -X                  Do not use titles, use index.
 
 Example:
-  engineroom_job_2Drank_toppr.sh  -c enwiki.top-pagerank-5000.txt \\
+  engineroom_job_toppr.sh  -c enwiki.top-pagerank-5000.txt \\
                                   -i /home/user/pagerank/enwiki/20180301/enwiki.wikigraph.pagerank.2018-03-01.csv \\
                                   -o /home/user/pagerank/enwiki/20180301/ \\
                                   -p enwiki.pages.txt")
@@ -598,7 +598,7 @@ if [ -z "$reference_python" ]; then
 fi
 
 
-scratch=$(mktemp -d -t tmp.engineroom_job_2Drank.XXXXXXXXXX)
+scratch=$(mktemp -d -t tmp.engineroom_job_toppr.XXXXXXXXXX)
 if ! $keeptmp_flag; then
   function finish {
     rm -rf "$scratch"
@@ -791,7 +791,8 @@ if $debug_flag || $verbose_flag; then set -x; fi
 #   -w
 #
 wrap_run python3 "$SCRIPTDIR/utils/compare_top-pagerank.py" \
-  -a 'looprank' '2Drank' \
+  -a 'looprank' 'ssppr' \
+  --alpha "${PAGERANK_ALPHA}" \
   -f "${SCORING_FUNCTION}" \
   -k "${MAXLOOP}" \
   -i "$compare_seealso_input" \
@@ -809,33 +810,35 @@ LC_ALL=C sort -k2 -r -g "${tmpoutdir}/${scorefileLR}" \
 
 if $notitle_flag; then
   if $wholenetwork; then
-    comparefile2Drank="${PROJECT}.2Drank.a${PAGERANK_ALPHA}.${INDEX}.wholenetwork.${DATE}.compare.toppr.txt"
+    comparefileSSPPR="${PROJECT}.2Drank.a${PAGERANK_ALPHA}.${INDEX}.wholenetwork.${DATE}.compare.toppr.txt"
   else
-    comparefile2Drank="${PROJECT}.2Drank.a${PAGERANK_ALPHA}.${INDEX}.${MAXLOOP}.${DATE}.compare.toppr.txt"
+    comparefileSSPPR="${PROJECT}.2Drank.a${PAGERANK_ALPHA}.${INDEX}.${MAXLOOP}.${DATE}.compare.toppr.txt"
   fi
 else
   if $wholenetwork; then
-    comparefile2Drank="${PROJECT}.2Drank.a${PAGERANK_ALPHA}.${NORMTITLE}.wholenetwork.${DATE}.compare.toppr.txt"
+    comparefileSSPPR="${PROJECT}.2Drank.a${PAGERANK_ALPHA}.${NORMTITLE}.wholenetwork.${DATE}.compare.toppr.txt"
   else
-    comparefile2Drank="${PROJECT}.2Drank.a${PAGERANK_ALPHA}.${NORMTITLE}.${MAXLOOP}.${DATE}.compare.toppr.txt"
+    comparefileSSPPR="${PROJECT}.2Drank.a${PAGERANK_ALPHA}.${NORMTITLE}.${MAXLOOP}.${DATE}.compare.toppr.txt"
   fi
 fi
-touch "${OUTPUTDIR}/${comparefile2Drank}"
+touch "${OUTPUTDIR}/${comparefileSSPPR}"
 
-maxrow2Drank="$(LC_ALL=C \
+maxrowSSPPR="$(LC_ALL=C \
   awk 'BEGIN{a=0}{if ($1>0+a) a=$1} END{print a}' \
-    "${OUTPUTDIR}/${comparefile2Drank}"
+    "${OUTPUTDIR}/${comparefileSSPPR}"
   )"
 
-touch "${tmpoutdir}/${outfile2Drank}"
-touch "${tmpoutdir}/${outfile2Drank}.sorted"
-LC_ALL=C sort -k2 -r -g "${tmpoutdir}/${outfile2Drank}" \
-  > "${tmpoutdir}/${outfile2Drank}.sorted"
+touch "${tmpoutdir}/${outfileSSPPR}"
+touch "${tmpoutdir}/${outfileSSPPR}.sorted"
+LC_ALL=C sort -k2 -r -g "${tmpoutdir}/${outfileSSPPR}" \
+  > "${tmpoutdir}/${outfileSSPPR}.sorted"
 
 wrap_run cp "${tmpoutdir}/${outfileLR}" "${OUTPUTDIR}/${outfileLR}"
 wrap_run cp "${tmpoutdir}/${scorefileLR}.sorted" "${OUTPUTDIR}/${scorefileLR}"
-wrap_run safe_head "$((maxrow2Drank+1))" "${tmpoutdir}/${outfile2Drank}.sorted" \
-  > "${OUTPUTDIR}/${outfile2Drank}"
+
+HEAD_OFFSET=10000
+wrap_run safe_head "$((maxrowSSPPR+HEAD_OFFSET))" "${tmpoutdir}/${outfileSSPPR}.sorted" \
+  > "${OUTPUTDIR}/${outfileSSPPR}"
 
 echo "Done processing ${NORMTITLE} ($INDEX)!"
 (>&2 echo "Done processing ${NORMTITLE} ($INDEX)!" )

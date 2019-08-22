@@ -881,6 +881,7 @@ if $debug_flag || $verbose_flag; then set -x; fi
 #
 wrap_run python3 "$SCRIPTDIR/utils/compare_top-pagerank.py" \
   -a 'looprank' '2Drank' \
+  --alpha "${PAGERANK_ALPHA}" \
   -f "${SCORING_FUNCTION}" \
   -k "${MAXLOOP}" \
   -i "$compare_seealso_input" \
@@ -923,7 +924,9 @@ LC_ALL=C sort -k2 -r -g "${tmpoutdir}/${outfile2Drank}" \
 
 wrap_run cp "${tmpoutdir}/${outfileLR}" "${OUTPUTDIR}/${outfileLR}"
 wrap_run cp "${tmpoutdir}/${scorefileLR}.sorted" "${OUTPUTDIR}/${scorefileLR}"
-wrap_run safe_head "$((maxrow2Drank+1))" "${tmpoutdir}/${outfile2Drank}.sorted" \
+
+HEAD_OFFSET=10000
+wrap_run safe_head "$((maxrow2Drank+HEAD_OFFSET))" "${tmpoutdir}/${outfile2Drank}.sorted" \
   > "${OUTPUTDIR}/${outfile2Drank}"
 
 echo "Done processing ${NORMTITLE} ($INDEX)!"

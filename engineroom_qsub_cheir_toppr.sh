@@ -73,6 +73,15 @@ function check_posint() {
   fi
 }
 
+function check_posfloat() {
+  local mynum="$1"
+  local option="$2"
+
+  if ! (( $(echo "$mynum > 0" |bc -l) )); then
+    (echo "Error in option '$option': must be positive, got $mynum." >&2)
+  fi
+}
+
 function array_contains () {
   local seeking=$1; shift
   local in=1
@@ -110,7 +119,6 @@ function short_usage() {
                                             -i INPUT_GRAPH
                                             -o OUTPUTDIR
                                             -s SNAPSHOT
-                                            -l LINKS_DIR
                                             -I PAGES_LIST
   "
   )
@@ -129,7 +137,6 @@ Arguments:
   -i INPUT_GRAPH          Absolute path of the input file.
   -o OUTPUTDIR            Absolute path of the output directory.
   -s SNAPSHOT             Absolute path of the file with the graph snapshot.
-  -l LINKS_DIR            Absolute path of the directory with the link files .
   -I PAGES_LIST           Absolute path of the file with the list of pages.
 
 
@@ -164,7 +171,6 @@ comparefile_unset=true
 inputgraph_unset=true
 outputdir_unset=true
 snapshot_unset=true
-linksdir_unset=true
 pageslist_unset=true
 
 project_set=false
@@ -211,7 +217,7 @@ PBS_HOST=''
 MAX_JOBS_PER_BATCH=30
 SLEEP_PER_BATCH=1800
 
-while getopts ":a:C:c:dD:f:hH:i:I:k:l:M:nN:o:p:P:q:s:S:t:vV:x:w:W" opt; do
+while getopts ":a:c:C:dD:f:hH:i:I:k:M:nN:o:p:P:q:s:S:t:vV:x:w:W" opt; do
   case $opt in
     a)
       check_posfloat "$OPTARG" '-a'
@@ -265,12 +271,6 @@ while getopts ":a:C:c:dD:f:hH:i:I:k:l:M:nN:o:p:P:q:s:S:t:vV:x:w:W" opt; do
       check_posint "$OPTARG" '-k'
 
       MAXLOOP="$OPTARG"
-      ;;
-    l)
-      linksdir_unset=false
-      check_dir "$OPTARG" '-l'
-
-      LINKS_DIR="$OPTARG"
       ;;
     M)
       check_posint "$OPTARG" '-M'
@@ -378,12 +378,6 @@ if $snapshot_unset; then
   exit 1
 fi
 
-if $linksdir_unset; then
-  (>&2 echo "Error. Option -l is required.")
-  short_usage
-  exit 1
-fi
-
 if $pageslist_unset; then
   (>&2 echo "Error. Option -I is required.")
   short_usage
@@ -450,7 +444,6 @@ echodebug "  * COMPARE_TOP_PR (-c): $COMPARE_TOP_PR"
 echodebug "  * INPUT_GRAPH (-i): $INPUT_GRAPH"
 echodebug "  * OUTPUTDIR (-o): $OUTPUTDIR"
 echodebug "  * SNAPSHOT (-s): $SNAPSHOT"
-echodebug "  * LINKS_DIR (-l): $LINKS_DIR"
 echodebug "  * PAGES_LIST (-I): $PAGES_LIST"
 echodebug
 
@@ -464,8 +457,8 @@ echodebug "  * SCORING_FUNCTION (-f): $SCORING_FUNCTION"
 echodebug "  * MAXLOOP (-k): $MAXLOOP"
 echodebug "  * PROJECT (-l): $PROJECT"
 echodebug "  * MAX_JOBS_PER_BATCH (-M): $MAX_JOBS_PER_BATCH"
-echodebug "  * PBS_NODES (-n): $PBS_NODES"
-echodebug "  * dryrun_flag (-N): $dryrun_flag"
+echodebug "  * dryrun_flag (-n): $dryrun_flag"
+echodebug "  * PBS_NODES (-N): $PBS_NODES"
 echodebug "  * PBS_PPN (-P): $PBS_PPN"
 echodebug "  * PBS_QUEUE (-q): $PBS_QUEUE"
 echodebug "  * SLEEP_PER_BATCH (-S): $SLEEP_PER_BATCH"
@@ -546,7 +539,7 @@ for title in "${!pages[@]}"; do
   idx="${pages[$title]}"
   normtitle="${title/ /_}"
 
-  pbsjobname="lr2d-toppr_${MAXLOOP}_${PAGERANK_ALPHA}${wholenetwork_flag:+"${wholenetwork_flag}"}_${idx}"
+  pbsjobname="lrcr-toppr_${MAXLOOP}_${PAGERANK_ALPHA}${wholenetwork_flag:+"${wholenetwork_flag}"}_${SCORING_FUNCTION}_${idx}"
 
   logfile="${OUTPUTDIR}/${PROJECT}.looprank.${normtitle}.${MAXLOOP}.${DATE}.log"
   echo "Logging to ${logfile}"
@@ -591,7 +584,7 @@ for title in "${!pages[@]}"; do
   #                      -o /home/user/pagerank/enwiki/20180301/ \
   #                      -p enwiki.pages.txt
   ############################################################################
-  command=("${SCRIPTDIR}/engineroom_job_2Drank_toppr.sh" \
+  command=("${SCRIPTDIR}/engineroom_job_cheir_toppr.sh" \
            "-a" "$PAGERANK_ALPHA" \
            "-C" "$COMPARE_TOP_PR" \
            "-f" "$SCORING_FUNCTION" \
@@ -602,7 +595,6 @@ for title in "${!pages[@]}"; do
            "-o" "${OUTPUTDIR}" \
            "-s" "${SNAPSHOT}" \
            ${timeout_flag[@]:+"${timeout_flag[@]}"} \
-           "-l" "${LINKS_DIR}" \
            "-I" "${idx}" \
            "-T" "${normtitle}" \
            ${verbosity_flag:+"${verbosity_flag}"} \
