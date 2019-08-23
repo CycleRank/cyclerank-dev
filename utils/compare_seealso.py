@@ -189,7 +189,7 @@ if __name__ == '__main__':
               for _ in infile.readlines()
               ]
     if '\t' in titles[0]:
-        if args.indexes:
+        if args.index:
             titles = [line.split('\t')[1] for line in titles]
         else:
             titles = [line.split('\t')[0] for line in titles]
