@@ -23,16 +23,16 @@ regex_name = re.compile(REGEX_NAME)
 
 SCORES_FILENAMES = {
 'looprank': 'enwiki.{algo}.f{scoring_function}.{title}.{maxloop}.2018-03-01.scores.txt',
-'ssppr': 'enwiki.{algo}.a{alpha}.{title}.{maxloop}.2018-03-01.txt',
-'cheir': 'enwiki.{algo}.a{alpha}.{title}.{maxloop}.2018-03-01.txt',
-'2Drank': 'enwiki.{algo}.a{alpha}.{title}.{maxloop}.2018-03-01.txt',
+'ssppr': 'enwiki.{algo}.a{alpha:.2f}.{title}.{maxloop}.2018-03-01.txt',
+'cheir': 'enwiki.{algo}.a{alpha:.2f}.{title}.{maxloop}.2018-03-01.txt',
+'2Drank': 'enwiki.{algo}.a{alpha:.2f}.{title}.{maxloop}.2018-03-01.txt',
 }
 ALLOWED_ALGOS = list(SCORES_FILENAMES.keys())
 OUTPUT_FILENAMES = {
 'looprank': 'enwiki.{algo}.f{scoring_function}.{title}.{maxloop}.2018-03-01.compare.txt',
-'ssppr': 'enwiki.{algo}.a{alpha}.{title}.{maxloop}.2018-03-01.compare.txt',
-'cheir': 'enwiki.{algo}.a{alpha}.{title}.{maxloop}.2018-03-01.compare.txt',
-'2Drank': 'enwiki.{algo}.a{alpha}.{title}.{maxloop}.2018-03-01.compare.txt',
+'ssppr': 'enwiki.{algo}.a{alpha:.2f}.{title}.{maxloop}.2018-03-01.compare.txt',
+'cheir': 'enwiki.{algo}.a{alpha:.2f}.{title}.{maxloop}.2018-03-01.compare.txt',
+'2Drank': 'enwiki.{algo}.a{alpha:.2f}.{title}.{maxloop}.2018-03-01.compare.txt',
 }
 
 # sanitize regex
