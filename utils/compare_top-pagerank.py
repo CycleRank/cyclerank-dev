@@ -29,10 +29,10 @@ SCORES_FILENAMES = {
 }
 ALLOWED_ALGOS = list(SCORES_FILENAMES.keys())
 OUTPUT_FILENAMES = {
-'looprank': 'enwiki.{algo}.f{scoring_function}.{title}.{maxloop}.2018-03-01.compare.txt',
-'ssppr': 'enwiki.{algo}.a{alpha:.2f}.{title}.{maxloop}.2018-03-01.compare.txt',
-'cheir': 'enwiki.{algo}.a{alpha:.2f}.{title}.{maxloop}.2018-03-01.compare.txt',
-'2Drank': 'enwiki.{algo}.a{alpha:.2f}.{title}.{maxloop}.2018-03-01.compare.txt',
+'looprank': 'enwiki.{algo}.f{scoring_function}.{title}.{maxloop}.2018-03-01.compare.toppr.txt',
+'ssppr': 'enwiki.{algo}.a{alpha:.2f}.{title}.{maxloop}.2018-03-01.compare.toppr.txt',
+'cheir': 'enwiki.{algo}.a{alpha:.2f}.{title}.{maxloop}.2018-03-01.compare.toppr.txt',
+'2Drank': 'enwiki.{algo}.a{alpha:.2f}.{title}.{maxloop}.2018-03-01.compare.toppr.txt',
 }
 
 # sanitize regex
