@@ -9,6 +9,7 @@ results
 *.csv
 *.csv.gz
 *.tar*
+*.dat
 
 # ignore log files in the repo root (input/output files)
 *.log
