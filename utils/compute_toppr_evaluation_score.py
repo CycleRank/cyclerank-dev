@@ -132,7 +132,7 @@ def compute_score(links, use_log=False):
       except ZeroDivisionError:
           score = 0.0
 
-    return score, title
+    return pos, score, title
 
 
 if __name__ == '__main__':
@@ -143,11 +143,16 @@ if __name__ == '__main__':
                         required=True,
                         help='Top Indegree file.'
                         )
-    parser.add_argument('-n', '--limit-toppr',
+    parser.add_argument('--limit-toppr',
                         type=int,
                         default=1000,
                         help='Limit number of Top Indegree articles.'
-                        )  
+                        )
+    parser.add_argument('--limit-algo',
+                        type=int,
+                        default=math.inf,
+                        help='Limit number of algorithm articles.'
+                        )
     parser.add_argument('-a', '--algo',
                         type=str,
                         choices=ALLOWED_ALGOS,
@@ -215,24 +220,30 @@ if __name__ == '__main__':
     toppr_file = args.toppr
     topprlen = count_file_lines(toppr_file)
     toppr = list()
-    toppr_set = set()
     with tqdm.tqdm(total=topprlen) as pbar:
         with safe_path(toppr_file).open('r', encoding='utf-8') as topprfp:
             reader = csv.reader(topprfp, delimiter='\t')
             for l in reader:
-                toppr.append( (l[0],int(l[1])) )
-                toppr_set.add(l[0])
+                title = l[0].replace('_', ' ')
+                pageid = int(l[1])
+
+                toppr.append((title,pageid))
                 pbar.update(1)
 
     limit_toppr = args.limit_toppr
     assert limit_toppr > 0, '--limit-toppr must be positive'
-    toppr = toppr[:limit_toppr]
+    # toppr_limit_set = set([el[0] for el in toppr[:limit_toppr]])
+    toppr_limit_set = set([el[1] for el in toppr[:limit_toppr]])
+    toppr_pos = dict([(el[1][0],el[0]+1) for el in enumerate(toppr[:limit_toppr])])
+
+    limit_algo = args.limit_algo
 
     print('* Processing titles: ', file=sys.stderr)
     for title in titles:
         score = 0.0
 
         scores = dict()
+        pos = dict()
         print('-'*80)
         print('    - {}'.format(title), file=sys.stderr)
 
@@ -247,13 +258,15 @@ if __name__ == '__main__':
 
         links_set = set(links_algo.keys())
         for lid in links_set:
-            score_algo, title_algo = compute_score(links_algo, use_log=args.log)
+            pos_algo, score_algo, title_algo = compute_score(links_algo, use_log=args.log)
 
-            if title_algo in toppr_set:
-              score += score_algo
+            # if pos_algo <= limit_algo and title_algo in toppr_limit_set:
+            if pos_algo <= limit_algo and lid in toppr_limit_set:
+                score += score_algo
 
-              title_link = title_algo
-              scores[title_link] = score_algo
+                title_link = title_algo
+                scores[title_link] = score_algo
+                pos[title_link] = pos_algo
 
         function='linear'
         if args.log:
@@ -271,6 +284,11 @@ if __name__ == '__main__':
             writer = csv.writer(outfp, delimiter='\t')
             writer.writerow((score,))
             for link_title in scores:
-                writer.writerow((scores[link_title], link_title))
+                writer.writerow((scores[link_title],
+                                 link_title,
+                                 pos[link_title],
+                                 toppr_pos[link_title]
+                                 )
+                                )
 
     exit(0)
