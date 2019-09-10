@@ -8,20 +8,6 @@ if ! $SOURCED; then
   IFS=$'\n\t'
 fi
 
-
-
-declare -A INFLUENZA=( \
-['de']='Influenza' \
-['en']='Influenza' \
-['es']='Gripe' \
-['it']='Influenza' \
-['fr']='Grippe' \
-['nl']='Griep' \
-['pl']='Grypa' \
-['ru']='Грипп' \
-['sv']='Influensa' \
-)
-
 # for key in "${!INFLUENZA[@]}"; do
 #   echo "$key: ${INFLUENZA["$key"]}"
 # done
@@ -37,17 +23,15 @@ for lang in "${langs[@]}"; do
       cd "${lang}wiki/${adate}/${year}-${month}-${day}"
       mkdir -pv influenza
 
-      title="${INFLUENZA["$lang"]}"
+      echo "Processing ${lang}wiki.influenza.keywords.${year}-${month}-${day}.txt"
 
-      echo "Page to search for ${title} (${lang})"
-      echo "Processing ${lang}wiki.wikigraph.snapshot.${year}-${month}-${day}.csv ..."
+      ./engineroom.sh \
+        -d \
+        -k 4 \
+        -i "/mnt/fluiddata/cconsonni/wikilink-new-output/pagerank/${lang}wiki/20180301/2018-03-01/enwiki.wikigraph.pagerank.2018-03-01.csv" \
+        -o "$(realpath .)" \
+        -p "${lang}wiki.influenza.keywords.${year}-${month}-${day}.txt"
 
-      # shellcheck disable=SC2002
-      \cat "${lang}wiki.wikigraph.snapshot.${year}-${month}-${day}.csv" \
-        | dos2unix \
-        | grep -E -i '^[0-9]+\s+'"$title"'$' \
-        > "influenza/${lang}wiki.influenza.keywords.${year}-${month}-${day}.txt" \
-        || true
     )
   done
 done
