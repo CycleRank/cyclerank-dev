@@ -20,7 +20,7 @@ langs=( 'de' 'es' 'fr' 'it' 'nl' 'pl' 'ru' 'sv' );
 for lang in "${langs[@]}"; do
   for year in {2001..2018}; do
     (
-      cd "${lang}wiki/${adate}/${year}-${month}-${day}"
+      cd "/mnt/fluiddata/cconsonni/wikilink-new-output/pagerank/${lang}wiki/${adate}/${year}-${month}-${day}"
       mkdir -pv influenza
 
       echo "Processing ${lang}wiki.influenza.keywords.${year}-${month}-${day}.txt"
