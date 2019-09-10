@@ -25,12 +25,14 @@ for lang in "${langs[@]}"; do
 
       echo "Processing ${lang}wiki.influenza.keywords.${year}-${month}-${day}.txt"
 
+      set -x
       ./engineroom.sh \
         -d \
         -k 4 \
         -i "/mnt/fluiddata/cconsonni/wikilink-new-output/pagerank/${lang}wiki/20180301/2018-03-01/enwiki.wikigraph.pagerank.2018-03-01.csv" \
         -o "$(realpath .)" \
         -p "${lang}wiki.influenza.keywords.${year}-${month}-${day}.txt"
+	   set +x
 
     )
   done
