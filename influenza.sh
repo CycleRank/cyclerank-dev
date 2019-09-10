@@ -17,27 +17,26 @@ langs=( 'de' 'es' 'fr' 'it' 'nl' 'pl' 'ru' 'sv' );
 
 for lang in "${langs[@]}"; do
   for year in {2001..2018}; do
-    (
-      cd "/mnt/fluiddata/cconsonni/wikilink-new-output/pagerank/${lang}wiki/${adate}/${year}-${month}-${day}"
-      mkdir -pv influenza
+    basedir="/mnt/fluiddata/cconsonni/wikilink-new-output/pagerank/${lang}wiki/${adate}/${year}-${month}-${day}"
+    mkdir -pv "${basedir}/influenza"
 
-      echo "Processing ${lang}wiki.influenza.keywords.${year}-${month}-${day}.txt"
+    echo "Processing ${lang}wiki.influenza.keywords.${year}-${month}-${day}.txt"
 
-      input_file="$(realpath "${lang}wiki.wikigraph.pagerank.${year}-${month}-${day}.csv")"
-      list_file="$(realpath "influenza/${lang}wiki.influenza.keywords.${year}-${month}-${day}.txt")"
+    input_file="$(realpath "${basedir}/${lang}wiki.wikigraph.pagerank.${year}-${month}-${day}.csv")"
+    output_dir="$(realpath "${basedir}/influenza")"
+    list_file="$(realpath "${basedir}/influenza/${lang}wiki.influenza.keywords.${year}-${month}-${day}.txt")"
 
-      numpages="$(wc -l "${list_file}" | awk '{print $1}')"
+    numpages="$(wc -l "${list_file}" | awk '{print $1}')"
 
-      if [ "$numpages" -gt 0 ]; then
-        set -x
-        "${scriptdir}/engineroom.sh" \
-          -d \
-          -k 4 \
-          -i "${input_file}" \
-          -o "$(realpath influenza)" \
-          -p "${list_file}"
-       set +x
-      fi
-    )
+    if [ "$numpages" -gt 0 ]; then
+      set -x
+      "${scriptdir}/engineroom.sh" \
+        -d \
+        -k 4 \
+        -i "${input_file}" \
+        -o "${output_dir}" \
+        -p "${list_file}"
+     set +x
+    fi
   done
 done
