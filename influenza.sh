@@ -27,7 +27,9 @@ for lang in "${langs[@]}"; do
       "${scriptdir}/engineroom.sh" \
         -d \
         -k 4 \
-        -i "/mnt/fluiddata/cconsonni/wikilink-new-output/pagerank/${lang}wiki/20180301/2018-03-01/enwiki.wikigraph.pagerank.2018-03-01.csv" \
+        -i "/mnt/fluiddata/cconsonni/wikilink-new-output/pagerank/" + \
+           "${lang}wiki/20180301/${year}-${month}-${day}/" + \
+           "${lang}wiki.wikigraph.pagerank.${year}-${month}-${day}.csv" \
         -o "$(realpath .)" \
         -p "${lang}wiki.influenza.keywords.${year}-${month}-${day}.txt"
 	   set +x
