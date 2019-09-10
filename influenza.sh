@@ -24,17 +24,20 @@ for lang in "${langs[@]}"; do
       echo "Processing ${lang}wiki.influenza.keywords.${year}-${month}-${day}.txt"
 
       input_file="$(realpath "${lang}wiki.wikigraph.pagerank.${year}-${month}-${day}.csv")"
-	  list_file="$(realpath "influenza/${lang}wiki.influenza.keywords.${year}-${month}-${day}.txt")"
+      list_file="$(realpath "influenza/${lang}wiki.influenza.keywords.${year}-${month}-${day}.txt")"
 
-      set -x
-      "${scriptdir}/engineroom.sh" \
-        -d \
-        -k 4 \
-        -i "${input_file}" \
-        -o "$(realpath influenza)" \
-        -p "${list_file}"
-	   set +x
+      numpages="$(wc -l "${list_file}" | awk '{print $1}')"
 
+      if [ "$numpages" -gt 0 ]; then
+        set -x
+        "${scriptdir}/engineroom.sh" \
+          -d \
+          -k 4 \
+          -i "${input_file}" \
+          -o "$(realpath influenza)" \
+          -p "${list_file}"
+       set +x
+      fi
     )
   done
 done
