@@ -8,9 +8,7 @@ if ! $SOURCED; then
   IFS=$'\n\t'
 fi
 
-# for key in "${!INFLUENZA[@]}"; do
-#   echo "$key: ${INFLUENZA["$key"]}"
-# done
+scriptdir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 
 adate='20180301'
 month='03'; day='01'
@@ -26,7 +24,7 @@ for lang in "${langs[@]}"; do
       echo "Processing ${lang}wiki.influenza.keywords.${year}-${month}-${day}.txt"
 
       set -x
-      ./engineroom.sh \
+      "${scriptdir}/engineroom.sh" \
         -d \
         -k 4 \
         -i "/mnt/fluiddata/cconsonni/wikilink-new-output/pagerank/${lang}wiki/20180301/2018-03-01/enwiki.wikigraph.pagerank.2018-03-01.csv" \
