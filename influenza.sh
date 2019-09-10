@@ -23,17 +23,16 @@ for lang in "${langs[@]}"; do
 
       echo "Processing ${lang}wiki.influenza.keywords.${year}-${month}-${day}.txt"
 
-      input_file="/mnt/fluiddata/cconsonni/wikilink-new-output/pagerank"
-      input_file="${input_file}/${lang}wiki/20180301/${year}-${month}-${day}"
-      input_file="${input_file}/${lang}wiki.wikigraph.pagerank.${year}-${month}-${day}.csv"
+      input_file="$(realpath "${lang}wiki.wikigraph.pagerank.${year}-${month}-${day}.csv")"
+	  list_file="$(realpath "influenza/${lang}wiki.influenza.keywords.${year}-${month}-${day}.txt")"
 
       set -x
       "${scriptdir}/engineroom.sh" \
         -d \
         -k 4 \
         -i "${input_file}" \
-        -o "$(realpath .)" \
-        -p "${lang}wiki.influenza.keywords.${year}-${month}-${day}.txt"
+        -o "$(realpath influenza)" \
+        -p "${list_file}"
 	   set +x
 
     )
