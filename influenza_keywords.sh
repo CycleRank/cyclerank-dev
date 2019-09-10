@@ -48,6 +48,9 @@ for lang in "${langs[@]}"; do
         | grep -E -i '^[0-9]+\s+'"$title"'$' \
         > "influenza/${lang}wiki.influenza.keywords.${year}-${month}-${day}.txt" \
         || true
+
+      awk "influenza/${lang}wiki.influenza.keywords.${year}-${month}-${day}.txt" '{print $2"\t"$1}' \
+        | sponge "influenza/${lang}wiki.influenza.keywords.${year}-${month}-${day}.txt"
     )
   done
 done
