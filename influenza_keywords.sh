@@ -49,7 +49,7 @@ for lang in "${langs[@]}"; do
         > "influenza/${lang}wiki.influenza.keywords.${year}-${month}-${day}.txt" \
         || true
 
-      awk "influenza/${lang}wiki.influenza.keywords.${year}-${month}-${day}.txt" '{print $2"\t"$1}' \
+      awk '{print $2"\t"$1}' "influenza/${lang}wiki.influenza.keywords.${year}-${month}-${day}.txt" \
         | sponge "influenza/${lang}wiki.influenza.keywords.${year}-${month}-${day}.txt"
     )
   done
