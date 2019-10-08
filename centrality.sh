@@ -14,12 +14,23 @@ function finish {
 }
 trap finish EXIT
 
-while read -r graph; do 
-  echo "Processing ${graph}...";
-  data=$(head -n 1 "${graph}" | tr -d $'\r');
-  IFS=' ' read -r nodes edges <<< "${data}"
-  echo "nodes: $nodes, edges: $edges"
-  if [ "$nodes" -gt 0 ]; then
-    true
-  fi
-done < "$1"
+graph="$1"
+outdir="$2"
+
+filename=$(basename -- "${graph}")
+outfile="${filename%.*}.centrality.csv"
+
+echo "Processing ${graph}...";
+data=$(head -n 1 "${graph}" | tr -d $'\r');
+IFS=' ' read -r nodes edges <<< "${data}"
+echo "nodes: $nodes, edges: $edges"
+if [ "$nodes" -gt 0 ]; then
+  cp "${graph}" "${scratch}/graph.txt"
+  sed -i '1d' "${scratch}/graph.txt"
+
+  /opt/snap/snap/examples/centrality "-i:${scratch}/graph.txt"
+
+  cp "${scratch}/node_centrality.tab" "${outdir}/${outfile}"
+fi
+
+exit 0
