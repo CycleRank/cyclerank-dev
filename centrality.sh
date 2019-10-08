@@ -25,11 +25,11 @@ data=$(head -n 1 "${graph}" | tr -d $'\r');
 IFS=' ' read -r nodes edges <<< "${data}"
 echo "nodes: $nodes, edges: $edges"
 if [ "$nodes" -gt 0 ]; then
-  cp "${graph}" "${scratch}/graph.txt"
-  sed -i '1d' "${scratch}/graph.txt"
+  cp "${graph}" "${scratch}/${filename}"
+  sed -i '1d' "${scratch}/${filename}"
 
   /opt/snap/snap/examples/centrality/centrality \
-    "-i:${scratch}/graph.txt" \
+    "-i:${scratch}/${filename}" \
     "-o:${scratch}/results.txt"
 
   cp "${scratch}/results.txt" "${outdir}/${outfile}"
