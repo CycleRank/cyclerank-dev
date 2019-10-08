@@ -28,7 +28,7 @@ if [ "$nodes" -gt 0 ]; then
   cp "${graph}" "${scratch}/graph.txt"
   sed -i '1d' "${scratch}/graph.txt"
 
-  /opt/snap/snap/examples/centrality "-i:${scratch}/graph.txt"
+  /opt/snap/snap/examples/centrality/centrality "-i:${scratch}/graph.txt"
 
   cp "${scratch}/node_centrality.tab" "${outdir}/${outfile}"
 fi
