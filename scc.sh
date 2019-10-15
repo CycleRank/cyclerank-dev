@@ -18,7 +18,7 @@ graph="$1"
 outdir="$2"
 
 filename=$(basename -- "${graph}")
-outfile="${filename%.*}.concomp.csv"
+outprefix="${filename%.*}.scc"
 
 echo "Processing ${graph}...";
 data=$(head -n 1 "${graph}" | tr -d $'\r');
@@ -30,9 +30,9 @@ if [ "$nodes" -gt 0 ]; then
 
   /opt/snap/snap/examples/concomp/concomp \
     "-i:${scratch}/${filename}" \
-    "-o:${scratch}/results.txt"
+    "-o:${scratch}/${outprefix}"
 
-  cp "${scratch}/results.txt" "${outdir}/${outfile}"
+  cp "${scratch}/${outprefix}"* "${outdir}/"
 fi
 
 exit 0
