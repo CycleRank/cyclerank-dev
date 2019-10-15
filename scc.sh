@@ -18,7 +18,7 @@ graph="$1"
 outdir="$2"
 
 filename=$(basename -- "${graph}")
-outprefix="${filename%.*}.scc"
+outprefix="${filename%.*}.concomp"
 
 echo "Processing ${graph}...";
 data=$(head -n 1 "${graph}" | tr -d $'\r');
