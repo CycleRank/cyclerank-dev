@@ -55,6 +55,7 @@ def read_comparison_file(algo,
     else:
         input_filename = (COMPARE_FILENAMES[algo]
                           .format(algo=algo,
+                                  alpha=alpha,
                                   title=title,
                                   maxloop=maxloop,
                                   scoring_function=scoring_function
@@ -254,7 +255,7 @@ if __name__ == '__main__':
                            key=itemgetter(1),
                            reverse=True)
 
-        stdrank_algo = rankdata([-el[1] for el 
+        stdrank_algo = rankdata([-el[1] for el
                                           in sorted(rank_algo,key=itemgetter(0))
                                           ])
         cmprank_algo = list(zip([el[0] for el
@@ -263,7 +264,7 @@ if __name__ == '__main__':
                                 ))
 
 
-        stdrank_ref =rankdata([-el[1] for el 
+        stdrank_ref =rankdata([-el[1] for el
                                in sorted(rank_ref,key=itemgetter(0))
                                ])
         cmprank_ref = list(zip([el[0] for el
