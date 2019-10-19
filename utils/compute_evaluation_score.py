@@ -54,6 +54,7 @@ def read_comparison_file(algo,
         input_filename = (COMPARE_FILENAMES[algo]
                           .format(algo=algo,
                                   title=title,
+                                  alpha=alpha,
                                   maxloop=maxloop,
                                   scoring_function=scoring_function
                                   )
