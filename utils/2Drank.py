@@ -30,7 +30,9 @@ regex_score = re.compile(REGEX_SCORE)
 #
 # example name
 # toy.cheir.a0.30.input0.wholenetwork.txt
-REGEX_NAME = r'(toy)\.cheir\.(.+)\.(.+)\.(.+)\.(csv|txt)'
+#
+# REGEX_NAME = r'(toy)\.cheir\.(.+)\.(.+)\.(.+)\.(csv|txt)'
+REGEX_NAME = r'([a-z]{2}wiki)\.cheir\.(.+)\.(.+)\.(\d{4}-\d{2}-\d{2})\.(csv|txt)'
 regex_name = re.compile(REGEX_NAME)
 
 
