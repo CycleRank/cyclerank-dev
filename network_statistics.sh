@@ -17,7 +17,6 @@ graph="$1"
 outdir="$2"
 
 filename=$(basename -- "${graph}")
-outfile="${filename%.*}.centrality.csv"
 
 echo "Processing ${graph}...";
 data=$(head -n 1 "${graph}" | tr -d $'\r');
@@ -26,12 +25,18 @@ echo "nodes: $nodes, edges: $edges"
 if [ "$nodes" -gt 0 ]; then
   cp "${graph}" "${scratch}/${filename}"
   sed -i '1d' "${scratch}/${filename}"
+  
+  (
+    cd "${scratch}" || exit 1
 
-  /opt/snap/snap/examples/centrality/centrality \
-    "-i:${scratch}/${filename}" \
-    "-o:${scratch}/results.txt"
+    /opt/snap/snap/examples/netstat/netstat \
+    "-i:${filename}" \
+    "-o:netstat" \
+    "-t:${filename}"
 
-  cp "${scratch}/results.txt" "${outdir}/${outfile}"
+    cp ./*.netstat.* "${outdir}/"
+  )
+
 fi
 
 exit 0
