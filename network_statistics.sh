@@ -31,7 +31,7 @@ if [ "$nodes" -gt 0 ]; then
 
     /opt/snap/snap/examples/netstat/netstat \
     "-i:${filename}" \
-    "-o:netstat" \
+    "-o:${filename}.netstat" \
     "-t:${filename}"
 
     cp ./*.netstat.* "${outdir}/"
