@@ -3,7 +3,6 @@
 SOURCED=false && [ "$0" = "$BASH_SOURCE" ] || SOURCED=true
 
 if ! $SOURCED; then
-  echo 'Enable strict mode'
   set -euo pipefail
   IFS=$'\n\t'
 fi
