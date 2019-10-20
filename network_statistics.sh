@@ -17,6 +17,7 @@ graph="$1"
 outdir="$2"
 
 filename=$(basename -- "${graph}")
+outprefix="${filename%.*}.netstat"
 
 echo "Processing ${graph}...";
 data=$(head -n 1 "${graph}" | tr -d $'\r');
@@ -31,7 +32,7 @@ if [ "$nodes" -gt 0 ]; then
 
     /opt/snap/snap/examples/netstat/netstat \
     "-i:${filename}" \
-    "-o:${filename}.netstat" \
+    "-o:${outprefix}" \
     "-t:${filename}"
 
     cp ./*.netstat.* "${outdir}/"
