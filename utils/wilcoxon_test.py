@@ -14,6 +14,13 @@ if __name__ == '__main__':
                         help="input file",
                         type=pathlib.Path
                         )
+    parser.add_argument("--t-test-mean",
+                        help="Value of the t-test 1-sample mean",
+                        dest='tt_mean',
+                        default=0.0,
+                        type=float
+                        )
+
     args = parser.parse_args()
 
     # load the data with NumPy function loadtxt
@@ -24,7 +31,7 @@ if __name__ == '__main__':
     print('normality test: {} (p-value: {})'.format(nt, p_nt))
 
     # normality test
-    tt, p_tt = ttest_1samp(data, 0.05)
+    tt, p_tt = ttest_1samp(data, args.tt_mean)
     print('t-tests test (mean: 0.0): {} (p-value: {})'.format(tt, p_tt))
 
     # wilcoxon test
