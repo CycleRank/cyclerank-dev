@@ -32,7 +32,8 @@ if __name__ == '__main__':
 
     # normality test
     tt, p_tt = ttest_1samp(data, args.tt_mean)
-    print('t-tests test (mean: 0.0): {} (p-value: {})'.format(tt, p_tt))
+    print('t-tests test (mean: {}): {} (p-value: {})'
+          .format(args.tt_mean, tt, p_tt))
 
     # wilcoxon test
     w, p_w = wilcoxon(data)
