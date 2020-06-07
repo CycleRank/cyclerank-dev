@@ -8,7 +8,9 @@ import numpy as np
 
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description="ikjMatrix multiplication")
+    parser = argparse.ArgumentParser(
+        description="Wilcoxon test for See Also"
+        )
     parser.add_argument("input",
                         metavar="INPUT",
                         help="input file",
